@@ -1,0 +1,7 @@
+{
+  "name":"parks-one-piloto",
+  "private":true,
+  "type":"module",
+  "scripts":{"dev":"npx serve . -l 3000","upload:docs":"node scripts/upload_repository.mjs","seed":"node scripts/seed_dataset.mjs"},
+  "dependencies":{"@supabase/supabase-js":"^2.57.4","serve":"^14.2.4"}
+}
