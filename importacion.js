@@ -26,6 +26,22 @@
   function renderResult(r){document.getElementById('importResult')?.classList.remove('hidden');const cards=document.getElementById('importResultCards');if(cards)cards.innerHTML=[['Cargados',r.uploaded,'good'],['Omitidos',r.skipped,'warn'],['Reanudados',r.resumed,'info'],['Errores',r.errors,'danger'],['Parques creados',r.createdParks,'info']].map(x=>`<div class="card kpi ${x[2]}"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join('');}
   function stop(){state.stopped=true;document.getElementById('stopNationalImport').disabled=true;}
   function downloadReport(){if(!state.summary)return alert('Todavía no existe un reporte de importación.');const rows=[['Región','Parque','Requisito','Archivo','Estado','Mensaje'],...state.summary.items.map(x=>[x.region,x.park,x.reqNum,x.file.name,x.status,x.message])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download=`PARKS_ONE_REPORTE_IMPORTACION_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href);}
-  function init(){const input=document.getElementById('nationalFolderInput');if(!input)return;input.addEventListener('change',()=>selectFiles(input));document.getElementById('runNationalImport')?.addEventListener('click',run);document.getElementById('stopNationalImport')?.addEventListener('click',stop);document.getElementById('downloadImportReport')?.addEventListener('click',downloadReport);const role=window.ParksCloud?.profile()?.role;const nav=document.querySelector('[data-page="importacion"]');if(nav)nav.style.display=role==='arquitecto'?'flex':'none';}
+  function refreshVisibility(){
+    const role=String(window.ParksCloud?.profile()?.role||'').toLowerCase();
+    const nav=document.querySelector('[data-page="importacion"]');
+    if(nav) nav.style.display=role==='arquitecto'?'flex':'none';
+    return role;
+  }
+  function init(){
+    const input=document.getElementById('nationalFolderInput');
+    if(!input)return;
+    input.addEventListener('change',()=>selectFiles(input));
+    document.getElementById('runNationalImport')?.addEventListener('click',run);
+    document.getElementById('stopNationalImport')?.addEventListener('click',stop);
+    document.getElementById('downloadImportReport')?.addEventListener('click',downloadReport);
+    const role=refreshVisibility();
+    console.info('PARKS ONE Importación Nacional 4.0.0 · rol:',role||'sin perfil');
+    setTimeout(refreshVisibility,500);
+  }
   window.initNationalImporter=init;
 })();
