@@ -29,12 +29,28 @@
       .trim();
   }
 
-  function normalizePath(path) {
-    return String(path || '')
-      .replace(/^\.\//, '')
-      .replace(/^documents_repo\//, '')
-      .replace(/^documents\//, '');
+function normalizePath(path) {
+  let clean = String(path || '').trim();
+
+  try {
+    clean = decodeURIComponent(clean);
+  } catch (_) {}
+
+  clean = clean
+    .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|public|authenticated)\//i, '')
+    .replace(/^\/+/, '')
+    .replace(/^\.\//, '')
+    .replace(/^documents_repo\//i, '')
+    .replace(/^documents\//i, '');
+
+  const bucket = String(cfg.bucket || '').replace(/^\/+|\/+$/g, '');
+
+  if (bucket && clean.toLowerCase().startsWith((bucket + '/').toLowerCase())) {
+    clean = clean.slice(bucket.length + 1);
   }
+
+  return clean;
+}
 
   function showConfigurationNotice() {
     if (document.getElementById('parksConfigNotice')) return;
