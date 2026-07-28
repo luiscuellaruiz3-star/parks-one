@@ -29,21 +29,28 @@
       .trim();
   }
 
-  function normalizePath(path) {
-    let clean = String(path || '').trim();
-    try { clean = decodeURIComponent(clean); } catch (_) {}
-    clean = clean
-      .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|public|authenticated)\//i, '')
-      .replace(/^\/+/, '')
-      .replace(/^\.\//, '')
-      .replace(/^documents_repo\//i, '')
-      .replace(/^documents\//i, '');
-    const bucket = String(cfg.bucket || '').replace(/^\/+|\/+$/g, '');
-    if (bucket && clean.toLowerCase().startsWith((bucket + '/').toLowerCase())) {
-      clean = clean.slice(bucket.length + 1);
-    }
-    return clean;
+function normalizePath(path) {
+  let clean = String(path || '').trim();
+
+  try {
+    clean = decodeURIComponent(clean);
+  } catch (_) {}
+
+  clean = clean
+    .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|public|authenticated)\//i, '')
+    .replace(/^\/+/, '')
+    .replace(/^\.\//, '')
+    .replace(/^documents_repo\//i, '')
+    .replace(/^documents\//i, '');
+
+  const bucket = String(cfg.bucket || '').replace(/^\/+|\/+$/g, '');
+
+  if (bucket && clean.toLowerCase().startsWith((bucket + '/').toLowerCase())) {
+    clean = clean.slice(bucket.length + 1);
   }
+
+  return clean;
+}
 
   function showConfigurationNotice() {
     if (document.getElementById('parksConfigNotice')) return;
@@ -348,7 +355,7 @@
       metrics.administrators = new Set(authoritativeParks.map(park => park.administrator).filter(Boolean)).size;
     }
 
-    console.log(`PARKS ONE Cloud V6.2: ${authoritativeParks.length} parques reales y ${allFiles.length} documentos vinculados.`);
+    console.log(`PARKS ONE Cloud V6.1: ${authoritativeParks.length} parques reales y ${allFiles.length} documentos vinculados.`);
   }
 
   async function resolveUrl(path, download = false) {

@@ -10,7 +10,7 @@
   const reqAliases={1:['PREDIAL'],2:['AGUA'],3:['DESCARGA'],4:['FUNCIONAMIENTO'],5:['USO DE SUELO','ZONIFICACION'],6:['PC ESTATAL','PROTECCION CIVIL ESTATAL'],7:['PC MUNICIPAL','PROTECCION CIVIL MUNICIPAL'],8:['ESTRUCTURAL'],9:['FACTIBILIDAD DE AGUA'],10:['ALINEAMIENTO','NUMERO OFICIAL'],11:['IMPACTO REGIONAL'],12:['TERMINACION DE OBRA'],13:['CONSTRUCCION'],14:['AMBIENTAL'],15:['JUNTA DE CAMINOS'],16:['ANUNCIO'],17:['SEGURIDAD ESTRUCTURAL'],18:['VISTO BUENO','SEGURIDAD Y OPERACION'],19:['POZO CESION'],20:['POZO TITULO'],21:['POZO CONSUMO'],22:['TOTEM','MASCARA COMERCIAL'],23:['CARCAMO','LAYOUT CARCAMOS']};
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   function classify(f){const p=partsOf(f),top=topFolder(p);let type='otro';if(isDocs(p))type='documento';else if(top.includes('TOP 23')||top==='TOP23')type='top23';else if(top.includes('TOP5')||top.includes('TOP 5'))type='top5';else if(top.includes('HIDRAUL'))type='hidraulica';else if(top.includes('AUDITOR'))type='auditoria';return{file:f,parts:p,type,top};}
-  function identifyDocument(row){const p=row.parts;const docsIndex=p.findIndex(x=>normalize(x)==='DOCUMENTOS'||normalize(x)==='DOCUMENTS'||normalize(x)==='DOCUMENTOS REPO');let region=p[docsIndex+1]||'';let park=p[docsIndex+2]||'';let folder=p[docsIndex+3]||'';const first=normalize(region);if(first==='T MEX PARK'||first==='TMEX PARK'||first==='T MEXPARK'){region='T-MEX';park=p[docsIndex+1]||'T-MEX PARK';folder=p[docsIndex+2]||'';}const normalized=normalize(folder+' '+row.file.name);const lead=(normalize(folder).match(/^(\d{1,2})\b/)||[])[1];let reqNum=lead?Number(lead):null;if(!reqNum){for(const[n,aliases]of Object.entries(reqAliases))if(aliases.some(a=>normalized.includes(normalize(a)))){reqNum=Number(n);break;}}return{...row,region,park,folder,reqNum};}
+  function identifyDocument(row){const p=row.parts;const docsIndex=p.findIndex(x=>normalize(x)==='DOCUMENTOS'||normalize(x)==='DOCUMENTS'||normalize(x)==='DOCUMENTOS REPO');const region=p[docsIndex+1]||'';const park=p[docsIndex+2]||'';const folder=p[docsIndex+3]||'';const normalized=normalize(folder+' '+row.file.name);const lead=(normalize(folder).match(/^(\d{1,2})\b/)||[])[1];let reqNum=lead?Number(lead):null;if(!reqNum){for(const[n,aliases]of Object.entries(reqAliases))if(aliases.some(a=>normalized.includes(normalize(a)))){reqNum=Number(n);break;}}return{...row,region,park,folder,reqNum};}
   function setText(id,text){const e=document.getElementById(id);if(e)e.textContent=text;}
   function setProgress(done,total){const pct=total?Math.round(done/total*100):0;const bar=document.getElementById('importProgressFill');if(bar)bar.style.width=pct+'%';setText('importProgressText',`${done.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} · ${pct}%`);}
   function log(msg,kind='info'){const box=document.getElementById('importLog');if(!box)return;const line=document.createElement('div');line.className='import-log-line '+kind;line.textContent=`${new Date().toLocaleTimeString('es-MX')} · ${msg}`;box.prepend(line);}
@@ -40,7 +40,7 @@
     document.getElementById('stopNationalImport')?.addEventListener('click',stop);
     document.getElementById('downloadImportReport')?.addEventListener('click',downloadReport);
     const role=refreshVisibility();
-    console.info('PARKS ONE Importación Nacional 5.0.0 · rol:',role||'sin perfil');
+    console.info('PARKS ONE Importación Nacional 4.0.0 · rol:',role||'sin perfil');
     setTimeout(refreshVisibility,500);
   }
   window.initNationalImporter=init;
