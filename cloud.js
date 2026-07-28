@@ -20,6 +20,15 @@
     consulta: 'executive'
   };
 
+  function normalizeName(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, ' ')
+      .trim();
+  }
+
   function normalizePath(path) {
     return String(path || '')
       .replace(/^\.\//, '')
@@ -198,16 +207,20 @@
     const { data: cloudParks, error: parksError } = await parkQuery;
     if (parksError) throw parksError;
 
-    const staticByName = new Map((window.SIGOP_DATA.parks || []).map(p => [String(p.park).toUpperCase(), p]));
+    const staticByName = new Map((window.SIGOP_DATA.parks || []).map(p => [normalizeName(p.park), p]));
     const parkIdToStatic = new Map();
 
     for (const cloudPark of cloudParks || []) {
-      const key = String(cloudPark.name || cloudPark.commercial_name || '').toUpperCase();
+      const key = normalizeName(cloudPark.name || cloudPark.commercial_name || '');
       const existing = staticByName.get(key);
       if (existing) {
         existing.cloud_id = cloudPark.id;
         existing.region = cloudPark.regions?.code || existing.region;
         existing.administrator = cloudPark.administrator_name || existing.administrator;
+        // Las referencias incluidas en data.js apuntan al repositorio local antiguo.
+        // Al trabajar en la nube se reemplazan por los registros reales de Supabase.
+        existing.files = [];
+        existing.file_count = 0;
         parkIdToStatic.set(cloudPark.id, existing);
       }
     }
@@ -218,7 +231,7 @@
 
     let docQuery = sb
       .from('documents')
-      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,requirements(code,name),updated_at')
+      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,requirements(requirement_number,code,name),updated_at')
       .eq('is_current', true);
     if (Array.isArray(allowedIds)) docQuery = docQuery.in('park_id', allowedIds);
 
@@ -235,6 +248,7 @@
         filename: document.original_filename,
         document_type: document.requirements?.name || document.title,
         folder: document.requirements?.code || 'DOCUMENTOS',
+        document_number: document.requirements?.requirement_number || null,
         year: document.issue_date ? Number(String(document.issue_date).slice(0, 4)) : null,
         extension: (document.original_filename.split('.').pop() || '').toLowerCase(),
         local_url: document.storage_path,
@@ -247,6 +261,9 @@
       });
     }
 
+    for (const park of window.SIGOP_DATA.parks || []) {
+      if (park.cloud_id) park.file_count = (park.files || []).length;
+    }
     window.SIGOP_DATA.files = (window.SIGOP_DATA.parks || []).flatMap(p => p.files || []);
   }
 
