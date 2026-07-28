@@ -121,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
-<script src="cloud.js?v=6.6.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.6.0";
+<script src="cloud.js?v=6.7.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.7.0";
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo(0,0)}
@@ -205,21 +205,122 @@ function renderDashboard(){
 function regionDetail(reg){const r=C.regions.find(x=>x.region===reg), ps=C.parks.filter(p=>p.region===reg).sort((a,b)=>b.compliance-a.compliance);openModal(`Detalle ${reg}`,`<p>${r.parks} parques · ${fmt(r.files)} archivos · ${fmt(r.integrated)} requisitos integrados.</p><div class="detail-list">${ps.map(p=>`<div class="detail-row"><b>${esc(p.park)}</b><div class="bar"><i style="width:${p.compliance*100}%"></i></div><span>${pct(p.compliance)}</span></div>`).join('')}</div>`)}
 function renderParks(){const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));$('#parksGrid').innerHTML=a.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>'}
 
-function normalizeDocName(v){return String(v||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]+/g,' ').trim()}
+function normalizeDocName(v){
+ return String(v||'').toUpperCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^A-Z0-9]+/g,' ')
+  .replace(/\s+/g,' ')
+  .trim()
+}
+function requirementMeta(req){
+ const normalized=normalizeDocName(req);
+ const match=normalized.match(/^([0-9]+)/);
+ const number=match?match[1]:'';
+ const client=/CLIENTES?/.test(normalized);
+ return {normalized,number,client};
+}
+function fileSearchText(f){
+ return normalizeDocName([
+  f.filename,
+  f.original_filename,
+  f.title,
+  f.document_type,
+  f.folder,
+  f.path,
+  f.storage_path
+ ].filter(Boolean).join(' '));
+}
+function fileRequirementNumber(f){
+ const direct=String(
+  f.document_number ??
+  f.requirement_number ??
+  f.requirement?.requirement_number ??
+  ''
+ ).trim();
+ if(direct)return direct.replace(/^0+/,'')||'0';
+
+ const text=fileSearchText(f);
+ const folderMatch=text.match(/\b(?:REQ|REQUISITO|TOP)\s*0?([1-9]|1[0-9]|2[0-3])\b/);
+ if(folderMatch)return folderMatch[1];
+
+ const aliases=[
+  ['1',/\bPREDIAL\b/],
+  ['2',/\bAGUA\b|\bHIDRICA\b|\bSUMINISTRO\b/],
+  ['3',/\bDESCARGAS?\b|\bVERTIMIENTO\b/],
+  ['4',/\bFUNCIONAMIENTO\b/],
+  ['5',/\bUSO DE SUELO\b|\bZONIFICACION\b/],
+  ['6',/\bPC ESTATAL\b|\bPROTECCION CIVIL ESTATAL\b/],
+  ['7',/\bPC MUNICIPAL\b|\bPROTECCION CIVIL MUNICIPAL\b/],
+  ['8',/\bDICTAMEN ESTRUCTURAL\b|\bESTRUCTURAL CTE\b/],
+  ['9',/\bFACTIBILIDAD DE AGUA\b|\bFACTIBILIDAD HIDRICA\b/],
+  ['10',/\bALINEAMIENTO\b|\bNUMERO OFICIAL\b/],
+  ['11',/\bIMPACTO REGIONAL\b/],
+  ['12',/\bTERMINACION DE OBRA\b/],
+  ['13',/\bLICENCIA DE CONSTRUCCION\b|\bCONSTRUCCION\b/],
+  ['14',/\bLICENCIA AMBIENTAL\b|\bAMBIENTAL\b/],
+  ['15',/\bJUNTA DE CAMINOS\b/],
+  ['16',/\bANUNCIOS?\b|\bTOTEM\b/],
+  ['17',/\bSEGURIDAD ESTRUCTURAL\b/],
+  ['18',/\bVISTO BUENO\b|\bSEGURIDAD Y OPERACION\b/],
+  ['19',/\bPOZO.*CESION\b|\bCESION.*POZO\b/],
+  ['20',/\bPOZO.*TITULO\b|\bTITULO.*POZO\b/],
+  ['21',/\bPOZO.*CONSUMO\b|\bCONSUMO.*POZO\b/],
+  ['22',/\bMASCARA COMERCIAL\b/],
+  ['23',/\bLAYOUT.*CARCAMO\b|\bCARCAMO.*LAYOUT\b/]
+ ];
+ const hit=aliases.find(([,pattern])=>pattern.test(text));
+ return hit?hit[0]:'';
+}
+function isClientFile(f){
+ return /\bCLIENTES?\b|\bARRENDATARIOS?\b|\bINQUILINOS?\b/.test(fileSearchText(f));
+}
 function filesForRequirement(p,req){
- const rn=normalizeDocName(req),num=(rn.match(/^([0-9]+)/)||[])[1];
- const aliases={
-  '1':['PREDIAL'], '2':['AGUA'], '3':['DESCARGA'], '4':['FUNCIONAMIENTO'], '5':['USO DE SUELO','ZONIFICACION'],
-  '6':['PC ESTATAL','PROTECCION CIVIL ESTATAL'], '7':['PC MUNICIPAL','PROTECCION CIVIL MUNICIPAL'], '8':['ESTRUCTURAL'],
-  '9':['FACTIBILIDAD DE AGUA'], '10':['ALINEAMIENTO','NUMERO OFICIAL'], '11':['IMPACTO REGIONAL'], '12':['TERMINACION DE OBRA'],
-  '13':['CONSTRUCCION'], '14':['AMBIENTAL'], '15':['JUNTA DE CAMINOS'], '16':['ANUNCIO','TOTEM'], '17':['SEGURIDAD ESTRUCTURAL'],
-  '18':['VISTO BUENO','SEGURIDAD Y OPERACION'], '19':['POZO CESION'], '20':['POZO TITULO'], '21':['POZO CONSUMO']
- };
- return (p.files||[]).filter(f=>{
-   if(num && String(f.document_number||'')===num) return true;
-   const fn=normalizeDocName((f.document_type||'')+' '+(f.folder||''));
-   return (aliases[num]||[]).some(a=>fn.includes(normalizeDocName(a))) || fn.includes(rn.replace(/^\d+\s*/,''));
+ const meta=requirementMeta(req);
+ const all=(p.files||[]);
+ return all.filter(f=>{
+   const fileNumber=fileRequirementNumber(f);
+   if(fileNumber!==meta.number)return false;
+
+   // Para los requisitos duplicados administración/clientes, separa por el nombre.
+   if(meta.number==='2'||meta.number==='3'||meta.number==='4'||meta.number==='6'||meta.number==='7'){
+     return isClientFile(f)===meta.client;
+   }
+   return true;
  });
+}
+function buildTop23Rows(p,statusEntries){
+ const claimed=new Set();
+ const rows=statusEntries.map(([req,status],index)=>{
+   const matched=filesForRequirement(p,req).filter(f=>{
+     const key=String(f.cloud_id||f.storage_path||f.path||f.filename);
+     if(claimed.has(key))return false;
+     claimed.add(key);
+     return true;
+   });
+   return {req,status,index,matched};
+ });
+
+ // Archivos con número no identificado: intenta asignarlos por texto al requisito más cercano.
+ const unassigned=(p.files||[]).filter(f=>{
+   const key=String(f.cloud_id||f.storage_path||f.path||f.filename);
+   return !claimed.has(key);
+ });
+ for(const file of unassigned){
+   const text=fileSearchText(file);
+   let best=null;
+   for(const row of rows){
+     const meta=requirementMeta(row.req);
+     const words=meta.normalized
+       .replace(/^\d+\s*/,'')
+       .replace(/\bCLIENTES?\b/g,'')
+       .split(' ')
+       .filter(w=>w.length>=4);
+     const score=words.reduce((sum,w)=>sum+(text.includes(w)?1:0),0);
+     if(score>0&&(!best||score>best.score))best={row,score};
+   }
+   if(best)best.row.matched.push(file);
+ }
+ return rows;
 }
 function parkTab(btn,id){
  const root=btn.closest('#parkPageBody');root.querySelectorAll('.park-tabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');root.querySelectorAll('.park-panel').forEach(x=>x.classList.remove('active'));root.querySelector('#'+id).classList.add('active');
@@ -232,9 +333,12 @@ function parkDetail(name){
  window.activePark=p.park;const deg=Math.max(0,Math.min(360,p.compliance*360));
  const canUpload=['administrator','architect'].includes(currentRole),canApprove=currentRole==='architect';
  const pending=getRequests().filter(x=>x.park===p.park&&x.status==='En revisión');
- const facts=[['División',p.division],['Región',p.region],['Administrador',p.administrator],['Riesgo',p.risk],['Requisitos integrados',p.integrated],['Archivos físicos',p.file_count],['N/A confirmados',p.na],['Auditoría SIGOP',p.audit||'Por validar']];
  const sts=Object.entries(p.statuses||{});
- const top23=`<div class="tablewrap card park-top-table"><table><thead><tr><th>#</th><th>Requisito documental</th><th>Estado checklist</th><th>Archivos físicos</th><th>Acción</th></tr></thead><tbody>${sts.map(([k,v],i)=>{const matched=filesForRequirement(p,k),n=matched.length;const cls=v==='✅'?'ok':v==='❌'?'no':v==='N/A'?'na':'val';const label=v==='✅'?'Integrado':v==='❌'?'Pendiente':v==='N/A'?'N/A':'Por validar';return`<tr><td>${i+1}</td><td>${esc(k)}</td><td><span class="park-status ${cls}"><i></i>${label}</span></td><td>${n}</td><td>${n?`<button class="park-action-link" onclick="showRequirementFiles('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Ver / descargar</button>`:(canUpload?`<button class="park-action-link" onclick="openUpload('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Cargar documento</button>`:'<b style="color:#145aad">Sin soporte</b>')}</td></tr>`}).join('')}</tbody></table></div>`;
+ const top23Rows=buildTop23Rows(p,sts);
+ const physicalCount=new Set(top23Rows.flatMap(r=>r.matched).map(f=>String(f.cloud_id||f.storage_path||f.path||f.filename))).size;
+ p.file_count=physicalCount;
+ const facts=[['División',p.division],['Región',p.region],['Administrador',p.administrator],['Riesgo',p.risk],['Requisitos integrados',p.integrated],['Archivos físicos',p.file_count],['N/A confirmados',p.na],['Auditoría SIGOP',p.audit||'Por validar']];
+ const top23=`<div class="tablewrap card park-top-table"><table><thead><tr><th>#</th><th>Requisito documental</th><th>Estado checklist</th><th>Archivos físicos</th><th>Acción</th></tr></thead><tbody>${top23Rows.map(({req:k,status:v,index:i,matched})=>{const n=matched.length;const cls=v==='✅'?'ok':v==='❌'?'no':v==='N/A'?'na':'val';const label=v==='✅'?'Integrado':v==='❌'?'Pendiente':v==='N/A'?'N/A':'Por validar';return`<tr><td>${i+1}</td><td>${esc(k)}</td><td><span class="park-status ${cls}"><i></i>${label}</span></td><td><b>${n}</b></td><td>${n?`<button class="park-action-link" onclick="showRequirementFiles('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Ver / descargar</button>`:(canUpload?`<button class="park-action-link" onclick="openUpload('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Cargar documento</button>`:'<b style="color:#145aad">Sin soporte</b>')}</td></tr>`}).join('')}</tbody></table></div>`;
  const files=[...(p.files||[]),...getRequests().filter(x=>x.park===p.park&&x.status!=='Devuelto').map(x=>({filename:x.filename,document_type:x.document,year:x.year||'',extension:x.extension||'pdf',local_url:x.dataUrl,status:x.status,requestId:x.id,park:x.park}))];
  const fileHtml=files.length?`<div class="doc-gallery">${files.map(f=>`<div class="card doc-tile"><div class="doc-icon">📄</div><h4>${esc(f.filename)}</h4><p>${esc(f.park||p.park)} · ${esc(f.document_type||f.folder||'Documento')}</p><p>Año: ${esc(f.year||'No identificado')} · ${esc(String(f.extension||'').toUpperCase())}</p>${f.status?`<span class="badge ${f.status==='Aprobado'?'bgreen':'bamber'} doc-state">${esc(f.status)}</span>`:''}<div class="doc-actions">${f.local_url?`<button class="btn secondary" onclick="previewDocument('${encodeURIComponent(f.local_url)}','${encodeURIComponent(f.filename)}')">Vista previa</button><button class="btn ghost" onclick="downloadDocument('${encodeURIComponent(f.local_url)}','${encodeURIComponent(f.filename)}')">Descargar</button>`:'<span class="meta">Archivo sin ruta disponible</span>'}</div></div>`).join('')}</div>`:'<div class="card empty">No se localizaron archivos físicos para este parque.</div>';
  const findings=`<div class="finding-grid"><div class="finding-box critical"><h4>¿Por qué se encuentra en ${esc(p.risk)}?</h4><p><b>${p.pending} obligaciones aplicables pendientes</b> y ${p.integrated} requisitos integrados.</p><p style="white-space:pre-line">${esc(p.critical||'La clasificación se deriva del cumplimiento documental y de los requisitos aplicables pendientes.')}</p></div><div class="finding-box action"><h4>Acción operativa recomendada</h4><p>Priorizar evidencia de requisitos críticos, validar vigencias y someter cada carga al flujo de aprobación.</p><p><b>Fuente:</b> Top 23, matriz hidráulica, archivos indexados y auditoría disponible.</p></div></div><div class="card section" style="margin-top:14px"><h3>Hallazgo consolidado del parque</h3><p style="white-space:pre-line">${esc(p.findings||'El parque requiere seguimiento documental conforme a sus requisitos aplicables.')}</p></div>`;

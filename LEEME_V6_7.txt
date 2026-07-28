@@ -1,0 +1,19 @@
+PARKS ONE V6.7 — CONTEO TOP 23
+
+Esta versión modifica únicamente la clasificación y el render del Top 23.
+
+- Clasifica por número de requisito.
+- Revisa filename, title, document_type, folder y storage_path.
+- Distingue administración y clientes en Agua, Descargas, Funcionamiento y PC.
+- Asigna archivos sin metadatos al requisito más cercano por palabras.
+- Evita contar un mismo archivo dos veces.
+- Actualiza Archivos físicos del encabezado con el conteo real.
+- Mantiene Ver / descargar en cada requisito con soporte.
+
+PUBLICAR:
+git add -A
+git commit -m "V6.7 corrige conteo Top 23"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y presiona Ctrl+F5.
