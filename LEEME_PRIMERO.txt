@@ -1,28 +1,34 @@
-PARKS ONE V6.3 — CORRECCIÓN FINAL SOBRE EL ZIP DEL USUARIO
+PARKS ONE V6.4 — PROYECTO COMPLETO CORREGIDO
 
-Problema encontrado:
-La base contenía 108 registros de parques, aunque el padrón nacional era de 89.
-Los 19 registros adicionales fueron creados durante importaciones anteriores.
-Los documentos podían quedar ligados al UUID duplicado, mientras la ficha abría
-el registro homónimo sin archivos. Por eso Cloud indicaba 552 documentos, pero
-AZCAPOPARK mostraba 0.
+Este paquete fue reconstruido directamente desde el ZIP que subiste.
 
-Corrección:
-- Fusiona parques duplicados por identidad normalizada.
-- Mapea todos sus UUID al mismo parque visual.
-- Consolida en esa ficha los documentos de todos los UUID duplicados.
-- Espera a Supabase antes de construir la interfaz.
-- Conserva diseño, roles, Top 23, Top 5 e importación.
+CORRECCIÓN REAL:
+- Agrupa registros duplicados de la tabla parks mediante todas sus identidades:
+  nombre, nombre comercial, código y plantilla nacional.
+- Conserva todos los UUID originales.
+- Cada UUID duplicado apunta a una sola ficha visual.
+- Los documentos de todos los UUID se juntan en esa misma ficha.
+- La interfaz se calcula solamente después de que Supabase termina de cargar.
+- No modifica Supabase, Storage, SQL ni los 552 documentos.
 
-Publicación:
-Reemplaza TODO el contenido del proyecto con esta carpeta, conservando solo .git.
-Después:
-git add -A
-git commit -m "Fusiona parques duplicados y vincula documentos"
-git pull --rebase origin main
-git push origin main
+PUBLICACIÓN:
+1. Extrae el ZIP.
+2. Copia todo el contenido sobre tu carpeta local del proyecto.
+3. Conserva únicamente la carpeta .git de tu proyecto actual.
+4. Reemplaza los archivos.
+5. Ejecuta:
+   git add -A
+   git commit -m "Publica consolidación definitiva de parques y documentos"
+   git pull --rebase origin main
+   git push origin main
 
-En consola debe aparecer:
-PARKS ONE Cloud V6.3: ... parques consolidados, 552 documentos vinculados y ... registros duplicados fusionados.
+Después abre la URL PRINCIPAL de Vercel y presiona Ctrl+F5.
 
-No ejecutes SQL ni vuelvas a importar documentos.
+CONSOLa ESPERADA:
+PARKS ONE Cloud V6.4: 108 registros cloud → [parques consolidados],
+552 documentos vinculados.
+
+También se crea:
+window.PARKS_CLOUD_DIAGNOSTICS
+
+NO vuelvas a importar documentos y NO ejecutes schema.sql.

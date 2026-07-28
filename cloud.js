@@ -258,71 +258,221 @@
       return null;
     }
 
+    /*
+     * Consolidación real de parques.
+     *
+     * La tabla parks contiene registros duplicados creados por importaciones
+     * anteriores. Los documentos están ligados al UUID concreto que los recibió.
+     * Esta lógica agrupa todos los UUID que representan el mismo parque y hace
+     * que todos apunten a una sola ficha visual, sin perder ningún documento.
+     */
     const authoritativeParks = [];
     const parkIdToUi = new Map();
-    const canonicalParks = new Map();
 
-    function canonicalParkKey(cloudPark, template) {
-      // Si existe una plantilla nacional, su nombre es la identidad principal.
-      const templateKey = normalizeName(template?.park || template?.commercial_name || template?.name);
-      if (templateKey) return templateKey;
-
-      // Para registros creados por el importador, elimina prefijos de región y
-      // palabras genéricas para unir duplicados que representan el mismo parque.
-      const candidates = [
-        cloudPark.commercial_name,
-        cloudPark.name,
-        cloudPark.code
-      ].map(value => compact(value)
-        .replace(/^R(?:EGION)?\s*\d+\s+/, '')
-        .replace(/^T\s*MEX\s+/, 'T MEX ')
-        .trim())
-        .filter(Boolean);
-
-      return candidates[0] || normalizeName(cloudPark.id);
+    function identity(value) {
+      return normalizeName(value)
+        .replace(/\bREGION\s*(?:0?[1-9]|10|11)\b/g, ' ')
+        .replace(/\bR\s*(?:0?[1-9]|10|11)\b/g, ' ')
+        .replace(/\bDIVISION\s*(?:0?[1-9]|10|11)\b/g, ' ')
+        .replace(/\bDOCUMENTOS?\b/g, ' ')
+        .replace(/\bEXPEDIENTES?\b/g, ' ')
+        .replace(/\bTOP\s*23\b/g, ' ')
+        .replace(/\b(PARQUE INDUSTRIAL|INDUSTRIAL PARK|PARQUE|PARK)\b/g, ' ')
+        .replace(/\bDE\b/g, ' ')
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
-    for (const cloudPark of cloudParks || []) {
-      const template = findStaticTemplate(cloudPark);
-      const key = canonicalParkKey(cloudPark, template);
-      let park = canonicalParks.get(key);
+    function aliasesForCloud(cloudPark) {
+      const values = [
+        cloudPark.name,
+        cloudPark.commercial_name,
+        cloudPark.code
+      ];
 
-      if (!park) {
-        park = template ? { ...template } : {
-          park: cloudPark.commercial_name || cloudPark.name,
-          division: '',
-          region: cloudPark.regions?.code || '',
-          administrator: cloudPark.administrator_name || 'Por asignar',
-          statuses: {},
-          integrated: 0,
-          pending: 0,
-          na: 0,
-          validating: 0,
-          compliance: 0,
-          risk: 'POR VALIDAR',
-          audit: 'Por validar'
-        };
+      const aliases = new Set();
+      for (const value of values) {
+        const normalized = normalizeName(value);
+        const compacted = identity(value);
+        if (normalized) aliases.add(normalized);
+        if (compacted) aliases.add(compacted);
 
-        park.cloud_id = cloudPark.id;
-        park.cloud_ids = [];
-        park.code = cloudPark.code || park.code || '';
-        park.park = template?.park || cloudPark.commercial_name || cloudPark.name || park.park;
-        park.name = template?.name || cloudPark.name || park.name || park.park;
-        park.commercial_name = template?.commercial_name || cloudPark.commercial_name || park.commercial_name || park.park;
-        park.region = cloudPark.regions?.code || park.region || '';
-        park.region_name = cloudPark.regions?.name || park.region_name || '';
-        park.administrator = cloudPark.administrator_name || park.administrator || 'Por asignar';
-        park.files = [];
-        park.file_count = 0;
+        // El importador puede guardar códigos como R1-AZCAPOPARK.
+        const withoutPrefix = normalized
+          .replace(/^(?:REGION\s*)?\d+\s+/, '')
+          .replace(/^R\s*\d+\s+/, '')
+          .trim();
+        if (withoutPrefix) {
+          aliases.add(withoutPrefix);
+          const compactWithoutPrefix = identity(withoutPrefix);
+          if (compactWithoutPrefix) aliases.add(compactWithoutPrefix);
+        }
+      }
+      return aliases;
+    }
 
-        canonicalParks.set(key, park);
-        authoritativeParks.push(park);
+    function aliasesForStatic(staticPark) {
+      const aliases = new Set();
+      for (const value of [
+        staticPark?.park,
+        staticPark?.commercial_name,
+        staticPark?.name,
+        staticPark?.code
+      ]) {
+        const normalized = normalizeName(value);
+        const compacted = identity(value);
+        if (normalized) aliases.add(normalized);
+        if (compacted) aliases.add(compacted);
+      }
+      return aliases;
+    }
+
+    const cloudRows = (cloudParks || []).map((cloudPark, index) => ({
+      cloudPark,
+      index,
+      aliases: aliasesForCloud(cloudPark),
+      template: findStaticTemplate(cloudPark)
+    }));
+
+    // Union-Find para fusionar registros que comparten cualquier identidad.
+    const parent = cloudRows.map((_, index) => index);
+    const findRoot = index => {
+      while (parent[index] !== index) {
+        parent[index] = parent[parent[index]];
+        index = parent[index];
+      }
+      return index;
+    };
+    const unite = (left, right) => {
+      const a = findRoot(left);
+      const b = findRoot(right);
+      if (a !== b) parent[b] = a;
+    };
+
+    const aliasOwner = new Map();
+    const templateOwner = new Map();
+
+    for (const row of cloudRows) {
+      for (const alias of row.aliases) {
+        if (!alias) continue;
+        if (aliasOwner.has(alias)) unite(row.index, aliasOwner.get(alias));
+        else aliasOwner.set(alias, row.index);
       }
 
-      park.cloud_ids.push(cloudPark.id);
-      // Todos los UUID duplicados apuntan al mismo parque visual; así se
-      // consolidan también sus documentos.
-      parkIdToUi.set(cloudPark.id, park);
+      if (row.template) {
+        const templateKey = identity(
+          row.template.park ||
+          row.template.commercial_name ||
+          row.template.name ||
+          row.template.code
+        );
+        if (templateKey) {
+          if (templateOwner.has(templateKey)) {
+            unite(row.index, templateOwner.get(templateKey));
+          } else {
+            templateOwner.set(templateKey, row.index);
+          }
+        }
+
+        // También enlaza las identidades de la plantilla con el registro cloud.
+        for (const alias of aliasesForStatic(row.template)) {
+          if (!alias) continue;
+          if (aliasOwner.has(alias)) unite(row.index, aliasOwner.get(alias));
+          else aliasOwner.set(alias, row.index);
+        }
+      }
+    }
+
+    const groupedRows = new Map();
+    for (const row of cloudRows) {
+      const root = findRoot(row.index);
+      if (!groupedRows.has(root)) groupedRows.set(root, []);
+      groupedRows.get(root).push(row);
+    }
+
+    const diagnostics = [];
+
+    for (const rows of groupedRows.values()) {
+      const templateRow = rows.find(row => row.template);
+      const template = templateRow?.template || null;
+
+      // Prefiere como registro principal el que tiene nombre comercial más claro.
+      const primaryRow =
+        rows.find(row => row.cloudPark.commercial_name) ||
+        rows.find(row => row.cloudPark.name) ||
+        rows[0];
+      const primary = primaryRow.cloudPark;
+
+      const park = template ? { ...template } : {
+        park: primary.commercial_name || primary.name,
+        division: '',
+        region: primary.regions?.code || '',
+        administrator: primary.administrator_name || 'Por asignar',
+        statuses: {},
+        integrated: 0,
+        pending: 0,
+        na: 0,
+        validating: 0,
+        compliance: 0,
+        risk: 'POR VALIDAR',
+        audit: 'Por validar'
+      };
+
+      park.cloud_id = primary.id;
+      park.cloud_ids = rows.map(row => row.cloudPark.id);
+      park.code = primary.code || park.code || '';
+      park.park =
+        template?.park ||
+        template?.commercial_name ||
+        primary.commercial_name ||
+        primary.name ||
+        park.park;
+      park.name =
+        template?.name ||
+        primary.name ||
+        park.name ||
+        park.park;
+      park.commercial_name =
+        template?.commercial_name ||
+        primary.commercial_name ||
+        park.commercial_name ||
+        park.park;
+      park.region =
+        template?.region ||
+        primary.regions?.code ||
+        park.region ||
+        '';
+      park.region_name =
+        primary.regions?.name ||
+        park.region_name ||
+        '';
+      park.administrator =
+        template?.administrator ||
+        primary.administrator_name ||
+        park.administrator ||
+        'Por asignar';
+      park.files = [];
+      park.file_count = 0;
+
+      authoritativeParks.push(park);
+
+      // Cada UUID original apunta a la misma ficha consolidada.
+      for (const row of rows) {
+        parkIdToUi.set(row.cloudPark.id, park);
+      }
+
+      if (rows.length > 1) {
+        diagnostics.push({
+          park: park.park,
+          ids: park.cloud_ids,
+          names: rows.map(row =>
+            row.cloudPark.commercial_name ||
+            row.cloudPark.name ||
+            row.cloudPark.code
+          )
+        });
+      }
     }
 
     let docQuery = sb
@@ -380,8 +530,26 @@
       metrics.administrators = new Set(authoritativeParks.map(park => park.administrator).filter(Boolean)).size;
     }
 
-    const duplicateCount = Math.max(0, (cloudParks || []).length - authoritativeParks.length);
-    console.log(`PARKS ONE Cloud V6.3: ${authoritativeParks.length} parques consolidados, ${allFiles.length} documentos vinculados y ${duplicateCount} registros duplicados fusionados.`);
+    window.PARKS_CLOUD_DIAGNOSTICS = {
+      cloud_records: (cloudParks || []).length,
+      consolidated_parks: authoritativeParks.length,
+      documents: allFiles.length,
+      duplicate_groups: diagnostics
+    };
+
+    console.log(
+      `PARKS ONE Cloud V6.4: ${(cloudParks || []).length} registros cloud → ` +
+      `${authoritativeParks.length} parques consolidados, ` +
+      `${allFiles.length} documentos vinculados.`
+    );
+
+    if (diagnostics.length) {
+      console.table(diagnostics.map(item => ({
+        parque: item.park,
+        registros_fusionados: item.ids.length,
+        nombres: item.names.join(' | ')
+      })));
+    }
   }
 
   async function resolveUrl(path, download = false) {
