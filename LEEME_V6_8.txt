@@ -1,0 +1,15 @@
+PARKS ONE V6.8 — RECÁLCULO DE INDICADORES
+
+Objetivo:
+- Recalcular integrados, pendientes, N/A, por validar, cumplimiento, riesgo y total de archivos
+  después de reconstruir la relación real de documentos.
+- Evitar tarjetas con archivos correctos pero indicadores en 0.
+- Ejecutar el recálculo al iniciar y antes de las vistas principales.
+
+PUBLICAR:
+git add -A
+git commit -m "V6.8 recalcula indicadores después de vincular archivos"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y presiona Ctrl+F5.
