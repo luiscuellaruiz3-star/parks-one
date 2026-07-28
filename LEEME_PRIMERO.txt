@@ -1,33 +1,30 @@
-PARKS ONE FINAL CORREGIDO
+PARKS ONE — VERSIÓN LISTA PARA PUBLICAR
 
-ESTE PAQUETE NO REQUIERE VOLVER A CONFIGURAR:
-- Supabase
-- Storage
-- tablas
-- usuarios
-- políticas
-- Vercel
+Este paquete parte exactamente del proyecto que subiste y solo corrige el orden de carga:
 
-Los datos y documentos ya cargados permanecen en Supabase.
+1. Supabase carga parques y documentos reales.
+2. Después se calculan las vistas y botones.
+3. Los botones usan storage_path (UUID/carpeta/archivo) y no las rutas antiguas documents_repo.
 
-FORMA RECOMENDADA:
-1. Conserva tu repositorio actual como respaldo.
-2. Extrae este ZIP.
-3. Copia TODO el contenido de la carpeta PARKS_ONE_FINAL_CORREGIDO a la carpeta local del repositorio.
-4. Reemplaza los archivos cuando Windows pregunte.
-5. Abre Git Bash en esa carpeta y ejecuta:
+NO incluye carpeta .git para evitar rebases o conflictos anteriores.
+NO modifica Supabase, Storage, usuarios, políticas ni los documentos ya cargados.
+NO vuelvas a ejecutar schema.sql.
+NO vuelvas a importar los documentos.
+
+PUBLICACIÓN RECOMENDADA EN TU REPOSITORIO ACTUAL:
+1. Haz una copia de respaldo de tu carpeta actual.
+2. Copia todo el contenido de esta carpeta sobre tu proyecto local.
+3. Conserva únicamente la carpeta .git de tu proyecto actual.
+4. En Git Bash ejecuta:
    git add -A
-   git commit -m "Publica PARKS ONE final corregido"
+   git commit -m "Corrige carga de documentos reales"
    git pull --rebase origin main
    git push origin main
-6. Espera a que Vercel muestre Ready.
-7. Abre la URL normal y presiona Ctrl+F5.
 
-CORRECCIONES:
-- index.html completo, con etiquetas finales correctas.
-- La interfaz espera a Supabase antes de calcular parques y documentos.
-- cloud.js usa storage_path real y URLs firmadas.
-- Se conserva Importación nacional, Top 23, Top 5, hidráulica, roles y login.
-- Parámetros de versión nuevos para evitar caché.
+Si Git indica conflicto, NO continúes. Usa un repositorio nuevo o sube estos archivos desde GitHub.
 
-NO ejecutes nuevamente schema.sql ni vuelvas a importar los 552 documentos.
+VERIFICACIÓN:
+- La consola debe mostrar cloud.js?v=6.2.2
+- Al pulsar Ver / descargar, la ruta debe comenzar con un UUID, por ejemplo:
+  8b01e752-.../AGUA/...
+- No debe comenzar con documents_repo/

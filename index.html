@@ -69,7 +69,7 @@
 <button data-page="top23"><span class="ic">✓</span><span class="txt">Top 23 nacional</span></button>
 <button data-page="top5"><span class="ic">◷</span><span class="txt">Top 5 operativo</span></button>
 <button data-page="alertas"><span class="ic">◉</span><span class="txt">Centro de alertas</span></button>
-<button data-page="documentos"><span class="ic">▤</span><span class="txt">Biblioteca documental</span></button><button data-page="importacion" style="display:none"><span class="ic">⇧</span><span class="txt">Importación nacional</span></button>
+<button data-page="documentos"><span class="ic">▤</span><span class="txt">Biblioteca documental</span></button><button data-page="importacion"><span class="ic">⇧</span><span class="txt">Importación nacional</span></button>
 <button data-page="agua"><span class="ic">●</span><span class="txt">Agua, PTAR y descargas</span></button>
 <button data-page="inteligencia"><span class="ic">✦</span><span class="txt">Centro de inteligencia</span></button>
 <button data-page="flujo"><span class="ic">⇄</span><span class="txt">Flujos y aprobaciones</span></button>
@@ -121,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
-<script src="cloud.js?v=7.0.0"></script><script src="importacion.js?v=5.0.0"></script><script>window.PARKS_ONE_VERSION="7.0.0";
+<script src="cloud.js?v=6.2.2"></script><script src="importacion.js?v=5.0.1"></script><script>window.PARKS_ONE_VERSION="6.2.2";
 const D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo(0,0)}
