@@ -1,0 +1,25 @@
+PARKS ONE V6.6 — MAPEO REAL POR NOMBRE DE ARCHIVO
+
+CAUSA ENCONTRADA
+data.js ya tenía la relación correcta parque → archivo → requisito.
+Al cargar Supabase, cloud.js borraba esa relación y confiaba solamente en park_id.
+Algunos documentos quedaron asociados a UUID duplicados o incorrectos, por eso
+la biblioteca global mostraba archivos, pero cada parque y Top 23 aparecían en cero.
+
+CORRECCIÓN
+- Usa el nombre original del archivo para recuperar su parque y requisito desde data.js.
+- Si no encuentra coincidencia, usa park_id como respaldo.
+- La ruta de Supabase se conserva para Vista previa y Descargar.
+- Top 23 cuenta únicamente documentos reales de Supabase.
+- La pestaña Documentos muestra solo los archivos del parque.
+
+PUBLICAR
+git add -A
+git commit -m "V6.6 recupera parque y requisito por archivo"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y usa Ctrl+F5.
+Consola esperada:
+PARKS ONE Cloud V6.6
+Vinculación documental: X recuperados por nombre de archivo...

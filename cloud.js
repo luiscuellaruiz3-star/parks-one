@@ -475,6 +475,86 @@
       }
     }
 
+    /*
+     * Índice de rescate basado en el padrón original.
+     *
+     * El importador creó algunos documentos con park_id ligado a un registro
+     * duplicado o incorrecto. Sin embargo, data.js conserva el parque y requisito
+     * correctos de cada archivo. El nombre original del archivo es la llave más
+     * estable para recuperar esa relación.
+     */
+    const authoritativeByIdentity = new Map();
+    for (const park of authoritativeParks) {
+      for (const value of [park.park, park.name, park.commercial_name, park.code]) {
+        const key = identity(value);
+        if (key) authoritativeByIdentity.set(key, park);
+      }
+    }
+
+    function fileIdentity(value) {
+      return normalizeName(value)
+        .replace(/\.[A-Z0-9]{2,5}$/i, '')
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    const staticFileLookup = new Map();
+    for (const staticPark of staticParks || []) {
+      for (const file of staticPark.files || []) {
+        const key = fileIdentity(file.filename);
+        if (!key) continue;
+        if (!staticFileLookup.has(key)) staticFileLookup.set(key, []);
+        staticFileLookup.get(key).push({
+          park: staticPark,
+          file
+        });
+      }
+    }
+
+    function findStaticFile(document) {
+      const filename = document.original_filename || document.title || '';
+      const key = fileIdentity(filename);
+      const candidates = staticFileLookup.get(key) || [];
+      if (candidates.length === 1) return candidates[0];
+
+      // En nombres repetidos, usa señales del título, requisito o ruta.
+      const haystack = normalizeName([
+        document.title,
+        document.storage_path,
+        document.requirements?.name,
+        document.requirements?.code
+      ].filter(Boolean).join(' '));
+
+      return candidates.find(candidate => {
+        const parkKey = identity(
+          candidate.park.park ||
+          candidate.park.commercial_name ||
+          candidate.park.name
+        );
+        return parkKey && haystack.includes(parkKey);
+      }) || candidates[0] || null;
+    }
+
+    function targetParkForDocument(document) {
+      const rescued = findStaticFile(document);
+      if (rescued) {
+        const parkKey = identity(
+          rescued.park.park ||
+          rescued.park.commercial_name ||
+          rescued.park.name ||
+          rescued.park.code
+        );
+        const target = authoritativeByIdentity.get(parkKey);
+        if (target) return { park: target, rescued };
+      }
+
+      return {
+        park: parkIdToUi.get(document.park_id) || null,
+        rescued: null
+      };
+    }
+
     let docQuery = sb
       .from('documents')
       .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,is_current,requirements(requirement_number,code,name),updated_at');
@@ -483,22 +563,59 @@
     const { data: docs, error: docsError } = await docQuery;
     if (docsError) throw docsError;
 
+    let rescuedByFilename = 0;
+    let linkedByParkId = 0;
+    let unlinkedDocuments = 0;
+
     for (const document of docs || []) {
-      const park = parkIdToUi.get(document.park_id);
-      if (!park || !document.storage_path) continue;
+      if (!document.storage_path) continue;
+
+      const resolved = targetParkForDocument(document);
+      const park = resolved.park;
+      const rescued = resolved.rescued;
+
+      if (!park) {
+        unlinkedDocuments++;
+        continue;
+      }
       if (park.files.some(file => file.cloud_id === document.id)) continue;
 
-      const originalFilename = document.original_filename || document.title || 'documento';
+      if (rescued) rescuedByFilename++;
+      else linkedByParkId++;
+
+      const originalFilename =
+        document.original_filename ||
+        rescued?.file?.filename ||
+        document.title ||
+        'documento';
+
+      const staticFile = rescued?.file || null;
+      const requirementNumber =
+        staticFile?.document_number ??
+        document.requirements?.requirement_number ??
+        null;
+
       park.files.push({
         cloud_id: document.id,
         park_id: document.park_id,
         filename: originalFilename,
-        document_type: document.requirements?.name || document.title || 'Documento',
-        folder: document.requirements?.code || 'DOCUMENTOS',
-        document_number: document.requirements?.requirement_number ?? null,
+        document_type:
+          staticFile?.document_type ||
+          document.requirements?.name ||
+          document.title ||
+          'Documento',
+        folder:
+          staticFile?.folder ||
+          document.requirements?.code ||
+          'DOCUMENTOS',
+        document_number: requirementNumber,
         requirement_id: document.requirement_id || null,
-        year: document.issue_date ? Number(String(document.issue_date).slice(0, 4)) : null,
-        extension: (originalFilename.split('.').pop() || '').toLowerCase(),
+        year:
+          staticFile?.year ??
+          (document.issue_date ? Number(String(document.issue_date).slice(0, 4)) : null),
+        extension:
+          staticFile?.extension ||
+          (originalFilename.split('.').pop() || '').toLowerCase(),
         local_url: document.storage_path,
         path: document.storage_path,
         storage_path: document.storage_path,
@@ -509,7 +626,8 @@
         expiry: document.expiration_date,
         mime_type: document.mime_type,
         file_size: document.file_size,
-        updated_at: document.updated_at
+        updated_at: document.updated_at,
+        rescued_by_filename: Boolean(rescued)
       });
     }
 
@@ -534,13 +652,21 @@
       cloud_records: (cloudParks || []).length,
       consolidated_parks: authoritativeParks.length,
       documents: allFiles.length,
-      duplicate_groups: diagnostics
+      duplicate_groups: diagnostics,
+      rescued_by_filename: rescuedByFilename,
+      linked_by_park_id: linkedByParkId,
+      unlinked_documents: unlinkedDocuments
     };
 
     console.log(
-      `PARKS ONE Cloud V6.5: ${(cloudParks || []).length} registros cloud → ` +
+      `PARKS ONE Cloud V6.6: ${(cloudParks || []).length} registros cloud → ` +
       `${authoritativeParks.length} parques consolidados, ` +
       `${allFiles.length} documentos vinculados.`
+    );
+
+    console.log(
+      `Vinculación documental: ${rescuedByFilename} recuperados por nombre de archivo, ` +
+      `${linkedByParkId} por park_id y ${unlinkedDocuments} sin relación.`
     );
 
     if (diagnostics.length) {
