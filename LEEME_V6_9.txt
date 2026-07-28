@@ -1,0 +1,24 @@
+PARKS ONE V6.9 — DEPURACIÓN DEL PADRÓN
+
+Problema corregido:
+Algunas filas auxiliares de importación (nombres de administradores y tarjetas
+REGION 2, REGION 3, etc.) estaban entrando como si fueran parques. Como no tenían
+checklist, aparecían con 0 integrados, 0 pendientes, 0 N/A y POR VALIDAR, aunque
+sí acumularan archivos.
+
+La versión V6.9:
+- elimina del padrón visual cualquier registro sin estructura Top 23;
+- elimina tarjetas REGION X, administradores y otros registros auxiliares;
+- conserva todos los archivos en la biblioteca documental;
+- mantiene únicamente los parques reales con checklist;
+- recalcula regiones, porcentajes e indicadores usando solo parques reales.
+
+PUBLICAR:
+git add -A
+git commit -m "V6.9 depura padrón de parques reales"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y presiona Ctrl+F5.
+En consola debe aparecer:
+Padrón depurado: X registros → Y parques reales.

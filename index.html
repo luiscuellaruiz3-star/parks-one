@@ -121,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
-<script src="cloud.js?v=6.8.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.8.0";
+<script src="cloud.js?v=6.9.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.9.0";
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo(0,0)}
@@ -177,6 +177,52 @@ function reconcilePhysicalFiles(){
  return unique;
 }
 
+
+function isCanonicalPark(p){
+ const statusCount=Object.keys(p?.statuses||{}).length;
+ const name=normalizeParkKey(p?.park||p?.name||p?.commercial_name||'');
+ if(statusCount===0)return false;
+
+ // Registros auxiliares creados durante importaciones previas.
+ if(/^REGION\s*\d+$/.test(name))return false;
+ if(/^R\s*\d+$/.test(name))return false;
+ if(/^(DIVISION|ADMINISTRADOR|RESPONSABLE)\b/.test(name))return false;
+
+ // Un parque real debe tener al menos una estructura documental.
+ return statusCount>=1;
+}
+
+function purgeNonParkRecords(){
+ const original=Array.isArray(D.parks)?D.parks:[];
+ const canonical=original.filter(isCanonicalPark);
+
+ // Conserva los archivos globales aunque su registro auxiliar sea descartado.
+ const allFiles=[];
+ const seen=new Set();
+ for(const p of original){
+   for(const f of (p.files||[])){
+     const key=String(f.cloud_id||f.storage_path||f.path||f.filename);
+     if(seen.has(key))continue;
+     seen.add(key);
+     allFiles.push(f);
+   }
+ }
+ for(const f of (D.files||[])){
+   const key=String(f.cloud_id||f.storage_path||f.path||f.filename);
+   if(seen.has(key))continue;
+   seen.add(key);
+   allFiles.push(f);
+ }
+
+ D.parks=canonical;
+ D.files=allFiles;
+ D.all_files=allFiles;
+
+ console.log(
+   `Padrón depurado: ${original.length} registros → ${canonical.length} parques reales.`
+ );
+}
+
 function recalculateParkIndicators(){
  const rows=(D.parks||[]);
  for(const p of rows){
@@ -203,7 +249,7 @@ function recalculateParkIndicators(){
  }
 }
 
-function compute(){const reconciledFiles=reconcilePhysicalFiles();recalculateParkIndicators();const parks=D.parks, regs={};parks.forEach(p=>{const r=regs[p.region]||(regs[p.region]={region:p.region,integrated:0,pending:0,na:0,validating:0,parks:0,files:0});r.integrated+=p.integrated||0;r.pending+=p.pending||0;r.na+=p.na||0;r.validating+=p.validating||0;r.parks++;r.files+=p.file_count||0});const regions=Object.values(regs).map(r=>({...r,eval:r.integrated+r.pending+r.validating,compliance:r.integrated/Math.max(1,r.integrated+r.pending+r.validating)}));const requirements={};parks.forEach(p=>Object.entries(p.statuses||{}).forEach(([k,v])=>{const x=requirements[k]||(requirements[k]={name:k,ok:0,no:0,na:0,val:0});if(v==='✅')x.ok++;else if(v==='❌')x.no++;else if(v==='N/A')x.na++;else x.val++}));const files=reconciledFiles;return{parks,regions,requirements:Object.values(requirements),files}}
+function compute(){purgeNonParkRecords();const reconciledFiles=reconcilePhysicalFiles();recalculateParkIndicators();const parks=D.parks, regs={};parks.forEach(p=>{const r=regs[p.region]||(regs[p.region]={region:p.region,integrated:0,pending:0,na:0,validating:0,parks:0,files:0});r.integrated+=p.integrated||0;r.pending+=p.pending||0;r.na+=p.na||0;r.validating+=p.validating||0;r.parks++;r.files+=p.file_count||0});const regions=Object.values(regs).map(r=>({...r,eval:r.integrated+r.pending+r.validating,compliance:r.integrated/Math.max(1,r.integrated+r.pending+r.validating)}));const requirements={};parks.forEach(p=>Object.entries(p.statuses||{}).forEach(([k,v])=>{const x=requirements[k]||(requirements[k]={name:k,ok:0,no:0,na:0,val:0});if(v==='✅')x.ok++;else if(v==='❌')x.no++;else if(v==='N/A')x.na++;else x.val++}));const files=reconciledFiles;return{parks,regions,requirements:Object.values(requirements),files}}
 let C=null;
 function kpiDetail(type){const m=D.metrics, title={cum:'Cumplimiento nacional',pend:'Documentos pendientes',na:'No aplicables confirmados',audit:'Parques auditados',files:'Parques con expediente',alerts:'Alertas generadas',critical:'Parques en riesgo crítico'}[type];let val='',desc='',rows=[];if(type==='cum'){val=pct(m.integrated/m.evaluated,2);desc=`${fmt(m.integrated)} requisitos integrados de ${fmt(m.evaluated)} evaluados.`;rows=C.regions.sort((a,b)=>b.compliance-a.compliance).map(r=>[r.region,r.compliance,pct(r.compliance)])}if(type==='pend'){val=fmt(m.pending);desc='Obligaciones aplicables que todavía no cuentan con evidencia integrada.';rows=C.regions.sort((a,b)=>b.pending-a.pending).map(r=>[r.region,r.pending,fmt(r.pending)])}if(type==='na'){val=fmt(m.na_confirmed);desc='Conceptos no aplicables con justificación de aplicabilidad.';rows=C.regions.sort((a,b)=>b.na-a.na).map(r=>[r.region,r.na,fmt(r.na)])}if(type==='audit'){val=fmt(m.audited);desc=`Parques identificados como auditados de un padrón de ${m.parks}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&String(p.audit).toUpperCase()==='SI').length,''])}if(type==='critical')return openModal('Parques en riesgo crítico',`<p>Esta cifra se deriva de los parques cuya combinación de cumplimiento y obligaciones aplicables los ubica en nivel crítico.</p><div class="detail-list">${C.parks.filter(p=>p.risk==='CRÍTICO').sort((a,b)=>a.compliance-b.compliance).map(p=>`<div class="alert critical" onclick="closeModal();parkDetail('${encodeURIComponent(p.park)}')" style="cursor:pointer"><b>${esc(p.park)} · ${pct(p.compliance)}</b><small>${p.pending} pendientes · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`).join('')}</div>`);if(type==='files'){val=fmt(m.physical_parks);desc=`Parques con al menos un archivo físico indexado. Total de archivos: ${fmt(m.files)}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&p.file_count>0).length,''])}if(type==='alerts'){val=fmt(D.alerts?.length||0);desc='Alertas derivadas de faltantes y señales temporales disponibles.';const sev={};(D.alerts||[]).forEach(a=>sev[a.severity]=(sev[a.severity]||0)+1);rows=Object.entries(sev).map(([a,b])=>[a,b,fmt(b)])}const max=Math.max(1,...rows.map(r=>typeof r[1]==='number'?r[1]:0));openModal(title,`<div class="chartgrid"><div class="donut" style="background:conic-gradient(var(--g) 0 ${type==='cum'?(m.integrated/m.evaluated)*360:270}deg,#e7efec 0)"><span>${val}<small style="font-size:12px;color:var(--mut);font-weight:400">${type==='cum'?'avance nacional':'dato actual'}</small></span></div><div><p>${esc(desc)}</p><div class="detail-list">${rows.map(r=>`<div class="detail-row"><b>${esc(r[0])}</b><div class="bar"><i style="width:${Math.max(2,(Number(r[1])||0)/max*100)}%"></i></div><span>${esc(r[2]||r[1])}</span></div>`).join('')}</div></div></div>`)}
 function renderDashboard(){
@@ -230,7 +276,7 @@ function renderDashboard(){
  applyEditable();
 }
 function regionDetail(reg){const r=C.regions.find(x=>x.region===reg), ps=C.parks.filter(p=>p.region===reg).sort((a,b)=>b.compliance-a.compliance);openModal(`Detalle ${reg}`,`<p>${r.parks} parques · ${fmt(r.files)} archivos · ${fmt(r.integrated)} requisitos integrados.</p><div class="detail-list">${ps.map(p=>`<div class="detail-row"><b>${esc(p.park)}</b><div class="bar"><i style="width:${p.compliance*100}%"></i></div><span>${pct(p.compliance)}</span></div>`).join('')}</div>`)}
-function renderParks(){const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));$('#parksGrid').innerHTML=a.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>'}
+function renderParks(){C.parks=C.parks.filter(isCanonicalPark);const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));$('#parksGrid').innerHTML=a.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>'}
 
 function normalizeDocName(v){
  return String(v||'').toUpperCase().normalize('NFD')
@@ -434,5 +480,5 @@ $('#globalSearch').addEventListener('input',globalSearch);document.addEventListe
 const labels={executive:'Dirección Ejecutiva',operations:'Dirección de Operaciones',regional:'Responsable Regional',administrator:'Administrador',auditor:'Auditor',architect:'Arquitecto del Sistema'};$('#role').onchange=e=>{currentRole=e.target.value;localStorage.setItem('parksOneRole',currentRole);$('#roleText').textContent=labels[currentRole];document.body.classList.toggle('architect',currentRole==='architect');applyEditable();renderWorkflow();toast('Vista activa: '+labels[currentRole])};
 function applyEditable(){const store=textStore();$$('.editable').forEach(el=>{const k=el.dataset.key;if(store[k])el.innerHTML=store[k];if(currentRole==='architect'&&!el.querySelector('.edit-pencil')){const b=document.createElement('button');b.className='edit-pencil';b.textContent='✎';b.onclick=e=>{e.preventDefault();e.stopPropagation();editText(el,k)};el.appendChild(b)}})}function editText(el,k){const clone=el.cloneNode(true);clone.querySelectorAll('.edit-pencil').forEach(x=>x.remove());openModal('Editar contenido visible',`<p>Modifica el contenido en español. Esta edición se guarda localmente en este navegador.</p><textarea id="editArea" style="width:100%;min-height:220px;border:1px solid var(--line);border-radius:9px;padding:12px">${esc(clone.innerHTML)}</textarea><div style="margin-top:12px;text-align:right"><button class="btn primary" onclick="saveText('${k}')">Guardar cambio</button></div>`)}function saveText(k){const s=textStore();s[k]=$('#editArea').value;localStorage.setItem('parksOneTexts',JSON.stringify(s));closeModal();location.reload()}function resetTexts(){localStorage.removeItem('parksOneTexts');location.reload()}
 function downloadCsv(type){let rows=[];if(type==='top23')rows=[['Requisito','Integrados','Pendientes','N/A','Por validar'],...C.requirements.map(x=>[x.name,x.ok,x.no,x.na,x.val])];if(type==='docs')rows=[['Archivo','Parque','Documento','Año','Región','Ruta'],...C.files.map(x=>[x.filename,x.park,x.document_type,x.year||'',x.region,x.path])];if(type==='water')rows=[['Parque','Región','Parks paga agua','Clientes pagan directo','Parks suministra','Suministro','Pozo','PTAR','Quién paga descargas','Tipo descarga','Pendientes','Observaciones','Fuente'],...C.parks.map(x=>{const h=x.hydrica||{};return[x.park,x.region,h.parks_paga_agua,h.clientes_pagan_directo,h.parks_suministra_clientes,h.suministro||x.supply,h.pozo,h.ptar||x.ptar,h.quien_paga_descargas,h.tipo_descarga||x.discharge,h.pendientes,h.observaciones,h.fuente]})];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='PARKS_ONE_'+type+'.csv';a.click()}
-async function boot(){if(window.ParksCloud){try{await window.ParksCloud.init()}catch(e){console.error(e);alert('Error de conexión: '+e.message);return}}D=window.SIGOP_DATA;reconcilePhysicalFiles();recalculateParkIndicators();C=compute();D.regions=C.regions;D.all_files=C.files;let load=0;const fill=$('#loaderFill'),txt=$('#loaderText');const timer=setInterval(()=>{load=Math.min(load+Math.ceil(Math.random()*13),92);if(fill)fill.style.width=load+'%';if(txt)txt.textContent='Preparando información nacional… '+load+'%'},110);if(!D){document.body.innerHTML='<h1>Error: no se pudo cargar data.js</h1>';return}D.metrics.compliance=D.metrics.integrated/D.metrics.evaluated;renderDashboard();initFilters();initTop5();renderParks();renderTop23();renderAlerts();renderDocs();renderWater();renderIntelligence();renderWorkflow();renderCalendar();if(window.initNationalImporter)window.initNationalImporter();const params=new URLSearchParams(location.search);const requested=(params.get('vista')||'').toLowerCase();const roleMap={direccion:'executive',ejecutiva:'executive',operaciones:'operations',regional:'regional',administrador:'administrator',auditor:'auditor',arquitecto:'architect'};const lockedRole=roleMap[requested]||'';const role=lockedRole||(window.PARKS_AUTH_ROLE||localStorage.getItem('parksOneRole')||'executive');$('#role').value=role;$('#role').dispatchEvent(new Event('change'));if(lockedRole){document.querySelector('.profile')?.classList.add('view-locked');$('#role').disabled=true;$('#viewBadge').textContent='Vista: '+labels[role];}applyEditable();clearInterval(timer);if(fill)fill.style.width='100%';if(txt)txt.textContent='Información lista · 100%';setTimeout(()=>$('#splash')?.classList.add('hide'),420)}boot();
+async function boot(){if(window.ParksCloud){try{await window.ParksCloud.init()}catch(e){console.error(e);alert('Error de conexión: '+e.message);return}}D=window.SIGOP_DATA;purgeNonParkRecords();reconcilePhysicalFiles();recalculateParkIndicators();C=compute();D.regions=C.regions;D.all_files=C.files;let load=0;const fill=$('#loaderFill'),txt=$('#loaderText');const timer=setInterval(()=>{load=Math.min(load+Math.ceil(Math.random()*13),92);if(fill)fill.style.width=load+'%';if(txt)txt.textContent='Preparando información nacional… '+load+'%'},110);if(!D){document.body.innerHTML='<h1>Error: no se pudo cargar data.js</h1>';return}D.metrics.compliance=D.metrics.integrated/D.metrics.evaluated;renderDashboard();initFilters();initTop5();renderParks();renderTop23();renderAlerts();renderDocs();renderWater();renderIntelligence();renderWorkflow();renderCalendar();if(window.initNationalImporter)window.initNationalImporter();const params=new URLSearchParams(location.search);const requested=(params.get('vista')||'').toLowerCase();const roleMap={direccion:'executive',ejecutiva:'executive',operaciones:'operations',regional:'regional',administrador:'administrator',auditor:'auditor',arquitecto:'architect'};const lockedRole=roleMap[requested]||'';const role=lockedRole||(window.PARKS_AUTH_ROLE||localStorage.getItem('parksOneRole')||'executive');$('#role').value=role;$('#role').dispatchEvent(new Event('change'));if(lockedRole){document.querySelector('.profile')?.classList.add('view-locked');$('#role').disabled=true;$('#viewBadge').textContent='Vista: '+labels[role];}applyEditable();clearInterval(timer);if(fill)fill.style.width='100%';if(txt)txt.textContent='Información lista · 100%';setTimeout(()=>$('#splash')?.classList.add('hide'),420)}boot();
 </script></body></html>
