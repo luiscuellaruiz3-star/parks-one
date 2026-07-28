@@ -128,7 +128,7 @@ function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$
 $$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)}function openModal(t,h){$('#modalTitle').textContent=t;$('#modalBody').innerHTML=h;$('#modal').classList.add('show')}function closeModal(){$('#modal').classList.remove('show');$('#modalBox')?.classList.remove('park-sheet')}
 function compute(){const parks=D.parks, regs={};parks.forEach(p=>{const r=regs[p.region]||(regs[p.region]={region:p.region,integrated:0,pending:0,na:0,validating:0,parks:0,files:0});r.integrated+=p.integrated||0;r.pending+=p.pending||0;r.na+=p.na||0;r.validating+=p.validating||0;r.parks++;r.files+=p.file_count||0});const regions=Object.values(regs).map(r=>({...r,eval:r.integrated+r.pending+r.validating,compliance:r.integrated/Math.max(1,r.integrated+r.pending+r.validating)}));const requirements={};parks.forEach(p=>Object.entries(p.statuses||{}).forEach(([k,v])=>{const x=requirements[k]||(requirements[k]={name:k,ok:0,no:0,na:0,val:0});if(v==='✅')x.ok++;else if(v==='❌')x.no++;else if(v==='N/A')x.na++;else x.val++}));const files=D.all_files||parks.flatMap(p=>p.files||[]);return{parks,regions,requirements:Object.values(requirements),files}}
-const C=compute();D.regions=C.regions;D.all_files=C.files;
+let C=null;
 function kpiDetail(type){const m=D.metrics, title={cum:'Cumplimiento nacional',pend:'Documentos pendientes',na:'No aplicables confirmados',audit:'Parques auditados',files:'Parques con expediente',alerts:'Alertas generadas',critical:'Parques en riesgo crítico'}[type];let val='',desc='',rows=[];if(type==='cum'){val=pct(m.integrated/m.evaluated,2);desc=`${fmt(m.integrated)} requisitos integrados de ${fmt(m.evaluated)} evaluados.`;rows=C.regions.sort((a,b)=>b.compliance-a.compliance).map(r=>[r.region,r.compliance,pct(r.compliance)])}if(type==='pend'){val=fmt(m.pending);desc='Obligaciones aplicables que todavía no cuentan con evidencia integrada.';rows=C.regions.sort((a,b)=>b.pending-a.pending).map(r=>[r.region,r.pending,fmt(r.pending)])}if(type==='na'){val=fmt(m.na_confirmed);desc='Conceptos no aplicables con justificación de aplicabilidad.';rows=C.regions.sort((a,b)=>b.na-a.na).map(r=>[r.region,r.na,fmt(r.na)])}if(type==='audit'){val=fmt(m.audited);desc=`Parques identificados como auditados de un padrón de ${m.parks}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&String(p.audit).toUpperCase()==='SI').length,''])}if(type==='critical')return openModal('Parques en riesgo crítico',`<p>Esta cifra se deriva de los parques cuya combinación de cumplimiento y obligaciones aplicables los ubica en nivel crítico.</p><div class="detail-list">${C.parks.filter(p=>p.risk==='CRÍTICO').sort((a,b)=>a.compliance-b.compliance).map(p=>`<div class="alert critical" onclick="closeModal();parkDetail('${encodeURIComponent(p.park)}')" style="cursor:pointer"><b>${esc(p.park)} · ${pct(p.compliance)}</b><small>${p.pending} pendientes · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`).join('')}</div>`);if(type==='files'){val=fmt(m.physical_parks);desc=`Parques con al menos un archivo físico indexado. Total de archivos: ${fmt(m.files)}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&p.file_count>0).length,''])}if(type==='alerts'){val=fmt(D.alerts?.length||0);desc='Alertas derivadas de faltantes y señales temporales disponibles.';const sev={};(D.alerts||[]).forEach(a=>sev[a.severity]=(sev[a.severity]||0)+1);rows=Object.entries(sev).map(([a,b])=>[a,b,fmt(b)])}const max=Math.max(1,...rows.map(r=>typeof r[1]==='number'?r[1]:0));openModal(title,`<div class="chartgrid"><div class="donut" style="background:conic-gradient(var(--g) 0 ${type==='cum'?(m.integrated/m.evaluated)*360:270}deg,#e7efec 0)"><span>${val}<small style="font-size:12px;color:var(--mut);font-weight:400">${type==='cum'?'avance nacional':'dato actual'}</small></span></div><div><p>${esc(desc)}</p><div class="detail-list">${rows.map(r=>`<div class="detail-row"><b>${esc(r[0])}</b><div class="bar"><i style="width:${Math.max(2,(Number(r[1])||0)/max*100)}%"></i></div><span>${esc(r[2]||r[1])}</span></div>`).join('')}</div></div></div>`)}
 function renderDashboard(){
  const m=D.metrics;m.compliance=m.integrated/m.evaluated;
@@ -253,5 +253,90 @@ $('#globalSearch').addEventListener('input',globalSearch);document.addEventListe
 const labels={executive:'Dirección Ejecutiva',operations:'Dirección de Operaciones',regional:'Responsable Regional',administrator:'Administrador',auditor:'Auditor',architect:'Arquitecto del Sistema'};$('#role').onchange=e=>{currentRole=e.target.value;localStorage.setItem('parksOneRole',currentRole);$('#roleText').textContent=labels[currentRole];document.body.classList.toggle('architect',currentRole==='architect');applyEditable();renderWorkflow();toast('Vista activa: '+labels[currentRole])};
 function applyEditable(){const store=textStore();$$('.editable').forEach(el=>{const k=el.dataset.key;if(store[k])el.innerHTML=store[k];if(currentRole==='architect'&&!el.querySelector('.edit-pencil')){const b=document.createElement('button');b.className='edit-pencil';b.textContent='✎';b.onclick=e=>{e.preventDefault();e.stopPropagation();editText(el,k)};el.appendChild(b)}})}function editText(el,k){const clone=el.cloneNode(true);clone.querySelectorAll('.edit-pencil').forEach(x=>x.remove());openModal('Editar contenido visible',`<p>Modifica el contenido en español. Esta edición se guarda localmente en este navegador.</p><textarea id="editArea" style="width:100%;min-height:220px;border:1px solid var(--line);border-radius:9px;padding:12px">${esc(clone.innerHTML)}</textarea><div style="margin-top:12px;text-align:right"><button class="btn primary" onclick="saveText('${k}')">Guardar cambio</button></div>`)}function saveText(k){const s=textStore();s[k]=$('#editArea').value;localStorage.setItem('parksOneTexts',JSON.stringify(s));closeModal();location.reload()}function resetTexts(){localStorage.removeItem('parksOneTexts');location.reload()}
 function downloadCsv(type){let rows=[];if(type==='top23')rows=[['Requisito','Integrados','Pendientes','N/A','Por validar'],...C.requirements.map(x=>[x.name,x.ok,x.no,x.na,x.val])];if(type==='docs')rows=[['Archivo','Parque','Documento','Año','Región','Ruta'],...C.files.map(x=>[x.filename,x.park,x.document_type,x.year||'',x.region,x.path])];if(type==='water')rows=[['Parque','Región','Parks paga agua','Clientes pagan directo','Parks suministra','Suministro','Pozo','PTAR','Quién paga descargas','Tipo descarga','Pendientes','Observaciones','Fuente'],...C.parks.map(x=>{const h=x.hydrica||{};return[x.park,x.region,h.parks_paga_agua,h.clientes_pagan_directo,h.parks_suministra_clientes,h.suministro||x.supply,h.pozo,h.ptar||x.ptar,h.quien_paga_descargas,h.tipo_descarga||x.discharge,h.pendientes,h.observaciones,h.fuente]})];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='PARKS_ONE_'+type+'.csv';a.click()}
-async function boot(){if(window.ParksCloud){try{await window.ParksCloud.init()}catch(e){console.error(e);alert('Error de conexión: '+e.message);return}}let load=0;const fill=$('#loaderFill'),txt=$('#loaderText');const timer=setInterval(()=>{load=Math.min(load+Math.ceil(Math.random()*13),92);if(fill)fill.style.width=load+'%';if(txt)txt.textContent='Preparando información nacional… '+load+'%'},110);if(!D){document.body.innerHTML='<h1>Error: no se pudo cargar data.js</h1>';return}D.metrics.compliance=D.metrics.integrated/D.metrics.evaluated;renderDashboard();initFilters();initTop5();renderParks();renderTop23();renderAlerts();renderDocs();renderWater();renderIntelligence();renderWorkflow();renderCalendar();if(window.initNationalImporter)window.initNationalImporter();const params=new URLSearchParams(location.search);const requested=(params.get('vista')||'').toLowerCase();const roleMap={direccion:'executive',ejecutiva:'executive',operaciones:'operations',regional:'regional',administrador:'administrator',auditor:'auditor',arquitecto:'architect'};const lockedRole=roleMap[requested]||'';const role=lockedRole||(window.PARKS_AUTH_ROLE||localStorage.getItem('parksOneRole')||'executive');$('#role').value=role;$('#role').dispatchEvent(new Event('change'));if(lockedRole){document.querySelector('.profile')?.classList.add('view-locked');$('#role').disabled=true;$('#viewBadge').textContent='Vista: '+labels[role];}applyEditable();clearInterval(timer);if(fill)fill.style.width='100%';if(txt)txt.textContent='Información lista · 100%';setTimeout(()=>$('#splash')?.classList.add('hide'),420)}boot();
-</script></body></html>
+async function boot() {
+  if (window.ParksCloud) {
+    try {
+      await window.ParksCloud.init();
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión: ' + e.message);
+      return;
+    }
+  }
+
+  C = compute();
+  D.regions = C.regions;
+  D.all_files = C.files;
+
+  let load = 0;
+  const fill = $('#loaderFill');
+  const txt = $('#loaderText');
+
+  const timer = setInterval(() => {
+    load = Math.min(load + Math.ceil(Math.random() * 13), 92);
+    if (fill) fill.style.width = load + '%';
+    if (txt) txt.textContent = 'Preparando información nacional… ' + load + '%';
+  }, 110);
+
+  if (!D) {
+    document.body.innerHTML = '<h1>Error: no se pudo cargar data.js</h1>';
+    return;
+  }
+
+  D.metrics.compliance = D.metrics.integrated / D.metrics.evaluated;
+
+  renderDashboard();
+  initFilters();
+  initTop5();
+  renderParks();
+  renderTop23();
+  renderAlerts();
+  renderDocs();
+  renderWater();
+  renderIntelligence();
+  renderWorkflow();
+  renderCalendar();
+
+  if (window.initNationalImporter) {
+    window.initNationalImporter();
+  }
+
+  const params = new URLSearchParams(location.search);
+  const requested = (params.get('vista') || '').toLowerCase();
+
+  const roleMap = {
+    direccion: 'executive',
+    ejecutiva: 'executive',
+    operaciones: 'operations',
+    regional: 'regional',
+    administrador: 'administrator',
+    auditor: 'auditor',
+    arquitecto: 'architect'
+  };
+
+  const lockedRole = roleMap[requested] || '';
+  const role =
+    lockedRole ||
+    window.PARKS_AUTH_ROLE ||
+    localStorage.getItem('parksOneRole') ||
+    'executive';
+
+  $('#role').value = role;
+  $('#role').dispatchEvent(new Event('change'));
+
+  if (lockedRole) {
+    document.querySelector('.profile')?.classList.add('view-locked');
+    $('#role').disabled = true;
+    $('#viewBadge').textContent = 'Vista: ' + labels[role];
+  }
+
+  applyEditable();
+  clearInterval(timer);
+
+  if (fill) fill.style.width = '100%';
+  if (txt) txt.textContent = 'Información lista · 100%';
+
+  setTimeout(() => $('#splash')?.classList.add('hide'), 420);
+}
+
+boot();
