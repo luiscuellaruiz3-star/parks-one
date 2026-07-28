@@ -29,28 +29,21 @@
       .trim();
   }
 
-function normalizePath(path) {
-  let clean = String(path || '').trim();
-
-  try {
-    clean = decodeURIComponent(clean);
-  } catch (_) {}
-
-  clean = clean
-    .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|public|authenticated)\//i, '')
-    .replace(/^\/+/, '')
-    .replace(/^\.\//, '')
-    .replace(/^documents_repo\//i, '')
-    .replace(/^documents\//i, '');
-
-  const bucket = String(cfg.bucket || '').replace(/^\/+|\/+$/g, '');
-
-  if (bucket && clean.toLowerCase().startsWith((bucket + '/').toLowerCase())) {
-    clean = clean.slice(bucket.length + 1);
+  function normalizePath(path) {
+    let clean = String(path || '').trim();
+    try { clean = decodeURIComponent(clean); } catch (_) {}
+    clean = clean
+      .replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|public|authenticated)\//i, '')
+      .replace(/^\/+/, '')
+      .replace(/^\.\//, '')
+      .replace(/^documents_repo\//i, '')
+      .replace(/^documents\//i, '');
+    const bucket = String(cfg.bucket || '').replace(/^\/+|\/+$/g, '');
+    if (bucket && clean.toLowerCase().startsWith((bucket + '/').toLowerCase())) {
+      clean = clean.slice(bucket.length + 1);
+    }
+    return clean;
   }
-
-  return clean;
-}
 
   function showConfigurationNotice() {
     if (document.getElementById('parksConfigNotice')) return;
@@ -267,36 +260,68 @@ function normalizePath(path) {
 
     const authoritativeParks = [];
     const parkIdToUi = new Map();
+    const canonicalParks = new Map();
+
+    function canonicalParkKey(cloudPark, template) {
+      // Si existe una plantilla nacional, su nombre es la identidad principal.
+      const templateKey = normalizeName(template?.park || template?.commercial_name || template?.name);
+      if (templateKey) return templateKey;
+
+      // Para registros creados por el importador, elimina prefijos de región y
+      // palabras genéricas para unir duplicados que representan el mismo parque.
+      const candidates = [
+        cloudPark.commercial_name,
+        cloudPark.name,
+        cloudPark.code
+      ].map(value => compact(value)
+        .replace(/^R(?:EGION)?\s*\d+\s+/, '')
+        .replace(/^T\s*MEX\s+/, 'T MEX ')
+        .trim())
+        .filter(Boolean);
+
+      return candidates[0] || normalizeName(cloudPark.id);
+    }
 
     for (const cloudPark of cloudParks || []) {
       const template = findStaticTemplate(cloudPark);
-      const park = template ? { ...template } : {
-        park: cloudPark.commercial_name || cloudPark.name,
-        division: '',
-        region: cloudPark.regions?.code || '',
-        administrator: cloudPark.administrator_name || 'Por asignar',
-        statuses: {},
-        integrated: 0,
-        pending: 0,
-        na: 0,
-        validating: 0,
-        compliance: 0,
-        risk: 'POR VALIDAR',
-        audit: 'Por validar'
-      };
+      const key = canonicalParkKey(cloudPark, template);
+      let park = canonicalParks.get(key);
 
-      park.cloud_id = cloudPark.id;
-      park.code = cloudPark.code || park.code || '';
-      park.park = cloudPark.commercial_name || cloudPark.name || park.park;
-      park.name = cloudPark.name || park.name || park.park;
-      park.commercial_name = cloudPark.commercial_name || park.commercial_name || park.park;
-      park.region = cloudPark.regions?.code || park.region || '';
-      park.region_name = cloudPark.regions?.name || park.region_name || '';
-      park.administrator = cloudPark.administrator_name || park.administrator || 'Por asignar';
-      park.files = [];
-      park.file_count = 0;
+      if (!park) {
+        park = template ? { ...template } : {
+          park: cloudPark.commercial_name || cloudPark.name,
+          division: '',
+          region: cloudPark.regions?.code || '',
+          administrator: cloudPark.administrator_name || 'Por asignar',
+          statuses: {},
+          integrated: 0,
+          pending: 0,
+          na: 0,
+          validating: 0,
+          compliance: 0,
+          risk: 'POR VALIDAR',
+          audit: 'Por validar'
+        };
 
-      authoritativeParks.push(park);
+        park.cloud_id = cloudPark.id;
+        park.cloud_ids = [];
+        park.code = cloudPark.code || park.code || '';
+        park.park = template?.park || cloudPark.commercial_name || cloudPark.name || park.park;
+        park.name = template?.name || cloudPark.name || park.name || park.park;
+        park.commercial_name = template?.commercial_name || cloudPark.commercial_name || park.commercial_name || park.park;
+        park.region = cloudPark.regions?.code || park.region || '';
+        park.region_name = cloudPark.regions?.name || park.region_name || '';
+        park.administrator = cloudPark.administrator_name || park.administrator || 'Por asignar';
+        park.files = [];
+        park.file_count = 0;
+
+        canonicalParks.set(key, park);
+        authoritativeParks.push(park);
+      }
+
+      park.cloud_ids.push(cloudPark.id);
+      // Todos los UUID duplicados apuntan al mismo parque visual; así se
+      // consolidan también sus documentos.
       parkIdToUi.set(cloudPark.id, park);
     }
 
@@ -355,7 +380,8 @@ function normalizePath(path) {
       metrics.administrators = new Set(authoritativeParks.map(park => park.administrator).filter(Boolean)).size;
     }
 
-    console.log(`PARKS ONE Cloud V6.1: ${authoritativeParks.length} parques reales y ${allFiles.length} documentos vinculados.`);
+    const duplicateCount = Math.max(0, (cloudParks || []).length - authoritativeParks.length);
+    console.log(`PARKS ONE Cloud V6.3: ${authoritativeParks.length} parques consolidados, ${allFiles.length} documentos vinculados y ${duplicateCount} registros duplicados fusionados.`);
   }
 
   async function resolveUrl(path, download = false) {

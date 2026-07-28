@@ -1,30 +1,28 @@
-PARKS ONE — VERSIÓN LISTA PARA PUBLICAR
+PARKS ONE V6.3 — CORRECCIÓN FINAL SOBRE EL ZIP DEL USUARIO
 
-Este paquete parte exactamente del proyecto que subiste y solo corrige el orden de carga:
+Problema encontrado:
+La base contenía 108 registros de parques, aunque el padrón nacional era de 89.
+Los 19 registros adicionales fueron creados durante importaciones anteriores.
+Los documentos podían quedar ligados al UUID duplicado, mientras la ficha abría
+el registro homónimo sin archivos. Por eso Cloud indicaba 552 documentos, pero
+AZCAPOPARK mostraba 0.
 
-1. Supabase carga parques y documentos reales.
-2. Después se calculan las vistas y botones.
-3. Los botones usan storage_path (UUID/carpeta/archivo) y no las rutas antiguas documents_repo.
+Corrección:
+- Fusiona parques duplicados por identidad normalizada.
+- Mapea todos sus UUID al mismo parque visual.
+- Consolida en esa ficha los documentos de todos los UUID duplicados.
+- Espera a Supabase antes de construir la interfaz.
+- Conserva diseño, roles, Top 23, Top 5 e importación.
 
-NO incluye carpeta .git para evitar rebases o conflictos anteriores.
-NO modifica Supabase, Storage, usuarios, políticas ni los documentos ya cargados.
-NO vuelvas a ejecutar schema.sql.
-NO vuelvas a importar los documentos.
+Publicación:
+Reemplaza TODO el contenido del proyecto con esta carpeta, conservando solo .git.
+Después:
+git add -A
+git commit -m "Fusiona parques duplicados y vincula documentos"
+git pull --rebase origin main
+git push origin main
 
-PUBLICACIÓN RECOMENDADA EN TU REPOSITORIO ACTUAL:
-1. Haz una copia de respaldo de tu carpeta actual.
-2. Copia todo el contenido de esta carpeta sobre tu proyecto local.
-3. Conserva únicamente la carpeta .git de tu proyecto actual.
-4. En Git Bash ejecuta:
-   git add -A
-   git commit -m "Corrige carga de documentos reales"
-   git pull --rebase origin main
-   git push origin main
+En consola debe aparecer:
+PARKS ONE Cloud V6.3: ... parques consolidados, 552 documentos vinculados y ... registros duplicados fusionados.
 
-Si Git indica conflicto, NO continúes. Usa un repositorio nuevo o sube estos archivos desde GitHub.
-
-VERIFICACIÓN:
-- La consola debe mostrar cloud.js?v=6.2.2
-- Al pulsar Ver / descargar, la ruta debe comenzar con un UUID, por ejemplo:
-  8b01e752-.../AGUA/...
-- No debe comenzar con documents_repo/
+No ejecutes SQL ni vuelvas a importar documentos.
