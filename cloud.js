@@ -190,81 +190,6 @@
     return (data || []).map(row => row.park_id);
   }
 
-  function compactParkName(value) {
-    return normalizeName(value)
-      .replace(/\b(REGION|R)\s*\d+\b/g, ' ')
-      .replace(/\bPARQUE INDUSTRIAL\b/g, ' ')
-      .replace(/\bINDUSTRIAL\b/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  function parkNameCandidates(cloudPark) {
-    const candidates = [
-      cloudPark?.name,
-      cloudPark?.commercial_name,
-      cloudPark?.code,
-      String(cloudPark?.code || '').replace(/^R\d+[-_ ]*/i, '')
-    ].filter(Boolean);
-    return [...new Set(candidates.map(compactParkName).filter(Boolean))];
-  }
-
-  function parkSimilarity(a, b) {
-    const left = compactParkName(a);
-    const right = compactParkName(b);
-    if (!left || !right) return 0;
-    if (left === right) return 1;
-    if (left.replace(/\s+/g, '') === right.replace(/\s+/g, '')) return 0.98;
-    const la = new Set(left.split(' '));
-    const rb = new Set(right.split(' '));
-    const intersection = [...la].filter(token => rb.has(token)).length;
-    const union = new Set([...la, ...rb]).size || 1;
-    const jaccard = intersection / union;
-    const contains = left.includes(right) || right.includes(left) ? 0.88 : 0;
-    return Math.max(jaccard, contains);
-  }
-
-  function findStaticPark(cloudPark, staticParks, claimed) {
-    const candidates = parkNameCandidates(cloudPark);
-
-    for (const candidate of candidates) {
-      const exact = staticParks.find(p => !claimed.has(p) && compactParkName(p.park) === candidate);
-      if (exact) return exact;
-    }
-
-    let best = null;
-    let bestScore = 0;
-    for (const staticPark of staticParks) {
-      if (claimed.has(staticPark)) continue;
-      const score = Math.max(...candidates.map(candidate => parkSimilarity(candidate, staticPark.park)));
-      if (score > bestScore) {
-        best = staticPark;
-        bestScore = score;
-      }
-    }
-    return bestScore >= 0.72 ? best : null;
-  }
-
-  function createCloudParkModel(cloudPark) {
-    return {
-      park: cloudPark.commercial_name || cloudPark.name || 'Parque sin nombre',
-      division: '',
-      region: cloudPark.regions?.code || cloudPark.regions?.name || 'POR VALIDAR',
-      administrator: cloudPark.administrator_name || 'Por validar',
-      integrated: 0,
-      pending: 0,
-      na: 0,
-      validating: 0,
-      compliance: 0,
-      risk: 'MEDIO',
-      file_count: 0,
-      files: [],
-      statuses: {},
-      audit: 'Por validar',
-      cloud_only: true
-    };
-  }
-
   async function mergeCloudData() {
     if (!session || !window.SIGOP_DATA) return;
 
@@ -278,6 +203,7 @@
       if (!allowedIds.length) {
         window.SIGOP_DATA.parks = [];
         window.SIGOP_DATA.files = [];
+        window.SIGOP_DATA.all_files = [];
         return;
       }
       parkQuery = parkQuery.in('id', allowedIds);
@@ -286,33 +212,81 @@
     const { data: cloudParks, error: parksError } = await parkQuery;
     if (parksError) throw parksError;
 
-    const staticParks = [...(window.SIGOP_DATA.parks || [])];
-    const claimedStaticParks = new Set();
-    const parkIdToModel = new Map();
-    const mergedParks = [];
+    const staticParks = Array.isArray(window.SIGOP_DATA.parks)
+      ? window.SIGOP_DATA.parks.map(park => ({ ...park }))
+      : [];
 
-    for (const cloudPark of cloudParks || []) {
-      let model = findStaticPark(cloudPark, staticParks, claimedStaticParks);
-      if (model) claimedStaticParks.add(model);
-      else model = createCloudParkModel(cloudPark);
-
-      model.cloud_id = cloudPark.id;
-      model.cloud_code = cloudPark.code || null;
-      model.park = model.park || cloudPark.commercial_name || cloudPark.name;
-      model.region = cloudPark.regions?.code || cloudPark.regions?.name || model.region;
-      model.administrator = cloudPark.administrator_name || model.administrator || 'Por validar';
-      model.files = [];
-      model.file_count = 0;
-
-      parkIdToModel.set(cloudPark.id, model);
-      mergedParks.push(model);
+    const exactStatic = new Map();
+    for (const park of staticParks) {
+      for (const candidate of [park.park, park.commercial_name, park.name, park.code]) {
+        const normalized = normalizeName(candidate);
+        if (normalized && !exactStatic.has(normalized)) exactStatic.set(normalized, park);
+      }
     }
 
-    window.SIGOP_DATA.parks = mergedParks;
+    const compact = value => normalizeName(value)
+      .replace(/\b(PARQUE INDUSTRIAL|INDUSTRIAL PARK|PARQUE|PARK)\b/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    function findStaticTemplate(cloudPark) {
+      const candidates = [cloudPark.name, cloudPark.commercial_name, cloudPark.code]
+        .map(normalizeName)
+        .filter(Boolean);
+
+      for (const candidate of candidates) {
+        const direct = exactStatic.get(candidate);
+        if (direct) return direct;
+      }
+
+      const compactCandidates = candidates.map(compact).filter(Boolean);
+      for (const staticPark of staticParks) {
+        const staticCandidates = [staticPark.park, staticPark.commercial_name, staticPark.name, staticPark.code]
+          .map(compact)
+          .filter(Boolean);
+        if (compactCandidates.some(value => staticCandidates.includes(value))) return staticPark;
+      }
+      return null;
+    }
+
+    const authoritativeParks = [];
+    const parkIdToUi = new Map();
+
+    for (const cloudPark of cloudParks || []) {
+      const template = findStaticTemplate(cloudPark);
+      const park = template ? { ...template } : {
+        park: cloudPark.commercial_name || cloudPark.name,
+        division: '',
+        region: cloudPark.regions?.code || '',
+        administrator: cloudPark.administrator_name || 'Por asignar',
+        statuses: {},
+        integrated: 0,
+        pending: 0,
+        na: 0,
+        validating: 0,
+        compliance: 0,
+        risk: 'POR VALIDAR',
+        audit: 'Por validar'
+      };
+
+      park.cloud_id = cloudPark.id;
+      park.code = cloudPark.code || park.code || '';
+      park.park = cloudPark.commercial_name || cloudPark.name || park.park;
+      park.name = cloudPark.name || park.name || park.park;
+      park.commercial_name = cloudPark.commercial_name || park.commercial_name || park.park;
+      park.region = cloudPark.regions?.code || park.region || '';
+      park.region_name = cloudPark.regions?.name || park.region_name || '';
+      park.administrator = cloudPark.administrator_name || park.administrator || 'Por asignar';
+      park.files = [];
+      park.file_count = 0;
+
+      authoritativeParks.push(park);
+      parkIdToUi.set(cloudPark.id, park);
+    }
 
     let docQuery = sb
       .from('documents')
-      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_bucket,storage_path,original_filename,mime_type,file_size,requirement_id,requirements(requirement_number,code,name),updated_at')
+      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,requirements(requirement_number,code,name),updated_at')
       .eq('is_current', true);
     if (Array.isArray(allowedIds)) docQuery = docQuery.in('park_id', allowedIds);
 
@@ -320,9 +294,8 @@
     if (docsError) throw docsError;
 
     for (const document of docs || []) {
-      const park = parkIdToModel.get(document.park_id);
-      if (!park) continue;
-      park.files = park.files || [];
+      const park = parkIdToUi.get(document.park_id);
+      if (!park || !document.storage_path) continue;
       if (park.files.some(file => file.cloud_id === document.id)) continue;
 
       const originalFilename = document.original_filename || document.title || 'documento';
@@ -331,52 +304,42 @@
         filename: originalFilename,
         document_type: document.requirements?.name || document.title || 'Documento',
         folder: document.requirements?.code || 'DOCUMENTOS',
-        document_number: document.requirements?.requirement_number || null,
+        document_number: document.requirements?.requirement_number ?? null,
         requirement_id: document.requirement_id || null,
         year: document.issue_date ? Number(String(document.issue_date).slice(0, 4)) : null,
         extension: (originalFilename.split('.').pop() || '').toLowerCase(),
         local_url: document.storage_path,
         path: document.storage_path,
         storage_path: document.storage_path,
-        storage_bucket: document.storage_bucket || cfg.bucket,
         park: park.park,
         region: park.region,
         status: document.status,
         workflow_status: document.workflow_status,
         expiry: document.expiration_date,
-        file_size: document.file_size,
         mime_type: document.mime_type,
+        file_size: document.file_size,
         updated_at: document.updated_at
       });
     }
 
-    for (const park of window.SIGOP_DATA.parks || []) {
-      park.file_count = (park.files || []).length;
-
-      // Para parques creados únicamente desde Supabase, construye un Top 23 mínimo
-      // usando los documentos realmente existentes.
-      if (park.cloud_only) {
-        const grouped = new Map();
-        for (const file of park.files || []) {
-          const number = Number(file.document_number || 0);
-          const label = `${number || ''}${number ? '. ' : ''}${file.document_type || 'Documento'}`;
-          grouped.set(label, '✅');
-        }
-        park.statuses = Object.fromEntries(grouped);
-        park.integrated = grouped.size;
-        park.pending = 0;
-        park.na = 0;
-        park.validating = 0;
-        park.compliance = grouped.size ? 1 : 0;
-      }
+    for (const park of authoritativeParks) {
+      park.file_count = park.files.length;
     }
 
-    window.SIGOP_DATA.files = (window.SIGOP_DATA.parks || []).flatMap(p => p.files || []);
-    window.SIGOP_DATA.all_files = window.SIGOP_DATA.files;
+    const allFiles = authoritativeParks.flatMap(park => park.files);
+    window.SIGOP_DATA.parks = authoritativeParks;
+    window.SIGOP_DATA.files = allFiles;
+    window.SIGOP_DATA.all_files = allFiles;
 
-    console.info(
-      `PARKS ONE Cloud V6: ${window.SIGOP_DATA.parks.length} parques y ${window.SIGOP_DATA.files.length} documentos vinculados.`
-    );
+    if (window.SIGOP_DATA.metrics) {
+      const metrics = window.SIGOP_DATA.metrics;
+      metrics.parks = authoritativeParks.length;
+      metrics.files = allFiles.length;
+      metrics.physical_parks = authoritativeParks.filter(park => park.file_count > 0).length;
+      metrics.administrators = new Set(authoritativeParks.map(park => park.administrator).filter(Boolean)).size;
+    }
+
+    console.log(`PARKS ONE Cloud V6.1: ${authoritativeParks.length} parques reales y ${allFiles.length} documentos vinculados.`);
   }
 
   async function resolveUrl(path, download = false) {
