@@ -1,0 +1,18 @@
+PARKS ONE — MODO EMERGENCIA DE DOCUMENTOS
+
+Objetivo: permitir ver y descargar los archivos hoy, aunque la relación parque-documento siga sin resolverse.
+
+Funcionamiento:
+- Entra a cualquier parque.
+- Abre la pestaña Documentos.
+- Si ese parque aparece con 0 archivos, la pestaña mostrará TODOS los archivos indexados.
+- Cada tarjeta conserva Vista previa y Descargar.
+- Usa Ctrl+F para buscar AZCAPOPARK, PREDIAL o el nombre del archivo.
+
+Publicación:
+git add -A
+git commit -m "Activa acceso de emergencia a documentos"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y presiona Ctrl+F5.
