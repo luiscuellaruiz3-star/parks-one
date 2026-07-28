@@ -1,0 +1,26 @@
+PARKS ONE V6.5 — VINCULACIÓN FÍSICA REAL
+
+CAUSA CORREGIDA
+La interfaz dependía exclusivamente de park.files y la consulta descartaba
+documentos cuyo campo is_current estaba en null o false. Por eso la biblioteca
+mostraba archivos indexados, pero la ficha del parque y el Top 23 mostraban cero.
+
+CAMBIOS
+1. Se consultan todos los documentos que tienen Storage Path.
+2. Cada archivo conserva su park_id real.
+3. Antes de pintar la interfaz se reconstruye park.files usando:
+   - park_id contra cloud_id/cloud_ids;
+   - nombre comercial, nombre, código y nombre normalizado;
+   - archivos ya ligados al parque.
+4. Se eliminan duplicados por cloud_id/storage_path.
+5. Top 23, ficha del parque, contador y pestaña Documentos usan la misma relación.
+
+PUBLICAR
+Reemplaza el contenido de tu carpeta V3 conservando .git y ejecuta:
+git add -A
+git commit -m "V6.5 vinculación física real"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y usa Ctrl+F5.
+La consola debe indicar PARKS ONE Cloud V6.5.

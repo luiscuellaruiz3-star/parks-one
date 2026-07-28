@@ -121,13 +121,62 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
-<script src="cloud.js?v=6.4.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.4.0";
+<script src="cloud.js?v=6.5.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.5.0";
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo(0,0)}
 $$('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)}function openModal(t,h){$('#modalTitle').textContent=t;$('#modalBody').innerHTML=h;$('#modal').classList.add('show')}function closeModal(){$('#modal').classList.remove('show');$('#modalBox')?.classList.remove('park-sheet')}
-function compute(){const parks=D.parks, regs={};parks.forEach(p=>{const r=regs[p.region]||(regs[p.region]={region:p.region,integrated:0,pending:0,na:0,validating:0,parks:0,files:0});r.integrated+=p.integrated||0;r.pending+=p.pending||0;r.na+=p.na||0;r.validating+=p.validating||0;r.parks++;r.files+=p.file_count||0});const regions=Object.values(regs).map(r=>({...r,eval:r.integrated+r.pending+r.validating,compliance:r.integrated/Math.max(1,r.integrated+r.pending+r.validating)}));const requirements={};parks.forEach(p=>Object.entries(p.statuses||{}).forEach(([k,v])=>{const x=requirements[k]||(requirements[k]={name:k,ok:0,no:0,na:0,val:0});if(v==='✅')x.ok++;else if(v==='❌')x.no++;else if(v==='N/A')x.na++;else x.val++}));const files=D.all_files||parks.flatMap(p=>p.files||[]);return{parks,regions,requirements:Object.values(requirements),files}}
+
+function normalizeParkKey(v){
+ return String(v||'').toUpperCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'')
+  .replace(/\b(PARQUE INDUSTRIAL|INDUSTRIAL PARK|PARQUE|PARK)\b/g,' ')
+  .replace(/\bREGION\s*(?:0?[1-9]|10|11)\b/g,' ')
+  .replace(/\bR\s*(?:0?[1-9]|10|11)\b/g,' ')
+  .replace(/[^A-Z0-9]+/g,' ')
+  .replace(/\s+/g,' ')
+  .trim();
+}
+function physicalFilesForPark(p,sourceFiles){
+ const ids=new Set([p.cloud_id,...(p.cloud_ids||[])].filter(Boolean).map(String));
+ const names=new Set([
+  p.park,p.name,p.commercial_name,p.code
+ ].map(normalizeParkKey).filter(Boolean));
+ const own=Array.isArray(p.files)?p.files:[];
+ const candidates=[...own,...(sourceFiles||[])];
+ const seen=new Set();
+ return candidates.filter(f=>{
+   const idMatch=f.park_id&&ids.has(String(f.park_id));
+   const nameMatch=names.has(normalizeParkKey(f.park));
+   const ownMatch=own.includes(f);
+   if(!(idMatch||nameMatch||ownMatch))return false;
+   const key=String(f.cloud_id||f.storage_path||f.path||f.local_url||f.filename);
+   if(seen.has(key))return false;
+   seen.add(key);
+   return true;
+ });
+}
+function reconcilePhysicalFiles(){
+ const source=[
+  ...(Array.isArray(D.all_files)?D.all_files:[]),
+  ...(Array.isArray(D.files)?D.files:[]),
+  ...((D.parks||[]).flatMap(p=>Array.isArray(p.files)?p.files:[]))
+ ];
+ const unique=[];const seen=new Set();
+ source.forEach(f=>{
+   const key=String(f.cloud_id||f.storage_path||f.path||f.local_url||f.filename);
+   if(!seen.has(key)){seen.add(key);unique.push(f)}
+ });
+ (D.parks||[]).forEach(p=>{
+   p.files=physicalFilesForPark(p,unique);
+   p.file_count=p.files.length;
+ });
+ D.files=unique;
+ D.all_files=unique;
+ return unique;
+}
+function compute(){const reconciledFiles=reconcilePhysicalFiles();const parks=D.parks, regs={};parks.forEach(p=>{const r=regs[p.region]||(regs[p.region]={region:p.region,integrated:0,pending:0,na:0,validating:0,parks:0,files:0});r.integrated+=p.integrated||0;r.pending+=p.pending||0;r.na+=p.na||0;r.validating+=p.validating||0;r.parks++;r.files+=p.file_count||0});const regions=Object.values(regs).map(r=>({...r,eval:r.integrated+r.pending+r.validating,compliance:r.integrated/Math.max(1,r.integrated+r.pending+r.validating)}));const requirements={};parks.forEach(p=>Object.entries(p.statuses||{}).forEach(([k,v])=>{const x=requirements[k]||(requirements[k]={name:k,ok:0,no:0,na:0,val:0});if(v==='✅')x.ok++;else if(v==='❌')x.no++;else if(v==='N/A')x.na++;else x.val++}));const files=reconciledFiles;return{parks,regions,requirements:Object.values(requirements),files}}
 let C=null;
 function kpiDetail(type){const m=D.metrics, title={cum:'Cumplimiento nacional',pend:'Documentos pendientes',na:'No aplicables confirmados',audit:'Parques auditados',files:'Parques con expediente',alerts:'Alertas generadas',critical:'Parques en riesgo crítico'}[type];let val='',desc='',rows=[];if(type==='cum'){val=pct(m.integrated/m.evaluated,2);desc=`${fmt(m.integrated)} requisitos integrados de ${fmt(m.evaluated)} evaluados.`;rows=C.regions.sort((a,b)=>b.compliance-a.compliance).map(r=>[r.region,r.compliance,pct(r.compliance)])}if(type==='pend'){val=fmt(m.pending);desc='Obligaciones aplicables que todavía no cuentan con evidencia integrada.';rows=C.regions.sort((a,b)=>b.pending-a.pending).map(r=>[r.region,r.pending,fmt(r.pending)])}if(type==='na'){val=fmt(m.na_confirmed);desc='Conceptos no aplicables con justificación de aplicabilidad.';rows=C.regions.sort((a,b)=>b.na-a.na).map(r=>[r.region,r.na,fmt(r.na)])}if(type==='audit'){val=fmt(m.audited);desc=`Parques identificados como auditados de un padrón de ${m.parks}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&String(p.audit).toUpperCase()==='SI').length,''])}if(type==='critical')return openModal('Parques en riesgo crítico',`<p>Esta cifra se deriva de los parques cuya combinación de cumplimiento y obligaciones aplicables los ubica en nivel crítico.</p><div class="detail-list">${C.parks.filter(p=>p.risk==='CRÍTICO').sort((a,b)=>a.compliance-b.compliance).map(p=>`<div class="alert critical" onclick="closeModal();parkDetail('${encodeURIComponent(p.park)}')" style="cursor:pointer"><b>${esc(p.park)} · ${pct(p.compliance)}</b><small>${p.pending} pendientes · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`).join('')}</div>`);if(type==='files'){val=fmt(m.physical_parks);desc=`Parques con al menos un archivo físico indexado. Total de archivos: ${fmt(m.files)}.`;rows=C.regions.map(r=>[r.region,C.parks.filter(p=>p.region===r.region&&p.file_count>0).length,''])}if(type==='alerts'){val=fmt(D.alerts?.length||0);desc='Alertas derivadas de faltantes y señales temporales disponibles.';const sev={};(D.alerts||[]).forEach(a=>sev[a.severity]=(sev[a.severity]||0)+1);rows=Object.entries(sev).map(([a,b])=>[a,b,fmt(b)])}const max=Math.max(1,...rows.map(r=>typeof r[1]==='number'?r[1]:0));openModal(title,`<div class="chartgrid"><div class="donut" style="background:conic-gradient(var(--g) 0 ${type==='cum'?(m.integrated/m.evaluated)*360:270}deg,#e7efec 0)"><span>${val}<small style="font-size:12px;color:var(--mut);font-weight:400">${type==='cum'?'avance nacional':'dato actual'}</small></span></div><div><p>${esc(desc)}</p><div class="detail-list">${rows.map(r=>`<div class="detail-row"><b>${esc(r[0])}</b><div class="bar"><i style="width:${Math.max(2,(Number(r[1])||0)/max*100)}%"></i></div><span>${esc(r[2]||r[1])}</span></div>`).join('')}</div></div></div>`)}
 function renderDashboard(){
@@ -179,6 +228,7 @@ function returnToParks(){go('parques');window.scrollTo({top:0,behavior:'smooth'}
 function setAdministratorMode(){currentRole='administrator';$('#role').value='administrator';$('#role').dispatchEvent(new Event('change'));if(window.activePark)parkDetail(encodeURIComponent(window.activePark))}
 function parkDetail(name){
  const p=C.parks.find(x=>x.park===decodeURIComponent(name));if(!p)return;
+ p.files=physicalFilesForPark(p,C.files);p.file_count=p.files.length;
  window.activePark=p.park;const deg=Math.max(0,Math.min(360,p.compliance*360));
  const canUpload=['administrator','architect'].includes(currentRole),canApprove=currentRole==='architect';
  const pending=getRequests().filter(x=>x.park===p.park&&x.status==='En revisión');

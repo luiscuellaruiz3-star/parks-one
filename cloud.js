@@ -477,8 +477,7 @@
 
     let docQuery = sb
       .from('documents')
-      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,requirements(requirement_number,code,name),updated_at')
-      .eq('is_current', true);
+      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,is_current,requirements(requirement_number,code,name),updated_at');
     if (Array.isArray(allowedIds)) docQuery = docQuery.in('park_id', allowedIds);
 
     const { data: docs, error: docsError } = await docQuery;
@@ -492,6 +491,7 @@
       const originalFilename = document.original_filename || document.title || 'documento';
       park.files.push({
         cloud_id: document.id,
+        park_id: document.park_id,
         filename: originalFilename,
         document_type: document.requirements?.name || document.title || 'Documento',
         folder: document.requirements?.code || 'DOCUMENTOS',
@@ -538,7 +538,7 @@
     };
 
     console.log(
-      `PARKS ONE Cloud V6.4: ${(cloudParks || []).length} registros cloud → ` +
+      `PARKS ONE Cloud V6.5: ${(cloudParks || []).length} registros cloud → ` +
       `${authoritativeParks.length} parques consolidados, ` +
       `${allFiles.length} documentos vinculados.`
     );
