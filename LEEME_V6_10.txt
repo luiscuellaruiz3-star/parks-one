@@ -1,0 +1,20 @@
+PARKS ONE V6.10 — PORCENTAJES CORREGIDOS
+
+Causa:
+El recálculo V6.8/V6.9 guardaba el cumplimiento como 26.1, pero la función visual
+pct() esperaba 0.261 y volvía a multiplicarlo por 100. Por eso aparecían cifras
+como 2610%, 3450% y 870%.
+
+Corrección:
+- El cumplimiento vuelve a almacenarse como fracción de 0 a 1.
+- Los umbrales de riesgo se ajustaron a 0.90 y 0.70.
+- Barras, círculos, tarjetas y ficha muestran porcentajes normales.
+- Se limita el anillo visual a un máximo de 100%.
+
+PUBLICAR:
+git add -A
+git commit -m "V6.10 corrige escala de porcentajes"
+git pull --rebase origin main
+git push origin main
+
+Después espera Vercel Ready y presiona Ctrl+F5.

@@ -121,7 +121,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="data.js"></script>
-<script src="cloud.js?v=6.9.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.9.0";
+<script src="cloud.js?v=6.10.0"></script><script src="importacion.js?v=5.0.4"></script><script>window.PARKS_ONE_VERSION="6.10.0";
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 function go(id){$$('.page').forEach(x=>x.classList.toggle('active',x.id===id));$$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo(0,0)}
@@ -232,7 +232,9 @@ function recalculateParkIndicators(){
    const na=statusValues.filter(v=>v==='N/A').length;
    const validating=statusValues.filter(v=>v!=='✅'&&v!=='❌'&&v!=='N/A').length;
    const applicable=Math.max(0,statusValues.length-na);
-   const compliance=applicable?Math.round((integrated/applicable)*1000)/10:0;
+   // Toda la aplicación espera cumplimiento como fracción entre 0 y 1.
+   // pct(), barras y anillos multiplican internamente por 100.
+   const compliance=applicable?integrated/applicable:0;
 
    p.integrated=integrated;
    p.pending=pending;
@@ -241,8 +243,8 @@ function recalculateParkIndicators(){
    p.compliance=compliance;
    p.file_count=(p.files||[]).length;
 
-   if(compliance>=90)p.risk='BAJO';
-   else if(compliance>=70)p.risk='MEDIO';
+   if(compliance>=0.90)p.risk='BAJO';
+   else if(compliance>=0.70)p.risk='MEDIO';
    else if(compliance>0)p.risk='ALTO';
    else if(statusValues.length)p.risk='CRÍTICO';
    else p.risk='POR VALIDAR';
@@ -403,7 +405,7 @@ function setAdministratorMode(){currentRole='administrator';$('#role').value='ad
 function parkDetail(name){
  const p=C.parks.find(x=>x.park===decodeURIComponent(name));if(!p)return;
  p.files=physicalFilesForPark(p,C.files);p.file_count=p.files.length;
- window.activePark=p.park;const deg=Math.max(0,Math.min(360,p.compliance*360));
+ window.activePark=p.park;const deg=Math.max(0,Math.min(360,(Math.min(1,Number(p.compliance)||0))*360));
  const canUpload=['administrator','architect'].includes(currentRole),canApprove=currentRole==='architect';
  const pending=getRequests().filter(x=>x.park===p.park&&x.status==='En revisión');
  const sts=Object.entries(p.statuses||{});
