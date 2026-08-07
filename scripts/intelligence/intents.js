@@ -1,0 +1,1 @@
+export const INTENTS=['consultar','comparar','listar','ranking','estadisticas'];

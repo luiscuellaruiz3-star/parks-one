@@ -1,0 +1,1 @@
+export const ENTITIES=['top5','top23','parques','usuarios','vigencias','agua','alertas','reportes'];

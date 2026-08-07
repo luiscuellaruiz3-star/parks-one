@@ -1,0 +1,61 @@
+<section id="moduloUsuarios" class="users-module">
+  <header class="users-header">
+    <div>
+      <h1>Administración de Usuarios</h1>
+      <p>Control de accesos, roles y alcances de PARKS ONE.</p>
+    </div>
+
+    <button id="btnNuevoUsuario" type="button">
+      + Nuevo usuario
+    </button>
+  </header>
+
+  <div class="users-toolbar">
+    <input
+      id="buscarUsuario"
+      type="search"
+      placeholder="Buscar por nombre o correo"
+      autocomplete="off"
+    >
+
+    <select id="filtroRol">
+      <option value="">Todos los roles</option>
+      <option value="arquitecto">Arquitecto</option>
+      <option value="ceo">CEO</option>
+      <option value="director">Director</option>
+      <option value="divisional">Divisional</option>
+      <option value="regional">Regional</option>
+      <option value="administrador">Administrador</option>
+    </select>
+
+    <select id="filtroEstado">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="activo">Activo</option>
+      <option value="suspendido">Suspendido</option>
+    </select>
+  </div>
+
+  <div class="users-table-wrapper">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Alcance</th>
+          <th>Último acceso</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody id="tablaUsuarios">
+        <tr>
+          <td colspan="6">
+            Aún no se han cargado usuarios.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

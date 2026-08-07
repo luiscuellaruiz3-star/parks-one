@@ -10,10 +10,14 @@
   let sb = null;
   let session = null;
   let profile = { role: 'consulta', full_name: '', email: '' };
+  let scope = {};
   const signedUrlCache = new Map();
 
   const roleMap = {
     direccion: 'executive',
+    director: 'executive',
+    ceo: 'executive',
+    divisional: 'divisional',
     arquitecto: 'architect',
     regional: 'regional',
     administrador: 'administrator',
@@ -81,9 +85,16 @@
     }
 
     await loadProfile();
+    await loadAccessScope();
     await mergeCloudData();
     applyIdentity();
     document.documentElement.dataset.cloud = 'online';
+
+    window.ParksAudit?.log?.('LOGIN', {
+      category: 'security',
+      message: 'Inicio de sesión correcto.'
+    });
+
     return { configured: true, authenticated: true };
   }
 
@@ -99,8 +110,64 @@
     profile = data;
 
     const uiRole = roleMap[profile.role] || 'executive';
+
+    // Rol verdadero proveniente de Supabase: nunca puede ser sustituido
+    // por el selector visual.
+    window.PARKS_REAL_ROLE = profile.role;
     window.PARKS_AUTH_ROLE = uiRole;
-    try { localStorage.setItem('parksOneRole', uiRole); } catch (_) {}
+
+    const realIsArchitect =
+      ['arquitecto', 'architect'].includes(
+        String(profile.role || '').trim().toLowerCase()
+      );
+
+    try {
+      if (!realIsArchitect) {
+        localStorage.removeItem('parksOneRole');
+        localStorage.removeItem('parksOneSimulatedRole');
+        window.PARKS_SIMULATED_ROLE = '';
+      }
+    } catch (_) {}
+  }
+
+
+  async function loadAccessScope() {
+    scope = {};
+    if (!session) return scope;
+
+    try {
+      const { data, error } = await sb
+        .from('user_scopes')
+        .select(
+          'scope_type,division_id,region_id,park_id,' +
+          'divisions(id,code,name),regions(id,code,name),parks(id,code,name)'
+        )
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('No fue posible cargar el alcance organizacional:', error);
+        return scope;
+      }
+
+      scope = {
+        scope_type: data?.scope_type || '',
+        division_id: data?.division_id || data?.divisions?.id || null,
+        division_code: data?.divisions?.code || '',
+        division_name: data?.divisions?.name || '',
+        region_id: data?.region_id || data?.regions?.id || null,
+        region_code: data?.regions?.code || '',
+        region_name: data?.regions?.name || '',
+        park_id: data?.park_id || data?.parks?.id || null,
+        park_code: data?.parks?.code || '',
+        park_name: data?.parks?.name || ''
+      };
+    } catch (error) {
+      console.warn('Alcance organizacional no disponible:', error);
+    }
+
+    return scope;
   }
 
   function applyIdentity() {
@@ -123,34 +190,194 @@
     }
   }
 
-  function showLogin() {
+  function showLogin(initialView = 'login') {
     if (document.getElementById('cloudLogin')) return;
+
     const overlay = document.createElement('div');
     overlay.id = 'cloudLogin';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#033b30,#087a5a);display:grid;place-items:center;padding:20px;font-family:Segoe UI,Arial,sans-serif';
+    overlay.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'z-index:99999',
+      'background:linear-gradient(135deg,#033b30,#087a5a)',
+      'display:grid',
+      'place-items:center',
+      'padding:20px',
+      'font-family:Segoe UI,Arial,sans-serif',
+      'overflow:auto'
+    ].join(';');
+
     overlay.innerHTML = `
-      <form id="cloudLoginForm" style="width:min(430px,100%);background:white;border-radius:20px;padding:30px;box-shadow:0 25px 80px #0005">
+      <div style="width:min(470px,100%);background:white;border-radius:20px;padding:30px;box-shadow:0 25px 80px #0005">
         <img src="assets/parks_logo.png" alt="Parks" style="max-width:180px">
-        <h2 style="color:#064c3d;margin:22px 0 6px">Acceso a PARKS ONE</h2>
-        <p style="color:#61756f;margin:0 0 20px">Plataforma Integral de Operaciones</p>
-        <label style="display:block;font-weight:700;color:#234b41">Correo
-          <input id="cloudEmail" type="email" autocomplete="username" required style="width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
-        </label>
-        <label style="display:block;font-weight:700;color:#234b41">Contraseña
-          <input id="cloudPass" type="password" autocomplete="current-password" required style="width:100%;padding:12px;margin:7px 0 16px;border:1px solid #ccd8d3;border-radius:9px">
-        </label>
-        <button id="cloudLoginButton" type="submit" style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">Ingresar</button>
-        <div id="cloudLoginError" style="color:#a22;margin-top:12px;min-height:20px"></div>
-      </form>`;
+        <h2 id="cloudAuthTitle" style="color:#064c3d;margin:22px 0 6px">Acceso a PARKS ONE</h2>
+        <p id="cloudAuthSubtitle" style="color:#61756f;margin:0 0 20px">Plataforma Integral de Operaciones</p>
+
+        <form id="cloudLoginForm">
+          <label style="display:block;font-weight:700;color:#234b41">Correo
+            <input id="cloudEmail" type="email" autocomplete="username" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <label style="display:block;font-weight:700;color:#234b41">Contraseña
+            <div style="position:relative">
+              <input id="cloudPass" type="password" autocomplete="current-password" required
+                style="box-sizing:border-box;width:100%;padding:12px 48px 12px 12px;margin:7px 0 16px;border:1px solid #ccd8d3;border-radius:9px">
+              <button id="cloudTogglePass" type="button" aria-label="Mostrar contraseña"
+                style="position:absolute;right:8px;top:15px;border:0;background:transparent;cursor:pointer;font-size:18px">👁</button>
+            </div>
+          </label>
+
+          <label style="display:flex;align-items:center;gap:8px;color:#49645d;margin:-4px 0 16px">
+            <input id="cloudRemember" type="checkbox" checked>
+            Mantener la sesión iniciada
+          </label>
+
+          <button id="cloudLoginButton" type="submit"
+            style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">
+            Ingresar
+          </button>
+
+          <div style="display:flex;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap">
+            <button id="cloudShowRegister" type="button"
+              style="border:0;background:transparent;color:#087a5a;font-weight:800;cursor:pointer;padding:0">
+              Solicitar acceso
+            </button>
+            <button id="cloudShowReset" type="button"
+              style="border:0;background:transparent;color:#087a5a;font-weight:800;cursor:pointer;padding:0">
+              Olvidé mi contraseña
+            </button>
+          </div>
+        </form>
+
+        <form id="cloudRegisterForm" hidden>
+          <label style="display:block;font-weight:700;color:#234b41">Nombre completo
+            <input id="cloudRegisterName" type="text" autocomplete="name" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <label style="display:block;font-weight:700;color:#234b41">Correo
+            <input id="cloudRegisterEmail" type="email" autocomplete="email" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <label style="display:block;font-weight:700;color:#234b41">Contraseña
+            <input id="cloudRegisterPass" type="password" autocomplete="new-password" minlength="8" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <label style="display:block;font-weight:700;color:#234b41">Confirmar contraseña
+            <input id="cloudRegisterConfirm" type="password" autocomplete="new-password" minlength="8" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 16px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <button id="cloudRegisterButton" type="submit"
+            style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">
+            Enviar solicitud
+          </button>
+
+          <button class="cloudBackToLogin" type="button"
+            style="width:100%;margin-top:12px;padding:10px;border:1px solid #ccd8d3;border-radius:9px;background:white;color:#234b41;font-weight:700;cursor:pointer">
+            Volver a ingresar
+          </button>
+        </form>
+
+        <form id="cloudResetForm" hidden>
+          <label style="display:block;font-weight:700;color:#234b41">Correo registrado
+            <input id="cloudResetEmail" type="email" autocomplete="email" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 16px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <button id="cloudResetButton" type="submit"
+            style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">
+            Enviar correo de restablecimiento
+          </button>
+
+          <button class="cloudBackToLogin" type="button"
+            style="width:100%;margin-top:12px;padding:10px;border:1px solid #ccd8d3;border-radius:9px;background:white;color:#234b41;font-weight:700;cursor:pointer">
+            Volver a ingresar
+          </button>
+        </form>
+
+        <form id="cloudUpdatePasswordForm" hidden>
+          <label style="display:block;font-weight:700;color:#234b41">Nueva contraseña
+            <input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="8" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <label style="display:block;font-weight:700;color:#234b41">Confirmar contraseña
+            <input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required
+              style="box-sizing:border-box;width:100%;padding:12px;margin:7px 0 16px;border:1px solid #ccd8d3;border-radius:9px">
+          </label>
+
+          <button id="cloudUpdatePasswordButton" type="submit"
+            style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">
+            Guardar nueva contraseña
+          </button>
+        </form>
+
+        <div id="cloudLoginError" style="color:#a22;margin-top:14px;min-height:20px"></div>
+        <div id="cloudLoginSuccess" style="color:#06724f;margin-top:8px;min-height:20px"></div>
+      </div>`;
+
     document.body.appendChild(overlay);
 
-    overlay.querySelector('form').addEventListener('submit', async (event) => {
+    const loginForm = overlay.querySelector('#cloudLoginForm');
+    const registerForm = overlay.querySelector('#cloudRegisterForm');
+    const resetForm = overlay.querySelector('#cloudResetForm');
+    const updatePasswordForm = overlay.querySelector('#cloudUpdatePasswordForm');
+    const title = overlay.querySelector('#cloudAuthTitle');
+    const subtitle = overlay.querySelector('#cloudAuthSubtitle');
+    const errorNode = overlay.querySelector('#cloudLoginError');
+    const successNode = overlay.querySelector('#cloudLoginSuccess');
+
+    function clearMessages() {
+      errorNode.textContent = '';
+      successNode.textContent = '';
+    }
+
+    function setView(view) {
+      clearMessages();
+      loginForm.hidden = view !== 'login';
+      registerForm.hidden = view !== 'register';
+      resetForm.hidden = view !== 'reset';
+      updatePasswordForm.hidden = view !== 'update-password';
+
+      const copy = {
+        login: ['Acceso a PARKS ONE', 'Plataforma Integral de Operaciones'],
+        register: ['Solicitar acceso', 'Tu cuenta quedará pendiente hasta ser aprobada por el Arquitecto del Sistema.'],
+        reset: ['Restablecer contraseña', 'Recibirás un enlace en el correo registrado.'],
+        'update-password': ['Crear nueva contraseña', 'Define una contraseña nueva para tu cuenta.']
+      };
+
+      title.textContent = copy[view][0];
+      subtitle.textContent = copy[view][1];
+    }
+
+    const recoveryMode =
+      String(location.hash || '').includes('type=recovery') ||
+      String(location.search || '').includes('type=recovery');
+
+    setView(recoveryMode ? 'update-password' : initialView);
+
+    overlay.querySelector('#cloudShowRegister').addEventListener('click', () => setView('register'));
+    overlay.querySelector('#cloudShowReset').addEventListener('click', () => setView('reset'));
+    overlay.querySelectorAll('.cloudBackToLogin').forEach(button => {
+      button.addEventListener('click', () => setView('login'));
+    });
+
+    overlay.querySelector('#cloudTogglePass').addEventListener('click', () => {
+      const input = overlay.querySelector('#cloudPass');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+
+    loginForm.addEventListener('submit', async event => {
       event.preventDefault();
+      clearMessages();
+
       const button = overlay.querySelector('#cloudLoginButton');
-      const errorNode = overlay.querySelector('#cloudLoginError');
       button.disabled = true;
       button.textContent = 'Ingresando…';
-      errorNode.textContent = '';
 
       const { data, error } = await sb.auth.signInWithPassword({
         email: overlay.querySelector('#cloudEmail').value.trim(),
@@ -167,6 +394,12 @@
       try {
         session = data.session;
         await loadProfile();
+        await loadAccessScope();
+
+        if (!profile?.is_active) {
+          throw new Error('Tu solicitud todavía está pendiente de aprobación.');
+        }
+
         await mergeCloudData();
         location.reload();
       } catch (loadError) {
@@ -176,27 +409,197 @@
         button.textContent = 'Ingresar';
       }
     });
+
+    registerForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      clearMessages();
+
+      const name = overlay.querySelector('#cloudRegisterName').value.trim();
+      const email = overlay.querySelector('#cloudRegisterEmail').value.trim();
+      const password = overlay.querySelector('#cloudRegisterPass').value;
+      const confirmation = overlay.querySelector('#cloudRegisterConfirm').value;
+      const button = overlay.querySelector('#cloudRegisterButton');
+
+      if (password !== confirmation) {
+        errorNode.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Enviando solicitud…';
+
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            requested_role: 'consulta',
+            access_status: 'pendiente'
+          }
+        }
+      });
+
+      if (error) {
+        errorNode.textContent = error.message;
+        button.disabled = false;
+        button.textContent = 'Enviar solicitud';
+        return;
+      }
+
+      /*
+       * En la instalación normal, un trigger de Supabase crea el perfil.
+       * Si la sesión queda abierta por configuración de Auth, se intenta
+       * dejar explícitamente el perfil como pendiente y luego se cierra.
+       */
+      if (data?.user?.id && data?.session) {
+        try {
+          await sb.from('profiles').upsert({
+            id: data.user.id,
+            full_name: name,
+            email,
+            role: 'consulta',
+            is_active: false
+          }, { onConflict: 'id' });
+        } catch (_) {}
+
+        await sb.auth.signOut();
+        session = null;
+      }
+
+      registerForm.reset();
+      successNode.textContent =
+        'Solicitud enviada. Revisa tu correo si Supabase solicita confirmación. ' +
+        'El Arquitecto del Sistema deberá aprobar y asignar tu acceso.';
+      button.disabled = false;
+      button.textContent = 'Enviar solicitud';
+    });
+
+    resetForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      clearMessages();
+
+      const button = overlay.querySelector('#cloudResetButton');
+      const email = overlay.querySelector('#cloudResetEmail').value.trim();
+
+      button.disabled = true;
+      button.textContent = 'Enviando…';
+
+      const { error } = await sb.auth.resetPasswordForEmail(email);
+
+      if (error) {
+        errorNode.textContent = error.message;
+      } else {
+        successNode.textContent =
+          'Correo enviado. Revisa también la carpeta de spam o correo no deseado.';
+        resetForm.reset();
+      }
+
+      button.disabled = false;
+      button.textContent = 'Enviar correo de restablecimiento';
+    });
+
+    updatePasswordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      clearMessages();
+
+      const password = overlay.querySelector('#cloudNewPassword').value;
+      const confirmation = overlay.querySelector('#cloudNewPasswordConfirm').value;
+      const button = overlay.querySelector('#cloudUpdatePasswordButton');
+
+      if (password !== confirmation) {
+        errorNode.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Guardando…';
+
+      const { error } = await sb.auth.updateUser({ password });
+
+      if (error) {
+        errorNode.textContent = error.message;
+        button.disabled = false;
+        button.textContent = 'Guardar nueva contraseña';
+        return;
+      }
+
+      successNode.textContent = 'Contraseña actualizada. Ya puedes ingresar.';
+      await sb.auth.signOut();
+      session = null;
+      history.replaceState({}, document.title, location.pathname);
+      setTimeout(() => setView('login'), 900);
+      button.disabled = false;
+      button.textContent = 'Guardar nueva contraseña';
+    });
   }
 
   async function accessibleParkIds() {
     if (!session) return [];
-    if (['direccion', 'arquitecto', 'consulta'].includes(profile.role)) return null;
 
-    if (profile.role === 'regional') {
-      const { data, error } = await sb
-        .from('user_regions')
-        .select('regions(parks(id))')
-        .eq('user_id', session.user.id);
-      if (error) throw error;
-      return (data || []).flatMap(row => row.regions?.parks || []).map(p => p.id);
+    const role = window.ParksPermissions?.realRole?.() ||
+      String(profile?.role || 'consulta').toLowerCase();
+
+    // Lectura nacional: Divisional, Dirección, CEO y Arquitecto.
+    if (['arquitecto','divisional','direccion','director','ceo','consulta'].includes(role)) {
+      return null;
     }
 
-    const { data, error } = await sb
-      .from('user_parks')
-      .select('park_id')
-      .eq('user_id', session.user.id);
-    if (error) throw error;
-    return (data || []).map(row => row.park_id);
+    // Administrador: sólo su parque asignado.
+    if (role === 'administrador') {
+      if (scope.scope_type === 'parque' && scope.park_id) return [scope.park_id];
+
+      // Compatibilidad temporal con cuentas antiguas.
+      if (scope.scope_type === 'region' && scope.region_id) {
+        const { data, error } = await sb
+          .from('parks')
+          .select('id')
+          .eq('region_id', scope.region_id)
+          .eq('status', 'activo');
+        if (error) throw error;
+        return (data || []).map(x => x.id);
+      }
+
+      return [];
+    }
+
+    // Regional: toda su división, para poder cubrir a otros Regionales.
+    if (role === 'regional') {
+      if (scope.scope_type === 'division' && scope.division_id) {
+        const { data: regions, error: regionError } = await sb
+          .from('regions')
+          .select('id')
+          .eq('division_id', scope.division_id)
+          .eq('is_active', true);
+        if (regionError) throw regionError;
+
+        const regionIds = (regions || []).map(x => x.id);
+        if (!regionIds.length) return [];
+
+        const { data: parks, error: parkError } = await sb
+          .from('parks')
+          .select('id')
+          .in('region_id', regionIds)
+          .eq('status', 'activo');
+        if (parkError) throw parkError;
+        return (parks || []).map(x => x.id);
+      }
+
+      // Compatibilidad temporal si aún existe un Regional con alcance Región.
+      if (scope.scope_type === 'region' && scope.region_id) {
+        const { data, error } = await sb
+          .from('parks')
+          .select('id')
+          .eq('region_id', scope.region_id)
+          .eq('status', 'activo');
+        if (error) throw error;
+        return (data || []).map(x => x.id);
+      }
+
+      return [];
+    }
+
+    return [];
   }
 
   async function mergeCloudData() {
@@ -557,7 +960,7 @@
 
     let docQuery = sb
       .from('documents')
-      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,is_current,requirements(requirement_number,code,name),updated_at');
+      .select('id,park_id,title,status,workflow_status,issue_date,expiration_date,storage_path,original_filename,mime_type,file_size,requirement_id,is_current,notes,requirements(requirement_number,code,name),updated_at');
     if (Array.isArray(allowedIds)) docQuery = docQuery.in('park_id', allowedIds);
 
     const { data: docs, error: docsError } = await docQuery;
@@ -623,6 +1026,16 @@
         region: park.region,
         status: document.status,
         workflow_status: document.workflow_status,
+        document_scope: (
+          String(document.notes || '').match(/PARKS_DOCUMENT_SCOPE=([^|]+)/i)?.[1] || ''
+        ).trim().toUpperCase(),
+        publication: (
+          String(document.notes || '').match(/PARKS_PUBLICATION=([^|]+)/i)?.[1] || ''
+        ).trim().toLowerCase(),
+        permission_role: (
+          String(document.notes || '').match(/PARKS_PERMISSION_ROLE=([^|]+)/i)?.[1] || ''
+        ).trim().toLowerCase(),
+        workflow_managed: /PARKS_PUBLICATION=/i.test(String(document.notes || '')),
         expiry: document.expiration_date,
         mime_type: document.mime_type,
         file_size: document.file_size,
@@ -659,7 +1072,7 @@
     };
 
     console.log(
-      `PARKS ONE Cloud V6.6: ${(cloudParks || []).length} registros cloud → ` +
+      `PARKS ONE Cloud V7.3: ${(cloudParks || []).length} registros cloud → ` +
       `${authoritativeParks.length} parques consolidados, ` +
       `${allFiles.length} documentos vinculados.`
     );
@@ -702,12 +1115,64 @@
 
     signedUrlCache.set(cacheKey, data.signedUrl);
     setTimeout(() => signedUrlCache.delete(cacheKey), 12 * 60 * 1000);
+
+    window.ParksAudit?.log?.(
+      download ? 'DOCUMENT_DOWNLOADED' : 'DOCUMENT_VIEWED',
+      {
+        category: 'document',
+        file_name: storagePath.split('/').pop() || '',
+        result: 'success',
+        metadata: { storage_path: storagePath }
+      }
+    );
+
     return data.signedUrl;
+  }
+
+  function permissionRole() {
+    return String(profile?.role || 'consulta').trim().toLowerCase();
+  }
+
+  function can(action, context = {}) {
+    if (!window.ParksPermissions) return true;
+    return window.ParksPermissions.can(action, {
+      ...context,
+      role: permissionRole(),
+      profile
+    });
+  }
+
+  function uploadDecision(meta = {}) {
+    if (!window.ParksPermissions) {
+      return {
+        allowed: true,
+        publication: 'pending',
+        approvalScope: 'none'
+      };
+    }
+
+    return window.ParksPermissions.uploadDecision({
+      role: permissionRole(),
+      profile,
+      documentRegion: meta.regionCode || meta.region || '',
+      documentDivision: meta.divisionCode || meta.division || ''
+    });
   }
 
   async function upload(file, meta) {
     if (!configured || !session) throw new Error('Se requiere una sesión activa.');
     if (!meta?.parkId) throw new Error('La carga requiere el UUID del parque.');
+
+    if (!can('upload', { meta })) {
+      throw new Error('Tu rol no tiene permiso para cargar documentos.');
+    }
+
+    const decision = uploadDecision(meta);
+    if (!decision.allowed) {
+      throw new Error(
+        decision.reason || 'La carga no está permitida para este alcance.'
+      );
+    }
 
     const safe = value => String(value || '')
       .normalize('NFD')
@@ -728,14 +1193,22 @@
       title: meta.title || meta.requirementName || file.name,
       issue_date: meta.issueDate || null,
       expiration_date: meta.expirationDate || null,
-      status: 'por_validar',
-      workflow_status: 'en_revision',
+      // Regional, Divisional y Arquitecto publican directamente según
+      // ParksPermissions.uploadDecision(). Administrador conserva revisión.
+      status: decision.publication === 'direct' ? 'integrado' : 'por_validar',
+      workflow_status: decision.publication === 'direct' ? 'aprobado' : 'en_revision',
       storage_bucket: cfg.bucket,
       storage_path: storagePath,
       original_filename: file.name,
       mime_type: file.type || 'application/octet-stream',
       file_size: file.size,
-      notes: meta.notes || null,
+      notes: [
+        meta.notes || '',
+        `PARKS_PERMISSION_ROLE=${permissionRole()}`,
+        `PARKS_PUBLICATION=${decision.publication}`,
+        `PARKS_APPROVAL_SCOPE=${decision.approvalScope}`,
+        `PARKS_DOCUMENT_SCOPE=${String(meta.documentScope || 'ADMINISTRADOR').toUpperCase()}`
+      ].filter(Boolean).join(' | '),
       source: 'PARKS ONE',
       uploaded_by: session.user.id
     };
@@ -745,6 +1218,20 @@
       await sb.storage.from(cfg.bucket).remove([storagePath]);
       throw error;
     }
+    window.ParksAudit?.log?.('DOCUMENT_UPLOADED', {
+      category: 'document',
+      document_id: data?.id || null,
+      document_name: row.title,
+      file_name: row.original_filename,
+      park_id: row.park_id,
+      result: decision.publication === 'direct' ? 'success' : 'pending',
+      message:
+        decision.publication === 'direct'
+          ? 'Documento cargado para publicación directa.'
+          : 'Documento cargado y enviado a revisión.',
+      after_data: data || row
+    });
+
     return data;
   }
 
@@ -785,6 +1272,11 @@
   }
 
   async function signOut() {
+    await window.ParksAudit?.log?.('LOGOUT', {
+      category: 'security',
+      message: 'Cierre de sesión solicitado.'
+    });
+
     if (sb) await sb.auth.signOut();
     location.reload();
   }
@@ -795,11 +1287,23 @@
     resolveUrl,
     upload,
     profile: () => profile,
+    accessScope: () => scope,
     session: () => session,
+    // Cliente Supabase ya inicializado. Lo usan los motores de datos
+    // tabulares (Top 5, Agua/PTAR, histórico de datasets).
+    client: () => sb,
+    // Recarga parques + documentos desde Supabase sin cerrar sesión.
+    refreshData: async () => {
+      await mergeCloudData();
+      return window.SIGOP_DATA;
+    },
     signOut,
     normalizePath,
     importCatalogs,
     ensurePark,
-    documentExists
+    documentExists,
+    can,
+    uploadDecision,
+    accessibleParkIds
   };
 })();

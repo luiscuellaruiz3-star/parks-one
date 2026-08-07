@@ -1,0 +1,1 @@
+export const evidence=(...e)=>e;
