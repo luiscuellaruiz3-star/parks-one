@@ -858,17 +858,10 @@
                 );
             }
 
-            /*
-             * Un usuario activo debe quedar sincronizado en dos capas:
-             * 1) Supabase Auth (correo confirmado)
-             * 2) PARKS ONE / profiles + user_scopes
-             *
-             * La Edge Function usa la Service Role de forma segura y evita el
-             * estado inconsistente "Activo" en PARKS ONE pero "Email not confirmed"
-             * en Supabase Auth. También permite corregir usuarios ya aprobados:
-             * basta abrir Editar y Guardar nuevamente mientras estén Activos.
-             */
             if (payload.status === 'activo') {
+                // Un usuario activo debe quedar sincronizado también en Supabase Auth.
+                // La confirmación de correo requiere service_role, por eso se hace
+                // exclusivamente a través de la Edge Function admin-users.
                 const { data, error } = await getClient().functions.invoke(
                     'admin-users',
                     {
@@ -876,26 +869,28 @@
                             action: 'approve_user',
                             user_id: user.id,
                             full_name: payload.full_name,
-                            email: payload.email || user.email,
                             role: payload.role,
                             scope_type: payload.scope_type,
                             scope_id: payload.scope_id,
-                            mark_approval: approvalMode
+                            approval_mode: approvalMode
                         }
                     }
                 );
 
                 if (error) {
-                    let message = error.message || 'No fue posible sincronizar el usuario con Supabase Auth.';
+                    let message = error.message || 'Error al sincronizar el usuario con Supabase Auth.';
                     try {
                         if (error.context && typeof error.context.json === 'function') {
                             const functionError = await error.context.json();
-                            message = functionError?.error?.message ||
+                            message =
+                                functionError?.error?.message ||
                                 functionError?.error ||
                                 functionError?.message ||
                                 message;
                         }
-                    } catch (_) {}
+                    } catch (readError) {
+                        console.error('No fue posible leer la respuesta de admin-users:', readError);
+                    }
                     throw new Error(message);
                 }
 
@@ -911,9 +906,7 @@
                     suspended_at:
                         payload.status === 'suspendido'
                         ? new Date().toISOString()
-                        : null,
-                    approved_by: user.approved_by || null,
-                    approved_at: user.approved_at || null
+                        : null
                 };
 
                 const { error } = await getClient()
@@ -935,7 +928,7 @@
 
         notify(
             options.approvalMode
-            ? 'Usuario aprobado y activado.'
+            ? 'Usuario aprobado, confirmado y activado.'
             : user
                 ? 'Usuario actualizado.'
                 : 'Usuario creado.'
@@ -1145,23 +1138,16 @@
 
     async function init() {
     const module = $('#moduloUsuarios');
+
     if (!module) return;
 
-    // Espera activa hasta que cloud.js cargue completamente el perfil.
-    let ready = false;
-    for (let attempt = 0; attempt < 50; attempt++) {
-        const profile = currentProfile();
-        if (profile && profile.id && profile.role) {
-            ready = true;
-            break;
-        }
-        await new Promise(r=>setTimeout(r,200));
-    }
+    // Esperar a que cloud.js termine de cargar el perfil.
+    for (let attempt = 0; attempt < 20; attempt++) {
+        if (currentProfile()?.role) break;
 
-    if (!ready) {
-        // Reintenta automáticamente sin mostrar acceso restringido.
-        setTimeout(() => init().catch(handleError), 1000);
-        return;
+        await new Promise(resolve =>
+        setTimeout(resolve, 300)
+        );
     }
 
     if (!isArchitect()) {
