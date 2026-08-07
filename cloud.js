@@ -469,8 +469,8 @@
 
       registerForm.reset();
       successNode.textContent =
-        'Solicitud enviada. Tu cuenta permanecerá pendiente hasta que el Arquitecto del Sistema ' +
-        'asigne tu rol y alcance. Al aprobarla, PARKS ONE habilitará también tu acceso de autenticación.';
+        'Solicitud enviada. Revisa tu correo si Supabase solicita confirmación. ' +
+        'El Arquitecto del Sistema deberá aprobar y asignar tu acceso.';
       button.disabled = false;
       button.textContent = 'Enviar solicitud';
     });
@@ -535,20 +535,71 @@
   }
 
   async function accessibleParkIds() {
-    /*
-     * PARKS ONE V8:
-     * Todos los usuarios activos tienen lectura documental nacional.
-     *
-     * La región y la división permanecen como datos organizacionales y se
-     * utilizarán para controlar acciones de aprobación, no para ocultar
-     * parques ni documentos.
-     */
     if (!session) return [];
 
-    const permissions = window.ParksPermissions;
-    if (permissions && !permissions.can('viewAll')) return [];
+    const role = window.ParksPermissions?.realRole?.() ||
+      String(profile?.role || 'consulta').toLowerCase();
 
-    return null;
+    // Lectura nacional: Divisional, Dirección, CEO y Arquitecto.
+    if (['arquitecto','divisional','direccion','director','ceo','consulta'].includes(role)) {
+      return null;
+    }
+
+    // Administrador: sólo su parque asignado.
+    if (role === 'administrador') {
+      if (scope.scope_type === 'parque' && scope.park_id) return [scope.park_id];
+
+      // Compatibilidad temporal con cuentas antiguas.
+      if (scope.scope_type === 'region' && scope.region_id) {
+        const { data, error } = await sb
+          .from('parks')
+          .select('id')
+          .eq('region_id', scope.region_id)
+          .eq('status', 'activo');
+        if (error) throw error;
+        return (data || []).map(x => x.id);
+      }
+
+      return [];
+    }
+
+    // Regional: toda su división, para poder cubrir a otros Regionales.
+    if (role === 'regional') {
+      if (scope.scope_type === 'division' && scope.division_id) {
+        const { data: regions, error: regionError } = await sb
+          .from('regions')
+          .select('id')
+          .eq('division_id', scope.division_id)
+          .eq('is_active', true);
+        if (regionError) throw regionError;
+
+        const regionIds = (regions || []).map(x => x.id);
+        if (!regionIds.length) return [];
+
+        const { data: parks, error: parkError } = await sb
+          .from('parks')
+          .select('id')
+          .in('region_id', regionIds)
+          .eq('status', 'activo');
+        if (parkError) throw parkError;
+        return (parks || []).map(x => x.id);
+      }
+
+      // Compatibilidad temporal si aún existe un Regional con alcance Región.
+      if (scope.scope_type === 'region' && scope.region_id) {
+        const { data, error } = await sb
+          .from('parks')
+          .select('id')
+          .eq('region_id', scope.region_id)
+          .eq('status', 'activo');
+        if (error) throw error;
+        return (data || []).map(x => x.id);
+      }
+
+      return [];
+    }
+
+    return [];
   }
 
   async function mergeCloudData() {

@@ -490,6 +490,21 @@
         return '';
     }
 
+    function requiredScopeForRole(role) {
+        const clean = String(role || '').trim().toLowerCase();
+
+        if (clean === 'regional') return 'division';
+        if (clean === 'administrador') return 'parque';
+
+        if ([
+            'arquitecto','architect',
+            'ceo','director','direccion',
+            'divisional','consulta'
+        ].includes(clean)) return 'nacional';
+
+        return 'nacional';
+    }
+
     function userModal(user = null, options = {}) {
         const currentScope = user
         ? state.scopes.find(
@@ -497,18 +512,8 @@
             )
         : null;
 
-        const nationalRoles = [
-        'arquitecto',
-        'ceo',
-        'director',
-        'direccion',
-        'consulta'
-        ];
-
-        const defaultScope =
-        nationalRoles.includes(user?.role)
-            ? 'nacional'
-            : 'region';
+        const effectiveRole = user?.role || 'administrador';
+        const defaultScope = requiredScopeForRole(effectiveRole);
 
         const scopeType =
         currentScope?.scope_type || defaultScope;
@@ -580,7 +585,7 @@
 
             <label>
                 Rol
-                <select name="role" required>
+                <select name="role" id="userRoleSelect" required>
                 ${
                     [
                     'arquitecto',
@@ -593,7 +598,7 @@
                     ].map(role => `
                     <option
                         value="${role}"
-                        ${user?.role === role ? 'selected' : ''}
+                        ${(user?.role || 'administrador') === role ? 'selected' : ''}
                     >
                         ${roleLabel(role)}
                     </option>
@@ -710,6 +715,7 @@
 
         window.openModal(title, html);
 
+        const roleSelect = $('#userRoleSelect');
         const typeSelect = $('#userScopeType');
         const target = $('#userScopeTarget');
         const label = $('#userScopeTargetLabel');
@@ -726,12 +732,33 @@
             scopeOptions(type, preserveId);
         }
 
-        typeSelect.addEventListener(
+        function enforceRoleScope(preserveId = '') {
+            const required = requiredScopeForRole(roleSelect.value);
+            typeSelect.value = required;
+            typeSelect.title =
+                roleSelect.value === 'regional'
+                    ? 'El Regional opera toda su división.'
+                    : roleSelect.value === 'administrador'
+                        ? 'El Administrador opera el parque asignado.'
+                        : 'Este rol utiliza alcance nacional.';
+            refreshTarget(preserveId);
+        }
+
+        roleSelect.addEventListener(
         'change',
-        () => refreshTarget()
+        () => enforceRoleScope()
         );
 
-        refreshTarget(scopeId);
+        typeSelect.addEventListener(
+        'change',
+        () => {
+            const required = requiredScopeForRole(roleSelect.value);
+            if (typeSelect.value !== required) typeSelect.value = required;
+            refreshTarget();
+        }
+        );
+
+        enforceRoleScope(scopeId);
 
         $('#userAdminForm').addEventListener(
         'submit',
@@ -776,6 +803,16 @@
             scope_id:
             form.get('scope_id') || null
         };
+
+        const requiredScope = requiredScopeForRole(payload.role);
+        if (payload.scope_type !== requiredScope) {
+            throw new Error(
+                `El rol ${roleLabel(payload.role)} requiere alcance ${requiredScope}.`
+            );
+        }
+        if (requiredScope !== 'nacional' && !payload.scope_id) {
+            throw new Error('Selecciona el alcance organizacional del usuario.');
+        }
 
         if (!user) {
             payload.password =
@@ -858,77 +895,40 @@
                 );
             }
 
-            /*
-             * Un usuario activo debe quedar sincronizado en dos capas:
-             * 1) Supabase Auth (correo confirmado)
-             * 2) PARKS ONE / profiles + user_scopes
-             *
-             * La Edge Function usa la Service Role de forma segura y evita el
-             * estado inconsistente "Activo" en PARKS ONE pero "Email not confirmed"
-             * en Supabase Auth. También permite corregir usuarios ya aprobados:
-             * basta abrir Editar y Guardar nuevamente mientras estén Activos.
-             */
-            if (payload.status === 'activo') {
-                const { data, error } = await getClient().functions.invoke(
-                    'admin-users',
-                    {
-                        body: {
-                            action: 'approve_user',
-                            user_id: user.id,
-                            full_name: payload.full_name,
-                            email: payload.email || user.email,
-                            role: payload.role,
-                            scope_type: payload.scope_type,
-                            scope_id: payload.scope_id,
-                            mark_approval: approvalMode
-                        }
-                    }
-                );
+            const updates = {
+            full_name: payload.full_name,
+            role: payload.role,
+            status: payload.status,
+            is_active: payload.is_active,
 
-                if (error) {
-                    let message = error.message || 'No fue posible sincronizar el usuario con Supabase Auth.';
-                    try {
-                        if (error.context && typeof error.context.json === 'function') {
-                            const functionError = await error.context.json();
-                            message = functionError?.error?.message ||
-                                functionError?.error ||
-                                functionError?.message ||
-                                message;
-                        }
-                    } catch (_) {}
-                    throw new Error(message);
-                }
+            suspended_at:
+                payload.status === 'suspendido'
+                ? new Date().toISOString()
+                : null,
 
-                if (data?.error) {
-                    throw new Error(data.error?.message || data.error);
-                }
-            } else {
-                const updates = {
-                    full_name: payload.full_name,
-                    role: payload.role,
-                    status: payload.status,
-                    is_active: payload.is_active,
-                    suspended_at:
-                        payload.status === 'suspendido'
-                        ? new Date().toISOString()
-                        : null,
-                    approved_by: user.approved_by || null,
-                    approved_at: user.approved_at || null
-                };
+            approved_by:
+                approvalMode
+                    ? current?.id || null
+                    : user.approved_by || null,
 
-                const { error } = await getClient()
-                    .from('profiles')
-                    .update(updates)
-                    .eq('id', user.id);
+            approved_at:
+                approvalMode
+                    ? new Date().toISOString()
+                    : user.approved_at || null
+            };
 
-                if (error) throw error;
+            const { error } = await getClient()
+            .from('profiles')
+            .update(updates)
+            .eq('id', user.id);
 
-                await replaceScope(
-                    user.id,
-                    payload.scope_type,
-                    payload.scope_id
-                );
-            }
+            if (error) throw error;
+
+            await replaceScope(
+            user.id,
+            payload.scope_type,
+            payload.scope_id
+            );
         }
 
         window.closeModal();
