@@ -111,10 +111,12 @@
     const regionWorkbook=new Map();
 
     matrix.slice(2).forEach((row,rowIndex)=>{
-      const region=String(row[regionCol]||'').trim();
+      let region=String(row[regionCol]||'').trim();
+      if(['T-MEX','TEMEX','TMEX'].includes(norm(region)))region='T-MEX';
       const administrator=String(row[adminCol]||'').trim();
       const park=String(row[parkCol]||'').trim();
-      if(!administrator||!region)return;
+      if(!administrator||!region||!park)return;
+      if(norm(region)==='REGION'||norm(administrator).startsWith('TOP ')||norm(administrator).startsWith('SIN TOP'))return;
 
       const key=`${norm(region)}|${norm(administrator)}`;
       let group=groups.get(key);
@@ -311,39 +313,53 @@
     return months[0]||null;
   }
 
+  function canonicalRegion(value){
+    const raw=String(value||'').trim();
+    const key=raw.toUpperCase().replace(/[.\s_]/g,'-').replace(/-+/g,'-');
+    if(['T-MEX','T-EMEX','TMEX','TEMEX'].includes(key)||['TMEX','TEMEX'].includes(key.replace(/-/g,'')))return 'T-MEX';
+    return raw;
+  }
+
   function normalizedAdminsForPeriod(month,year){
     const monthIndex=MONTHS.indexOf(month);
     const expected=expectedPerAdministrator(year,monthIndex);
-    return (global.TOP5_DATA?.admins||[])
+    const seen=new Map();
+    (global.TOP5_DATA?.admins||[])
       .filter(x=>x.month===month&&Number(x.year||year)===year)
-      .map(x=>{
+      .forEach(x=>{
+        const region=canonicalRegion(x.region);
+        const key=region+'|'+String(x.administrator||'').trim().toUpperCase();
         const records=(Number(x.matutino)||0)+(Number(x.vespertino)||0);
-        return {
-          ...x,
-          records,
-          expected,
-          compliance:expected>0?Math.min(records/expected,1):0
-        };
+        const row={...x,region,records,expected,compliance:expected>0?Math.min(records/expected,1):0};
+        const prior=seen.get(key);
+        if(!prior||row.records>prior.records)seen.set(key,row);
       });
+    return [...seen.values()];
   }
 
   function regionSummaryFromAdmins(month,year){
     const admins=normalizedAdminsForPeriod(month,year);
+    const official=global.TOP5_DATA?.officialRegions?.[month]||null;
+    if(official){
+      return Object.entries(official).map(([region,compliance])=>({
+        month,year,region:canonicalRegion(region),compliance:Number(compliance)||0,
+        administrators:admins.filter(x=>x.region===canonicalRegion(region)).length
+      }));
+    }
     const regions=[...new Set(admins.map(x=>x.region).filter(Boolean))];
     return regions.map(region=>{
       const rows=admins.filter(x=>x.region===region);
-      // El indicador ejecutivo se consolida por Administrador.
-      const compliance=rows.length
-        ? rows.reduce((sum,x)=>sum+(Number(x.compliance)||0),0)/rows.length
-        : 0;
+      const compliance=rows.length?rows.reduce((sum,x)=>sum+(Number(x.compliance)||0),0)/rows.length:0;
       return {month,year,region,compliance,administrators:rows.length};
     });
   }
 
   function reportData(month){
     const data=global.TOP5_DATA||{months:[],admins:[],regions:[]};
-    const current=data.months.find(x=>x.month===month);
-    if(!current)return null;
+    const currentRaw=data.months.find(x=>x.month===month);
+    if(!currentRaw)return null;
+    const officialMonth=data.officialMonths?.[month];
+    const current=officialMonth?{...currentRaw,compliance:Number(officialMonth.compliance)||0}:currentRaw;
     const year=Number(current.year||2026);
     const monthIndex=MONTHS.indexOf(month);
     const prev=data.months

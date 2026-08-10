@@ -177,7 +177,7 @@
     if(match)return `R${match[1]}`;
     const compact=s.match(/\bR\s*(\d{1,2})\b/);
     if(compact)return `R${compact[1]}`;
-    if(s.includes('T MEX')||s.includes('TMEX')||s.includes('T EMEX'))return 'T-MEX';
+    if(s.includes('T MEX')||s.includes('TMEX')||s.includes('T-MEX'))return 'T-MEX';
     if(s.includes('BALBROS'))return 'GRUPO BALBROS';
     return String(value||'').trim();
   }

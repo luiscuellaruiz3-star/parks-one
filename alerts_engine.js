@@ -248,7 +248,7 @@
           alerts.push(alertObject({
             key:stableKey(['annual',year,row.park,key]),
             type:'annual_missing',
-            severity:'high',
+            severity:'medium',
             park:park.park,
             region:park.region||row.region,
             division:park.division||park.division_name||'',
@@ -279,7 +279,7 @@
             alerts.push(alertObject({
               key:stableKey(['reported-month-expiry',year,row.park,'proteccion civil',month]),
               type:'expiry_upcoming',
-              severity:'high',
+              severity:dayDiff<=30?'high':'medium',
               park:park.park,
               region:park.region||row.region,
               division:park.division||park.division_name||'',
@@ -401,7 +401,7 @@
         alerts.push(alertObject({
           key:stableKey(['returned',request.id||request.park,request.document,request.filename]),
           type:'document_returned',
-          severity:'critical',
+          severity:'high',
           park:request.park,
           region:request.region||'',
           administrator:request.uploadedBy||'',
