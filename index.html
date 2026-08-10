@@ -4020,12 +4020,62 @@ function openTop23Kpi(type){
  const rows=top23RequirementRows();
 
  if(type==='compliance'){
+   // El KPI conserva exactamente el cálculo oficial del Top 23.
    const integrated=rows.reduce((s,r)=>s+r.ok,0);
    const evaluated=rows.reduce((s,r)=>s+r.evaluated,0);
+
+   // Para el desglose ejecutivo, consolidamos variantes internas como
+   // "clientes" dentro del requisito principal y contamos cada parque una sola vez.
+   const canonicalRequirementName=name=>String(name||'')
+     .replace(/\s+clientes\s*$/i,'')
+     .replace(/\s+/g,' ')
+     .trim();
+
+   const consolidatedMap=new Map();
+   rows.forEach(r=>{
+     const name=canonicalRequirementName(r.name);
+     if(!consolidatedMap.has(name))consolidatedMap.set(name,{name,parks:new Map()});
+     const target=consolidatedMap.get(name);
+     (r.parks||[]).forEach(item=>{
+       const parkName=String(item?.park?.park||'').trim();
+       if(!parkName)return;
+       const current=target.parks.get(parkName)||[];
+       current.push(item.status);
+       target.parks.set(parkName,current);
+     });
+   });
+
+   const statusPriority=status=>status==='✅'?4:status==='❌'?3:status==='Por validar'?2:status==='N/A'?1:0;
+   const displayRows=[...consolidatedMap.values()].map(group=>{
+     let ok=0,no=0,na=0,val=0;
+     group.parks.forEach(statuses=>{
+       const clean=(statuses||[]).filter(Boolean);
+       let status='Por validar';
+       if(clean.includes('✅'))status='✅';
+       else if(clean.includes('❌'))status='❌';
+       else if(clean.length&&clean.every(x=>x==='N/A'))status='N/A';
+       else if(clean.includes('Por validar'))status='Por validar';
+       else if(clean.length)status=[...clean].sort((a,b)=>statusPriority(b)-statusPriority(a))[0];
+       if(status==='✅')ok++;
+       else if(status==='❌')no++;
+       else if(status==='N/A')na++;
+       else val++;
+     });
+     const applicable=ok+no+val;
+     return {name:group.name,ok,no,na,val,evaluated:applicable,compliance:ok/Math.max(1,applicable)};
+   });
+
+   const reqNumber=name=>{
+     const match=String(name||'').match(/^\s*(\d+)/);
+     return match?Number(match[1]):999;
+   };
+   displayRows.sort((a,b)=>reqNumber(a.name)-reqNumber(b.name)||a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
+
    return openModal('Cumplimiento documental',`
      <p><b>${pct(integrated/Math.max(1,evaluated),2)}</b> de cumplimiento dentro del alcance seleccionado. <span class="meta">Fórmula: Integrados ÷ Parques aplicables.</span></p>
+     <p class="meta" style="margin-top:-4px">Desglose ordenado por número de requisito. Variantes internas como "clientes" se consolidan en el requisito principal para evitar duplicidades visuales.</p>
      <div class="tablewrap"><table><thead><tr><th>Requisito</th><th>Integrados</th><th>Parques aplicables</th><th>Cumplimiento</th></tr></thead><tbody>
-       ${[...rows].sort((a,b)=>(a.compliance-b.compliance)||a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'})).map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.ok}</td><td>${r.evaluated}</td><td>${pct(r.compliance,1)}</td></tr>`).join('')}
+       ${displayRows.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.ok}</td><td>${r.evaluated}</td><td>${pct(r.compliance,1)}</td></tr>`).join('')}
      </tbody></table></div>`);
  }
 
