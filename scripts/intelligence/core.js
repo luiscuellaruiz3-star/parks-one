@@ -42,32 +42,51 @@
     return normalize(division);
   }
 
+  function currentPark() {
+    const scope = getScope();
+    return normalize(scope.park_code || scope.park_name || scope.park_id || '');
+  }
+
   function scopeInfo() {
     const role = getRole();
     const division = currentDivision();
-    if (['arquitecto', 'divisional', 'direccion', 'director', 'ceo'].includes(role)) {
-      return { level: 'national', label: 'Consulta nacional', division: '' };
+    const park = currentPark();
+    if (['arquitecto', 'divisional', 'direccion', 'director', 'ceo', 'consulta'].includes(role)) {
+      return { level: 'national', label: 'Consulta nacional', division: '', park: '' };
     }
-    if (['administrador', 'regional'].includes(role)) {
+    if (role === 'regional') {
       return {
         level: 'division',
-        label: division
-          ? `Consulta limitada a tu división: ${division.toUpperCase()}`
-          : 'Tu perfil requiere una división asignada',
-        division
+        label: division ? `Consulta limitada a tu división: ${division.toUpperCase()}` : 'Tu perfil requiere una división asignada',
+        division, park: ''
       };
     }
-    return { level: 'read', label: 'Consulta de información autorizada', division };
+    if (role === 'administrador') {
+      return {
+        level: 'park',
+        label: park ? `Consulta limitada a tu parque: ${park.toUpperCase()}` : 'Tu perfil requiere un parque asignado',
+        division, park
+      };
+    }
+    return { level: 'read', label: 'Consulta de información autorizada', division, park };
   }
 
   function visibleParks() {
     const parks = Array.isArray(dataSource().parks) ? dataSource().parks.filter(Boolean) : [];
     const scope = scopeInfo();
-    if (scope.level !== 'division') return parks;
-    if (!scope.division) return [];
-    return parks.filter(park =>
-      normalize(park.division || park.division_name) === scope.division
-    );
+    if (scope.level === 'national' || scope.level === 'read') return parks;
+    if (scope.level === 'division') {
+      if (!scope.division) return [];
+      return parks.filter(park => normalize(park.division || park.division_name) === scope.division);
+    }
+    if (scope.level === 'park') {
+      if (!scope.park) return [];
+      return parks.filter(park => {
+        const values=[park.park, park.code, park.id].map(normalize).filter(Boolean);
+        return values.includes(scope.park);
+      });
+    }
+    return [];
   }
 
   function visibleFiles() {
@@ -149,8 +168,9 @@
   function visibleAlerts() {
     const parkNames = new Set(visibleParks().map(park => normalize(park.park)));
     const source = global.D || global.SIGOP_DATA || {};
+    const level = scopeInfo().level;
     return (source.alerts || []).filter(alert =>
-      scopeInfo().level !== 'division' || parkNames.has(normalize(alert.park))
+      ['national','read'].includes(level) || parkNames.has(normalize(alert.park))
     );
   }
 
@@ -178,17 +198,18 @@
     return (top5Data().admins || []).filter(row => {
       if (!monthMatches(row.month, month)) return false;
       if (!regionMatches(row.region, region)) return false;
-      if (scope.level === 'division') {
-        if (!division) return false;
-        const rowDivision = normalize(row.division || row.division_name);
-        if (rowDivision && rowDivision !== division) return false;
-        if (!rowDivision) {
-          const allowedParks = new Set(visibleParks().map(p => normalize(p.park)));
-          const rowParks = Array.isArray(row.parks)
-            ? row.parks
-            : String(row.parks || '').split(',').map(item => item.trim()).filter(Boolean);
-          return rowParks.some(p => allowedParks.has(normalize(p)));
+      if (['division','park'].includes(scope.level)) {
+        const allowedParks = new Set(visibleParks().map(p => normalize(p.park)));
+        if (!allowedParks.size) return false;
+        const rowParks = Array.isArray(row.parks)
+          ? row.parks
+          : String(row.parks || '').split(',').map(item => item.trim()).filter(Boolean);
+        if (rowParks.some(p => allowedParks.has(normalize(p)))) return true;
+        if (scope.level === 'division') {
+          const rowDivision = normalize(row.division || row.division_name);
+          return Boolean(rowDivision && rowDivision === division);
         }
+        return false;
       }
       return true;
     });

@@ -25,9 +25,12 @@
         return acc;
       }, { records: 0, expected: 0 });
 
-      const top5 = top5Totals.expected > 0
-        ? top5Totals.records / top5Totals.expected
-        : 0;
+      const scope=C.scopeInfo();
+      const monthRecord=(C.top5Data().months||[]).find(m=>C.normalize(m.month)===C.normalize(parsed.month));
+      const official=Number(monthRecord?.compliance);
+      const top5 = scope.level==='national' && !parsed.region && Number.isFinite(official)
+        ? (official>1?official/100:official)
+        : top5Totals.expected>0 ? top5Totals.records/top5Totals.expected : 0;
 
       const top23 = parks.reduce(
         (sum, park) => sum + (Number(park.compliance) || 0), 0

@@ -19,8 +19,10 @@
     const entities = parsed.entities || {};
 
     if (entities.executive) return 'executive';
-    if (entities.document) return 'documents';
-    if (entities.concept) return 'water';
+    // El dominio explícito manda sobre entidades heredadas. Un concepto hidráulico
+    // (PTAR/pozo/descarga) nunca debe ser desviado por un documento previo.
+    if (parsed.domain === 'water' || entities.concept) return 'water';
+    if (parsed.domain === 'documents' || entities.document) return 'documents';
 
     // Si existe un parque activo y la pregunta no pide explícitamente
     // otro dominio, la Skill de parques puede construir el snapshot.

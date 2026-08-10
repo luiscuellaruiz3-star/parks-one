@@ -8,21 +8,40 @@
     const entities = parsed.entities || {};
     const previousEntities = previous.entities || {};
 
+    // Un dominio explícito nuevo no debe arrastrar filtros semánticos incompatibles
+    // de la consulta anterior. Ej.: Predial -> "¿Qué parques tienen PTAR?".
+    const explicitDomain = parsed.domain && parsed.domain !== 'general';
+    const domainChanged = explicitDomain && previous.domain && parsed.domain !== previous.domain;
+    const keepDocument = !domainChanged && ['documents', 'parks', 'general'].includes(parsed.domain || 'general');
+    const keepConcept = !domainChanged && ['water', 'parks', 'general'].includes(parsed.domain || 'general');
+    const keepRisk = !domainChanged && ['alerts', 'parks', 'general'].includes(parsed.domain || 'general');
+
     const merged = {
       ...parsed,
       region: parsed.region || previous.region || '',
       month: parsed.month || previous.month || '',
-      document: parsed.document || previous.document || '',
-      risk: parsed.risk || previous.risk || '',
+      document: parsed.document || (keepDocument ? previous.document : '') || '',
+      risk: parsed.risk || (keepRisk ? previous.risk : '') || '',
       entities: {
         ...previousEntities,
         ...entities,
         park: entities.park || previousEntities.park || null,
         administrator: entities.administrator || previousEntities.administrator || null,
-        document: entities.document || previousEntities.document || null,
-        concept: entities.concept || previousEntities.concept || null
+        document: entities.document || (keepDocument ? previousEntities.document : null) || null,
+        concept: entities.concept || (keepConcept ? previousEntities.concept : null) || null
       }
     };
+
+    // Una intención hidráulica explícita siempre invalida documentos heredados.
+    if (parsed.domain === 'water' || entities.concept) {
+      merged.document = parsed.document || '';
+      merged.entities.document = entities.document || null;
+    }
+
+    // Una intención documental explícita invalida conceptos hidráulicos heredados.
+    if (parsed.domain === 'documents' || entities.document) {
+      merged.entities.concept = entities.concept || null;
+    }
 
     // Cambiar a una entidad explícita nueva limpia relaciones incompatibles.
     if (entities.park) {
