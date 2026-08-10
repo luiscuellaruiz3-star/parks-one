@@ -4025,7 +4025,7 @@ function openTop23Kpi(type){
    return openModal('Cumplimiento documental',`
      <p><b>${pct(integrated/Math.max(1,evaluated),2)}</b> de cumplimiento dentro del alcance seleccionado. <span class="meta">Fórmula: Integrados ÷ Parques aplicables.</span></p>
      <div class="tablewrap"><table><thead><tr><th>Requisito</th><th>Integrados</th><th>Parques aplicables</th><th>Cumplimiento</th></tr></thead><tbody>
-       ${[...rows].sort((a,b)=>a.compliance-b.compliance).map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.ok}</td><td>${r.evaluated}</td><td>${pct(r.compliance,1)}</td></tr>`).join('')}
+       ${[...rows].sort((a,b)=>(a.compliance-b.compliance)||a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'})).map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${r.ok}</td><td>${r.evaluated}</td><td>${pct(r.compliance,1)}</td></tr>`).join('')}
      </tbody></table></div>`);
  }
 
