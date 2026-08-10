@@ -466,12 +466,15 @@
         selectedId = ''
     ) {
         if (selectedType === 'division') {
+        if (!state.divisions.length) {
+            return '<option value="" selected disabled>No existen divisiones configuradas</option>';
+        }
         return state.divisions.map(item => `
             <option
             value="${item.id}"
             ${item.id === selectedId ? 'selected' : ''}
             >
-            ${esc(item.name)}
+            ${esc(item.code)} · ${esc(item.name)}
             </option>
         `).join('');
         }
@@ -555,16 +558,17 @@
             ? 'Editar usuario'
             : 'Nuevo usuario';
 
-        const divisionOption = state.divisions.length
-        ? `
+        // V7.2.2: el tipo "División" siempre existe porque es obligatorio
+        // para el rol Regional. Si el catálogo aún no está poblado, el formulario
+        // muestra una explicación explícita en vez de quedar visualmente en blanco.
+        const divisionOption = `
             <option
             value="division"
             ${scopeType === 'division' ? 'selected' : ''}
             >
             División
             </option>
-        `
-        : '';
+        `;
 
         const html = `
         <form id="userAdminForm">
@@ -852,6 +856,9 @@
         };
 
         const requiredScope = requiredScopeForRole(payload.role);
+        if (requiredScope === 'division' && !state.divisions.length) {
+            throw new Error('No existen divisiones configuradas. Ve a Configuración Maestra para cargar el catálogo de divisiones.');
+        }
         if (payload.scope_type !== requiredScope) {
             throw new Error(
                 `El rol ${roleLabel(payload.role)} requiere alcance ${requiredScope}.`
