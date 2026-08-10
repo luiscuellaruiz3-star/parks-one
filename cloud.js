@@ -428,48 +428,30 @@
       button.disabled = true;
       button.textContent = 'Enviando solicitud…';
 
-      const { data, error } = await sb.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            requested_role: 'consulta',
-            access_status: 'pendiente'
-          }
-        }
+      // V7.2.1: el alta de solicitud no depende del correo de confirmación.
+      // La Edge Function crea la identidad ya confirmada, pero el perfil queda
+      // INACTIVO/PENDIENTE hasta que el Arquitecto lo apruebe en PARKS ONE.
+      const { data, error } = await sb.functions.invoke('request-access', {
+        body: { full_name: name, email, password }
       });
 
-      if (error) {
-        errorNode.textContent = error.message;
+      if (error || data?.error) {
+        let message = data?.error || error?.message || 'No fue posible registrar la solicitud.';
+        try {
+          if (error?.context && typeof error.context.json === 'function') {
+            const detail = await error.context.json();
+            message = detail?.error || detail?.message || message;
+          }
+        } catch (_) {}
+        errorNode.textContent = message;
         button.disabled = false;
         button.textContent = 'Enviar solicitud';
         return;
       }
 
-      /*
-       * En la instalación normal, un trigger de Supabase crea el perfil.
-       * Si la sesión queda abierta por configuración de Auth, se intenta
-       * dejar explícitamente el perfil como pendiente y luego se cierra.
-       */
-      if (data?.user?.id && data?.session) {
-        try {
-          await sb.from('profiles').upsert({
-            id: data.user.id,
-            full_name: name,
-            email,
-            role: 'consulta',
-            is_active: false
-          }, { onConflict: 'id' });
-        } catch (_) {}
-
-        await sb.auth.signOut();
-        session = null;
-      }
-
       registerForm.reset();
       successNode.textContent =
-        'Solicitud enviada. Revisa tu correo si Supabase solicita confirmación. ' +
+        'Solicitud registrada. No necesitas confirmar tu correo. ' +
         'El Arquitecto del Sistema deberá aprobar y asignar tu acceso.';
       button.disabled = false;
       button.textContent = 'Enviar solicitud';

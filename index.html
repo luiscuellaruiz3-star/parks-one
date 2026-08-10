@@ -3648,7 +3648,9 @@ function parkDetail(name){recalculateParkIndicators();
  const p=C.parks.find(x=>x.park===decodeURIComponent(name));if(!p)return;
  p.files=physicalFilesForPark(p,C.files);p.file_count=p.files.length;
  window.activePark=p.park;const deg=Math.max(0,Math.min(360,(Math.min(1,Number(p.compliance)||0))*360));
- const canUpload=['administrator','architect'].includes(currentRole),canApprove=currentRole==='architect';
+ const permissionRole=window.ParksPermissions?.currentRole?.()||currentRole;
+ const uploadAccess=window.ParksPermissions?.uploadDecision?.({role:permissionRole,profile:window.ParksCloud?.profile?.()||{},scope:window.ParksCloud?.accessScope?.()||{},documentDivision:p.division})||{allowed:['administrator','architect'].includes(currentRole)};
+ const canUpload=Boolean(uploadAccess.allowed),canApprove=window.ParksPermissions?.can?.('approve',{role:permissionRole,profile:window.ParksCloud?.profile?.()||{},scope:window.ParksCloud?.accessScope?.()||{},documentDivision:p.division})||currentRole==='architect';
  const pending=getRequests().filter(x=>x.park===p.park&&x.status==='En revisión');
  const sts=Object.entries(p.statuses||{});
  const top23Rows=buildTop23Rows(p,sts);
@@ -3691,10 +3693,18 @@ function getRequests(){return JSON.parse(localStorage.getItem('parksOnePending')
 function saveRequests(a){localStorage.setItem('parksOnePending',JSON.stringify(a))}
 function openUpload(parkEnc,docEnc=''){
  const park=decodeURIComponent(parkEnc),p=C.parks.find(x=>x.park===park);if(!p)return;
- if(!['administrator','architect'].includes(currentRole))return toast('La carga está disponible para Administrador y Arquitecto.');
+ const identity=workflowIdentity();
+ const decision=window.ParksPermissions?.uploadDecision?.({
+  role:identity.role,
+  profile:window.ParksCloud?.profile?.()||{},
+  scope:window.ParksCloud?.accessScope?.()||{},
+  documentDivision:p.division
+ })||{allowed:['administrator','architect'].includes(currentRole),publication:'pending'};
+ if(!decision.allowed)return toast(decision.reason||'La carga no está permitida para este alcance.');
  const selected=docEnc?decodeURIComponent(docEnc):'';
  const opts=Object.keys(p.statuses||{}).map(d=>`<option ${d===selected?'selected':''}>${esc(d)}</option>`).join('');
- openModal('Cargar documento',`<div class="flow-note">El documento se guardará como <b>En revisión</b>. No modificará ningún KPI hasta que el Arquitecto lo apruebe.</div><div class="upload-grid"><label>Parque<input id="upPark" value="${esc(park)}" readonly></label><label>Requisito documental<select id="upDoc">${opts}</select></label><label>Año del documento<input id="upYear" type="number" min="1900" max="2100" value="2026"></label><label>Fecha de vencimiento<input id="upExpiry" type="date"></label><label class="full">Archivo<input id="upFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx"></label><label class="full">Observaciones<textarea id="upNotes" rows="3" placeholder="Comentarios para la revisión"></textarea></label><div class="full"><button class="btn primary" onclick="commitUpload()">Enviar a aprobación</button></div></div>`)
+ const direct=decision.publication==='direct';
+ openModal('Cargar documento',`<div class="flow-note">${direct?'El documento se publicará <b>directamente</b> conforme a las facultades de tu rol.':'El documento se guardará como <b>En revisión</b>. No modificará ningún KPI hasta su aprobación.'}</div><div class="upload-grid"><label>Parque<input id="upPark" value="${esc(park)}" readonly></label><label>Requisito documental<select id="upDoc">${opts}</select></label><label>Año del documento<input id="upYear" type="number" min="1900" max="2100" value="2026"></label><label>Fecha de vencimiento<input id="upExpiry" type="date"></label><label class="full">Archivo<input id="upFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx"></label><label class="full">Observaciones<textarea id="upNotes" rows="3" placeholder="Comentarios para la revisión"></textarea></label><div class="full"><button class="btn primary" onclick="commitUpload()">${direct?'Publicar documento':'Enviar a aprobación'}</button></div></div>`)
 }
 function commitUpload(){
  const file=$('#upFile').files[0];if(!file)return toast('Selecciona un archivo.');
