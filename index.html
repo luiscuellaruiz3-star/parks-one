@@ -1342,7 +1342,7 @@ body:not(.architect) #inteligencia{
 
 
 <style>
-/* V7.1.7 · consistencia de indicadores y hover limpio */
+/* V7.1.8 · Top 5 unificado entre Panel Ejecutivo y módulo operativo */
 .kpi::before,.kpi::after,
 #documentos .kpi::before,#documentos .kpi::after,
 #flujo .kpi::before,#flujo .kpi::after,
@@ -1370,7 +1370,7 @@ body:not(.architect) #inteligencia{
   <span class="txt">Usuarios</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.1.7</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.1.8</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -3321,10 +3321,23 @@ function dashboardAnnualRows(type){
 function dashboardTop5Data(){
  const month=$('#top5Month')?.value||T5.months.at(-1)?.month||'Julio';
  const admins=normalizedTop5Admins(month);
- const records=admins.reduce((s,x)=>s+(Number(x.records)||0),0);
- const expected=admins.reduce((s,x)=>s+(Number(x.expected)||0),0);
- const compliance=expected>0?Math.min(records/expected,1):0;
- return {month,admins,records,expected,compliance};
+ const monthRow=T5.months.find(x=>x.month===month)||{};
+ const officialMonth=T5.officialMonths?.[month];
+ const records=Number(monthRow.records)||admins.reduce((s,x)=>s+(Number(x.records)||0),0);
+ const expected=Number(monthRow.expected)||admins.reduce((s,x)=>s+(Number(x.expected)||0),0);
+ const compliance=officialMonth
+   ? Number(officialMonth.compliance)||0
+   : (Number(monthRow.compliance)||0)||(expected>0?Math.min(records/expected,1):0);
+ const officialRegions=T5.officialRegions?.[month]||null;
+ const regions=officialRegions
+   ? Object.entries(officialRegions).map(([region,value])=>({region,compliance:Number(value)||0}))
+   : [...new Set(admins.map(x=>x.region).filter(Boolean))].map(region=>{
+       const rows=admins.filter(x=>x.region===region);
+       const rRecords=rows.reduce((s,x)=>s+(Number(x.records)||0),0);
+       const rExpected=rows.reduce((s,x)=>s+(Number(x.expected)||0),0);
+       return {region,compliance:rExpected>0?Math.min(rRecords/rExpected,1):0};
+     });
+ return {month,admins,records,expected,compliance,regions};
 }
 
 function execMetric(label,value,sub=''){
@@ -3402,9 +3415,9 @@ function kpiDetail(type){
    return openModal('Pendientes documentales',`<div class="exec-modal-dashboard"><div class="exec-metric-grid">${execMetric('Pendientes',fmt(t23.pending),'Parque–requisito pendientes')}${execMetric('Parques con pendientes',fmt(affected),`De ${fmt(t23.parks.length)} evaluados`)}${execMetric('Cumplimiento',pct(t23.compliance,1),'Top 23 nacional')}${execMetric('Mayor rezago',rows[0]?fmt(rows[0].no):'0',rows[0]?.name||'Sin rezago')}</div><div class="exec-visual-grid"><div class="exec-chart-card"><h4>Cumplimiento documental</h4><p>Integrados contra requisitos aplicables evaluados. N/A no penaliza.</p>${execDonut(t23.compliance,'cumplimiento')}</div><div class="exec-chart-card"><h4>5 requisitos con mayor rezago</h4><p>Número de parques donde cada requisito continúa pendiente.</p>${execBars(top)}</div></div><div class="exec-insight">Lectura ejecutiva: cada requisito Top 23 se cuenta una sola vez por parque. Variantes internas como “clientes” se consolidan en su requisito principal y los N/A quedan fuera de los pendientes.</div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal();go('top23')">Abrir Top 23</button></div></div>`);
  }
  if(type==='top5'){
-   const byRegion={};top5.admins.forEach(a=>{const k=a.region||'Sin región';const x=byRegion[k]||(byRegion[k]={records:0,expected:0});x.records+=Number(a.records)||0;x.expected+=Number(a.expected)||0});
-   const reg=Object.entries(byRegion).map(([label,x])=>({label,value:x.records/Math.max(1,x.expected)})).sort((a,b)=>b.value-a.value);
-   return openModal('Top 5 operativo',`<div class="exec-modal-dashboard"><div class="exec-metric-grid">${execMetric('Cumplimiento',pct(top5.compliance,2),top5.month)}${execMetric('Registros',fmt(top5.records),'Recibidos')}${execMetric('Meta',fmt(top5.expected),'Esperados')}${execMetric('Administradores',fmt(top5.admins.length),'Evaluados')}</div><div class="exec-visual-grid"><div class="exec-chart-card"><h4>Cierre del periodo</h4><p>Registros recibidos contra la meta operativa.</p>${execDonut(top5.compliance,'cumplimiento')}</div><div class="exec-chart-card"><h4>Cumplimiento por región</h4><p>Comparativo consolidado del periodo seleccionado.</p>${execBars(reg.slice(0,8),v=>pct(v,0))}</div></div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal();go('top5')">Abrir Top 5</button></div></div>`);
+   const reg=(top5.regions||[]).map(x=>({label:x.region,value:Number(x.compliance)||0})).sort((a,b)=>b.value-a.value);
+   const capture=top5.expected>0?Math.min(top5.records/top5.expected,1):0;
+   return openModal('Top 5 operativo',`<div class="exec-modal-dashboard"><div class="exec-metric-grid">${execMetric('Cumplimiento',pct(top5.compliance,2),`${top5.month} · cierre consolidado`)}${execMetric('Registros',fmt(top5.records),'Registros consolidados')}${execMetric('Meta',fmt(top5.expected),'Registros esperados')}${execMetric('Administradores',fmt(top5.admins.length),'Sin duplicar multiparque')}</div><div class="exec-visual-grid"><div class="exec-chart-card"><h4>Cierre del periodo</h4><p>Mismo indicador oficial mostrado en el módulo Top 5 operativo.</p>${execDonut(top5.compliance,'cumplimiento')}</div><div class="exec-chart-card"><h4>Cumplimiento por región</h4><p>Comparativo oficial del periodo seleccionado.</p>${execBars(reg.slice(0,8),v=>pct(v,0))}</div></div><div class="exec-insight">Trazabilidad: ${fmt(top5.records)} de ${fmt(top5.expected)} registros consolidados (${pct(capture,2)} de cobertura de registros). El KPI de cumplimiento utiliza el cierre oficial del mismo módulo Top 5.</div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal();go('top5')">Abrir Top 5</button></div></div>`);
  }
  if(type==='docs'){
    const files=C.files||[];const parks=new Set(files.map(f=>f.park).filter(Boolean));const years=new Set(files.map(f=>f.year||f.document_year).filter(Boolean));const pdf=files.filter(f=>/\.pdf$/i.test(f.filename||f.file_name||f.name||'')).length;const grouped={};files.forEach(f=>{const k=f.document_type||f.folder||'Sin clasificar';grouped[k]=(grouped[k]||0)+1});const sorted=Object.entries(grouped).sort((a,b)=>b[1]-a[1]);const shown=sorted.slice(0,5);const others=sorted.slice(5).reduce((s,x)=>s+x[1],0);const bars=shown.map(([label,value])=>({label,value}));if(others)bars.push({label:'Otros',value:others});const coverage=parks.size/Math.max(1,t23.parks.length);
@@ -3434,7 +3447,7 @@ function renderDashboard(){
  const k=[
   ['cum','Cumplimiento documental',pct(t23.compliance,2),`${fmt(t23.integrated)} integrados de ${fmt(t23.evaluated)} aplicables`,'good','◉'],
   ['pend','Pendientes documentales',fmt(t23.pending),'Obligaciones aplicables sin evidencia integrada','danger','!'],
-  ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · ${fmt(top5.records)} de ${fmt(top5.expected)} registros`,'info','↗'],
+  ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · cierre consolidado por Administrador`,'info','↗'],
   ['docs','Documentos cargados',fmt(C.files.length),`${fmt(new Set(C.files.map(f=>f.park).filter(Boolean)).size)} parques con evidencia`,'good','▤'],
   ['alerts','Alertas críticas',fmt(alerts.critical),'Centro de alertas · atención prioritaria','warn','●'],
   ['critical','Parques con rezago crítico',fmt(critical),'15+ pendientes documentales aplicables','danger','⚠']
