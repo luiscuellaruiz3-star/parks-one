@@ -1351,7 +1351,7 @@ body:not(.architect) #inteligencia{
 .architect .kpi.editable:hover{outline:none!important;outline-offset:0!important}
 .kpi:hover,.top5-kpi-click:hover,.top23-kpi-btn:hover,.alerts-kpi-btn:hover,.water-kpi-btn:hover,.workflow-kpi-btn:hover,.calendar-kpi-btn:hover{transform:translateY(-3px)!important}
 </style>
-</head>
+<link rel="stylesheet" href="components/configuracion-maestra.css?v=7.2.0"></head>
 <body>
 <div id="splash" class="splash"><div class="splash-box"><img class="splash-logo" src="assets/parks_logo.png" alt="Parks Industrial"><h1>Parks ONE</h1><p>Plataforma Integral de Operaciones</p><div class="loader-track"><div id="loaderFill" class="loader-fill"></div></div><div id="loaderText" class="loader-text">Preparando información nacional… 0%</div></div></div><div class="app"><aside class="side"><div class="brand"><img src="assets/parks_logo.png"><div><b>Parks ONE</b><small>Plataforma Integral de Operaciones</small></div></div><nav class="nav" id="nav">
 <button class="active" data-page="inicio" data-module="inicio"><span class="ic">▦</span><span class="txt">Panel ejecutivo</span></button>
@@ -1369,8 +1369,12 @@ body:not(.architect) #inteligencia{
   <span class="ic">👥</span>
   <span class="txt">Usuarios</span>
 </button>
+<button data-page="configuracionMaestra" data-module="configuracionMaestra">
+  <span class="ic">⚙</span>
+  <span class="txt">Configuración maestra</span>
+</button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.1.8</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.2.0</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1905,6 +1909,22 @@ body:not(.architect) #inteligencia{
       </tbody>
     </table>
   </div>
+</section>
+<section id="configuracionMaestra" class="page master-module">
+  <div class="headline">
+    <div><h1>Configuración maestra</h1><p>Catálogo vivo de divisiones, regiones, parques y responsables. Cada movimiento conserva historial.</p></div>
+    <div class="actions"><button class="btn secondary" id="masterRefresh">Actualizar</button><button class="btn primary" id="masterNewPark">+ Nuevo parque</button></div>
+  </div>
+  <div id="masterScopeNotice" class="master-notice">Solo el Arquitecto del Sistema puede modificar la estructura operativa.</div>
+  <div id="masterKpis" class="master-kpis"></div>
+  <div class="master-tabs">
+    <button class="active" data-master-tab="parks">Parques</button>
+    <button data-master-tab="regions">Regiones</button>
+    <button data-master-tab="divisions">Divisiones</button>
+    <button data-master-tab="assignments">Asignaciones</button>
+    <button data-master-tab="history">Historial</button>
+  </div>
+  <div id="masterView" class="card section"></div>
 </section>
 <section id="parkdetail" class="page park-page"><div id="parkPageBody"></div></section>
 </div></main></div>
@@ -5214,7 +5234,8 @@ async function boot(){
 boot();
 </script>
 <script src="scripts/auth.js?v=7.1.2"></script>
-<script src="scripts/usuarios.js?v=7.1.2"></script>
+<script src="scripts/usuarios.js?v=7.2.0"></script>
+<script src="scripts/configuracion-maestra.js?v=7.2.0"></script>
 
 <script src="scripts/intelligence/parser.js?v=11.0.0"></script>
 <script src="scripts/intelligence/core.js?v=11.0.0"></script>

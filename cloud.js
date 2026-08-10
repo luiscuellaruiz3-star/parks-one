@@ -545,17 +545,28 @@
       return null;
     }
 
-    // Administrador: sólo su parque asignado.
+    // Administrador: toda su región. Sus parques asignados son responsabilidad directa, no un límite de acceso.
     if (role === 'administrador') {
-      if (scope.scope_type === 'parque' && scope.park_id) return [scope.park_id];
+      let regionId = scope.scope_type === 'region' ? scope.region_id : null;
 
-      // Compatibilidad temporal con cuentas antiguas.
-      if (scope.scope_type === 'region' && scope.region_id) {
+      // Compatibilidad con cuentas antiguas configuradas por parque:
+      // inferimos la región del parque y ampliamos automáticamente el alcance.
+      if (!regionId && scope.scope_type === 'parque' && scope.park_id) {
+        const { data: legacyPark, error: legacyError } = await sb
+          .from('parks')
+          .select('region_id')
+          .eq('id', scope.park_id)
+          .maybeSingle();
+        if (legacyError) throw legacyError;
+        regionId = legacyPark?.region_id || null;
+      }
+
+      if (regionId) {
         const { data, error } = await sb
           .from('parks')
           .select('id')
-          .eq('region_id', scope.region_id)
-          .eq('status', 'activo');
+          .eq('region_id', regionId)
+          .in('status', ['activo','construccion','adquirido']);
         if (error) throw error;
         return (data || []).map(x => x.id);
       }
@@ -580,7 +591,7 @@
           .from('parks')
           .select('id')
           .in('region_id', regionIds)
-          .eq('status', 'activo');
+          .in('status', ['activo','construccion','adquirido']);
         if (parkError) throw parkError;
         return (parks || []).map(x => x.id);
       }
@@ -591,7 +602,7 @@
           .from('parks')
           .select('id')
           .eq('region_id', scope.region_id)
-          .eq('status', 'activo');
+          .in('status', ['activo','construccion','adquirido']);
         if (error) throw error;
         return (data || []).map(x => x.id);
       }
@@ -609,7 +620,7 @@
     let parkQuery = sb
       .from('parks')
       .select('id,code,name,commercial_name,administrator_name,region_id,regions(code,name)')
-      .eq('status', 'activo');
+      .in('status', ['activo','construccion','adquirido']);
 
     if (Array.isArray(allowedIds)) {
       if (!allowedIds.length) {
@@ -1240,7 +1251,7 @@
     if (!session) throw new Error('Se requiere una sesión activa.');
     const [regionsRes, parksRes, reqRes] = await Promise.all([
       sb.from('regions').select('id,code,name').eq('is_active', true).order('sort_order'),
-      sb.from('parks').select('id,name,region_id,regions(code,name)').eq('status','activo'),
+      sb.from('parks').select('id,name,region_id,regions(code,name)').in('status',['activo','construccion','adquirido']),
       sb.from('requirements').select('id,requirement_number,code,name').eq('is_active', true).order('sort_order')
     ]);
     if (regionsRes.error) throw regionsRes.error;

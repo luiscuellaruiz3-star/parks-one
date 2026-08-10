@@ -7,6 +7,7 @@
         divisions: [],
         regions: [],
         parks: [],
+        assignments: [],
         client: null
     };
 
@@ -275,7 +276,7 @@
 
         if (!rows.length) return 'Sin alcance asignado';
 
-        return rows.map(scope => {
+        const scopeLabel = rows.map(scope => {
         if (scope.scope_type === 'nacional') {
             return 'Nacional';
         }
@@ -308,6 +309,9 @@
 
         return scope.scope_type || 'Sin alcance';
         }).join(', ');
+        const assigned = state.assignments.filter(item => item.user_id === userId && !item.valid_to);
+        const assignedText = assigned.length ? ` · ${assigned.length} parque${assigned.length === 1 ? '' : 's'} asignado${assigned.length === 1 ? '' : 's'}` : '';
+        return scopeLabel + assignedText;
     }
 
     async function load() {
@@ -320,7 +324,8 @@
         scopesRes,
         regionsRes,
         parksRes,
-        divisionsRes
+        divisionsRes,
+        assignmentsRes
         ] = await Promise.all([
         client
             .from('profiles')
@@ -353,7 +358,12 @@
             .from('divisions')
             .select('id,code,name,is_active')
             .eq('is_active', true)
-            .order('name')
+            .order('name'),
+
+        client
+            .from('park_assignments')
+            .select('id,user_id,park_id,is_primary,valid_from,valid_to')
+            .is('valid_to', null)
         ]);
 
         if (usersRes.error) throw usersRes.error;
@@ -378,6 +388,7 @@
         state.divisions = divisionsRes.error
         ? []
         : divisionsRes.data || [];
+        state.assignments = assignmentsRes?.error ? [] : (assignmentsRes?.data || []);
 
         render();
     }
@@ -494,7 +505,7 @@
         const clean = String(role || '').trim().toLowerCase();
 
         if (clean === 'regional') return 'division';
-        if (clean === 'administrador') return 'parque';
+        if (clean === 'administrador') return 'region';
 
         if ([
             'arquitecto','architect',
@@ -515,14 +526,26 @@
         const effectiveRole = user?.role || 'administrador';
         const defaultScope = requiredScopeForRole(effectiveRole);
 
-        const scopeType =
+        let scopeType =
         currentScope?.scope_type || defaultScope;
 
-        const scopeId =
+        let scopeId =
         currentScope?.division_id ||
         currentScope?.region_id ||
         currentScope?.park_id ||
         '';
+
+        // Compatibilidad V7.2: si un Administrador antiguo estaba limitado a parque,
+        // al editarlo se propone automáticamente la región de ese parque.
+        if (effectiveRole === 'administrador' && currentScope?.scope_type === 'parque' && currentScope?.park_id) {
+            const legacyPark = state.parks.find(item => item.id === currentScope.park_id);
+            scopeType = 'region';
+            scopeId = legacyPark?.region_id || '';
+        }
+
+        const assignedParkIds = user
+        ? state.assignments.filter(item => item.user_id === user.id && !item.valid_to).map(item => item.park_id)
+        : [];
 
         const approvalMode = Boolean(options.approvalMode);
 
@@ -676,13 +699,21 @@
             </label>
 
             <label id="userScopeTargetLabel">
-                Alcance
+                Alcance efectivo
                 <select
                 name="scope_id"
                 id="userScopeTarget"
                 >
                 ${scopeOptions(scopeType, scopeId)}
                 </select>
+            </label>
+
+            <label class="full" id="assignedParksLabel" style="${effectiveRole === 'administrador' ? '' : 'display:none'}">
+                Parques de responsabilidad directa
+                <select name="assigned_parks" id="assignedParks" multiple style="min-height:130px">
+                  ${state.parks.map(item => `<option value="${item.id}" ${assignedParkIds.includes(item.id) ? 'selected' : ''}>${esc(item.commercial_name || item.name)} · ${esc(state.regions.find(r => r.id === item.region_id)?.code || '')}</option>`).join('')}
+                </select>
+                <small style="font-weight:400;color:#6b7e78">Puedes seleccionar uno o varios. Esto no limita su acceso: el Administrador conserva alcance a toda su región.</small>
             </label>
 
             </div>
@@ -730,6 +761,17 @@
 
         target.innerHTML =
             scopeOptions(type, preserveId);
+        const assignedSelect = $('#assignedParks');
+        if (assignedSelect && roleSelect?.value === 'administrador') {
+            const regionId = type === 'region' ? (preserveId || target.value) : '';
+            [...assignedSelect.options].forEach(option => {
+                const park = state.parks.find(item => item.id === option.value);
+                const visible = !regionId || park?.region_id === regionId;
+                option.hidden = !visible;
+                option.disabled = !visible;
+                if (!visible) option.selected = false;
+            });
+        }
         }
 
         function enforceRoleScope(preserveId = '') {
@@ -739,9 +781,11 @@
                 roleSelect.value === 'regional'
                     ? 'El Regional opera toda su división.'
                     : roleSelect.value === 'administrador'
-                        ? 'El Administrador opera el parque asignado.'
+                        ? 'El Administrador opera toda su región; los parques asignados representan su responsabilidad directa.'
                         : 'Este rol utiliza alcance nacional.';
             refreshTarget(preserveId);
+            const assignedLabel = $('#assignedParksLabel');
+            if (assignedLabel) assignedLabel.style.display = roleSelect.value === 'administrador' ? '' : 'none';
         }
 
         roleSelect.addEventListener(
@@ -757,6 +801,7 @@
             refreshTarget();
         }
         );
+        target.addEventListener('change', () => refreshTarget(target.value));
 
         enforceRoleScope(scopeId);
 
@@ -801,7 +846,9 @@
             form.get('scope_type'),
 
             scope_id:
-            form.get('scope_id') || null
+            form.get('scope_id') || null,
+
+            assigned_parks: form.getAll('assigned_parks').map(String)
         };
 
         const requiredScope = requiredScopeForRole(payload.role);
@@ -812,6 +859,15 @@
         }
         if (requiredScope !== 'nacional' && !payload.scope_id) {
             throw new Error('Selecciona el alcance organizacional del usuario.');
+        }
+        if (String(payload.role).toLowerCase() === 'administrador') {
+            const outsideRegion = (payload.assigned_parks || []).filter(id => {
+                const park = state.parks.find(item => item.id === id);
+                return park && park.region_id !== payload.scope_id;
+            });
+            if (outsideRegion.length) {
+                throw new Error('Los parques de responsabilidad directa del Administrador deben pertenecer a su región de alcance.');
+            }
         }
 
         if (!user) {
@@ -859,6 +915,10 @@
         data.error?.message ||
         data.error
     );
+    }
+    const createdUserId = data?.user_id || data?.user?.id || data?.id || data?.profile?.id || null;
+    if (createdUserId && payload.role === 'administrador') {
+        await replaceParkAssignmentsForUser(createdUserId, payload.assigned_parks);
     }
         } else {
             const approvalMode = Boolean(options.approvalMode);
@@ -929,6 +989,8 @@
             payload.scope_type,
             payload.scope_id
             );
+
+            await replaceParkAssignmentsForUser(user.id, payload.role === 'administrador' ? payload.assigned_parks : []);
         }
 
         window.closeModal();
@@ -946,6 +1008,41 @@
         } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Guardar';
+        }
+    }
+
+    async function replaceParkAssignmentsForUser(userId, parkIds = []) {
+        const client = getClient();
+        const now = new Date().toISOString();
+        const desired = new Set((parkIds || []).filter(Boolean));
+
+        const currentRes = await client
+            .from('park_assignments')
+            .select('id,park_id,user_id,valid_to')
+            .eq('user_id', userId)
+            .is('valid_to', null);
+
+        if (currentRes.error) {
+            if (currentRes.error.code === '42P01') return;
+            throw currentRes.error;
+        }
+
+        const current = currentRes.data || [];
+        const currentIds = new Set(current.map(row => row.park_id));
+
+        for (const row of current) {
+            if (!desired.has(row.park_id)) {
+                const result = await client.from('park_assignments').update({ valid_to: now }).eq('id', row.id);
+                if (result.error) throw result.error;
+            }
+        }
+
+        const rows = [...desired].filter(id => !currentIds.has(id)).map(park_id => ({
+            user_id: userId, park_id, valid_from: now, created_by: currentProfile().id || null, change_reason: 'Asignación desde Administración de Usuarios'
+        }));
+        if (rows.length) {
+            const result = await client.from('park_assignments').insert(rows);
+            if (result.error) throw result.error;
         }
     }
 

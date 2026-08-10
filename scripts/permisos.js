@@ -48,7 +48,7 @@
     arquitecto: [
       'inicio','parques','top23','top5','alertas','documentos',
       'importacion','agua','inteligencia','flujo','calendario',
-      'reportes','auditoria','moduloUsuarios'
+      'reportes','auditoria','moduloUsuarios','configuracionMaestra'
     ]
   });
 
@@ -237,6 +237,32 @@
     return Boolean(user && target && user === target);
   }
 
+  function userRegion(context = {}) {
+    const p = context.profile || profile();
+    const s = context.scope || accessScope();
+    return normalize(
+      context.userRegion ||
+      s.region_code ||
+      s.region_name ||
+      s.region_id ||
+      p.region_code ||
+      p.region ||
+      p.region_id ||
+      ''
+    );
+  }
+
+  function sameRegion(context = {}) {
+    const user = userRegion(context);
+    const target = normalize(
+      context.documentRegion ||
+      context.region ||
+      context.parkRegion ||
+      ''
+    );
+    return Boolean(user && target && user === target);
+  }
+
   function userPark(context = {}) {
     const p = context.profile || profile();
     const s = context.scope || accessScope();
@@ -268,6 +294,7 @@
     if (value === true || value === 'national' || value === 'complete') return true;
     if (!value || value === false) return false;
     if (value === 'own-division') return sameDivision(context);
+    if (value === 'own-region') return sameRegion(context);
     if (value === 'own') {
       return Boolean(
         context.userId && context.currentUserId &&
@@ -302,7 +329,10 @@
     if (mode === 'own-followup') {
       const me = profile();
       if (request?.uploadedById && me?.id && request.uploadedById === me.id) return true;
-      return samePark({
+      return sameRegion({
+        ...context,
+        documentRegion: request?.region || request?.parkRegion || request?.regionCode
+      }) || samePark({
         ...context,
         documentPark: request?.park || request?.parkCode || request?.parkId
       });
@@ -411,7 +441,7 @@
   window.ParksPermissions = Object.freeze({
     ROLE_PERMISSIONS, MODULES, normalizeRole, currentRole,
     realRole, isRealArchitect, setSimulatedRole, clearSimulatedRole,
-    permissionsFor, userDivision, sameDivision, userPark, samePark, can, canModule,
+    permissionsFor, userDivision, sameDivision, userRegion, sameRegion, userPark, samePark, can, canModule,
     workflowMode, canSeeWorkflowRequest, canApproveRequest,
     canReturnRequest, uploadDecision, applyModuleVisibility,
     applyReadOnlyInterface, applyInterface
