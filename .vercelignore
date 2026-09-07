@@ -1,0 +1,18 @@
+# PARKS ONE V7.3 - no publicar archivos fuente/privados
+.git
+.git/**
+supabase
+supabase/**
+*.xlsx
+*.xls
+*.csv
+*.zip
+*.bat
+*.md
+LEEME_*.txt
+VALIDACION_*.txt
+index.html.respaldo
+index.html.da*
+hydrica_master_seed.js
+scripts/seed_dataset.mjs
+scripts/upload_repository.mjs
