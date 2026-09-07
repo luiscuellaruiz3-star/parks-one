@@ -71,12 +71,12 @@
     }),
     regional: Object.freeze({
       viewAll: false, download: true, upload: true,
-      directPublish: 'own-division', approve: 'own-division',
-      returnDocument: 'own-division', editMetadata: 'own-division',
-      trash: 'own-division', restore: 'own-division',
+      directPublish: 'own-region', approve: 'own-region',
+      returnDocument: 'own-region', editMetadata: 'own-region',
+      trash: 'own-region', restore: 'own-region',
       permanentDelete: false, manageUsers: false,
-      importNational: false, viewAudit: 'own-division',
-      workflowMode: 'division-approval'
+      importNational: false, viewAudit: 'own-region',
+      workflowMode: 'region-approval'
     }),
     divisional: Object.freeze({
       viewAll: true, download: true, upload: true,
@@ -337,6 +337,12 @@
         documentPark: request?.park || request?.parkCode || request?.parkId
       });
     }
+    if (mode === 'region-followup' || mode === 'region-approval') {
+      return sameRegion({
+        ...context,
+        documentRegion: request?.region || request?.parkRegion || request?.regionCode
+      });
+    }
     if (mode === 'division-followup' || mode === 'division-approval') {
       return sameDivision({
         ...context,
@@ -349,14 +355,16 @@
   function canApproveRequest(request, context = {}) {
     return can('approve', {
       ...context,
-      documentDivision: request?.division || request?.parkDivision
+      documentDivision: request?.division || request?.parkDivision,
+      documentRegion: request?.region || request?.parkRegion || request?.regionCode
     });
   }
 
   function canReturnRequest(request, context = {}) {
     return can('returnDocument', {
       ...context,
-      documentDivision: request?.division || request?.parkDivision
+      documentDivision: request?.division || request?.parkDivision,
+      documentRegion: request?.region || request?.parkRegion || request?.regionCode
     });
   }
 
@@ -367,13 +375,13 @@
         reason:'Este rol no tiene permiso para cargar documentos.' };
     }
     if (role === 'administrador') {
-      return { allowed:true, publication:'pending', approvalScope:'own-division' };
+      return { allowed:true, publication:'pending', approvalScope:'own-region' };
     }
     if (role === 'regional') {
-      return sameDivision(context)
-        ? { allowed:true, publication:'direct', approvalScope:'own-division' }
-        : { allowed:false, publication:'blocked', approvalScope:'own-division',
-            reason:'El Regional solo puede publicar directamente dentro de su división.' };
+      return sameRegion(context)
+        ? { allowed:true, publication:'direct', approvalScope:'own-region' }
+        : { allowed:false, publication:'blocked', approvalScope:'own-region',
+            reason:'El Regional solo puede publicar directamente dentro de su región.' };
     }
     if (role === 'divisional' || role === 'arquitecto') {
       return { allowed:true, publication:'direct', approvalScope:'national' };
