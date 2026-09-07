@@ -507,7 +507,7 @@
     function requiredScopeForRole(role) {
         const clean = String(role || '').trim().toLowerCase();
 
-        if (clean === 'regional') return 'region';
+        if (clean === 'regional') return 'division';
         if (clean === 'administrador') return 'region';
 
         if ([
@@ -558,8 +558,8 @@
             ? 'Editar usuario'
             : 'Nuevo usuario';
 
-        // V7.3: División se conserva como opción de catálogo, pero el rol Regional
-        // queda forzado a su Región. Divisional y Arquitecto mantienen alcance nacional.
+        // V7.3: Regional opera todas las regiones de su División.
+        // Divisional y Arquitecto mantienen alcance nacional para coberturas.
         const divisionOption = `
             <option
             value="division"
@@ -782,7 +782,7 @@
             typeSelect.value = required;
             typeSelect.title =
                 roleSelect.value === 'regional'
-                    ? 'El Regional opera únicamente su región asignada.'
+                    ? 'El Regional opera todas las regiones de su división asignada.'
                     : roleSelect.value === 'administrador'
                         ? 'El Administrador opera toda su región; los parques asignados representan su responsabilidad directa.'
                         : 'Este rol utiliza alcance nacional.';

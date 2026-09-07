@@ -597,17 +597,27 @@
       return [];
     }
 
-    // Regional: exclusivamente su región asignada. Si no existe un alcance
-    // regional verificable, no se concede acceso por defecto (fail closed).
+    // Regional: todas las regiones de su división asignada.
+    // Si no existe una división verificable, no se concede acceso (fail closed).
     if (role === 'regional') {
-      if (scope.scope_type === 'region' && scope.region_id) {
-        const { data, error } = await sb
+      if (scope.scope_type === 'division' && scope.division_id) {
+        const { data: regions, error: regionError } = await sb
+          .from('regions')
+          .select('id')
+          .eq('division_id', scope.division_id)
+          .eq('is_active', true);
+        if (regionError) throw regionError;
+
+        const regionIds = (regions || []).map(x => x.id);
+        if (!regionIds.length) return [];
+
+        const { data: parks, error: parkError } = await sb
           .from('parks')
           .select('id')
-          .eq('region_id', scope.region_id)
+          .in('region_id', regionIds)
           .in('status', ['activo','construccion','adquirido']);
-        if (error) throw error;
-        return (data || []).map(x => x.id);
+        if (parkError) throw parkError;
+        return (parks || []).map(x => x.id);
       }
       return [];
     }

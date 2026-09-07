@@ -71,12 +71,12 @@
     }),
     regional: Object.freeze({
       viewAll: false, download: true, upload: true,
-      directPublish: 'own-region', approve: 'own-region',
-      returnDocument: 'own-region', editMetadata: 'own-region',
-      trash: 'own-region', restore: 'own-region',
+      directPublish: 'own-division', approve: 'own-division',
+      returnDocument: 'own-division', editMetadata: 'own-division',
+      trash: 'own-division', restore: 'own-division',
       permanentDelete: false, manageUsers: false,
-      importNational: false, viewAudit: 'own-region',
-      workflowMode: 'region-approval'
+      importNational: false, viewAudit: 'own-division',
+      workflowMode: 'division-approval'
     }),
     divisional: Object.freeze({
       viewAll: true, download: true, upload: true,
@@ -378,10 +378,10 @@
       return { allowed:true, publication:'pending', approvalScope:'own-region' };
     }
     if (role === 'regional') {
-      return sameRegion(context)
-        ? { allowed:true, publication:'direct', approvalScope:'own-region' }
-        : { allowed:false, publication:'blocked', approvalScope:'own-region',
-            reason:'El Regional solo puede publicar directamente dentro de su región.' };
+      return sameDivision(context)
+        ? { allowed:true, publication:'direct', approvalScope:'own-division' }
+        : { allowed:false, publication:'blocked', approvalScope:'own-division',
+            reason:'El Regional solo puede publicar directamente dentro de su división.' };
     }
     if (role === 'divisional' || role === 'arquitecto') {
       return { allowed:true, publication:'direct', approvalScope:'national' };
