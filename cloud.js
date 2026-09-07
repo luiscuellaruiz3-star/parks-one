@@ -12,6 +12,42 @@
   let profile = { role: 'consulta', full_name: '', email: '' };
   let scope = {};
   const signedUrlCache = new Map();
+  let inactivityTimer = null;
+
+  function rememberPreference() {
+    try { return localStorage.getItem('parksOneRememberSession') !== '0'; }
+    catch (_) { return true; }
+  }
+
+  function createSupabaseClient(remember = rememberPreference()) {
+    const storage = remember ? window.localStorage : window.sessionStorage;
+    return window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage
+      }
+    });
+  }
+
+  function resetInactivityTimer() {
+    if (!session) return;
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    const minutes = Math.max(5, Number(cfg.inactivityMinutes || 30));
+    inactivityTimer = setTimeout(async () => {
+      try { await sb?.auth?.signOut(); } catch (_) {}
+      session = null;
+      location.reload();
+    }, minutes * 60 * 1000);
+  }
+
+  function installInactivityWatch() {
+    ['pointerdown','keydown','touchstart','scroll'].forEach(type => {
+      window.addEventListener(type, resetInactivityTimer, { passive: true });
+    });
+    resetInactivityTimer();
+  }
 
   const roleMap = {
     direccion: 'executive',
@@ -71,9 +107,7 @@
       return { configured: false, authenticated: false };
     }
 
-    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-    });
+    sb = createSupabaseClient();
 
     const { data, error } = await sb.auth.getSession();
     if (error) console.error('No fue posible recuperar la sesión:', error);
@@ -88,6 +122,7 @@
     await loadAccessScope();
     await mergeCloudData();
     applyIdentity();
+    installInactivityWatch();
     document.documentElement.dataset.cloud = 'online';
 
     window.ParksAudit?.log?.('LOGIN', {
@@ -229,7 +264,7 @@
           </label>
 
           <label style="display:flex;align-items:center;gap:8px;color:#49645d;margin:-4px 0 16px">
-            <input id="cloudRemember" type="checkbox" checked>
+            <input id="cloudRemember" type="checkbox">
             Mantener la sesión iniciada
           </label>
 
@@ -359,6 +394,8 @@
       String(location.search || '').includes('type=recovery');
 
     setView(recoveryMode ? 'update-password' : initialView);
+    const rememberBox = overlay.querySelector('#cloudRemember');
+    if (rememberBox) rememberBox.checked = rememberPreference();
 
     overlay.querySelector('#cloudShowRegister').addEventListener('click', () => setView('register'));
     overlay.querySelector('#cloudShowReset').addEventListener('click', () => setView('reset'));
@@ -378,6 +415,10 @@
       const button = overlay.querySelector('#cloudLoginButton');
       button.disabled = true;
       button.textContent = 'Ingresando…';
+
+      const remember = Boolean(overlay.querySelector('#cloudRemember')?.checked);
+      try { localStorage.setItem('parksOneRememberSession', remember ? '1' : '0'); } catch (_) {}
+      sb = createSupabaseClient(remember);
 
       const { data, error } = await sb.auth.signInWithPassword({
         email: overlay.querySelector('#cloudEmail').value.trim(),
@@ -556,29 +597,9 @@
       return [];
     }
 
-    // Regional: toda su división, para poder cubrir a otros Regionales.
+    // Regional: exclusivamente su región asignada. Si no existe un alcance
+    // regional verificable, no se concede acceso por defecto (fail closed).
     if (role === 'regional') {
-      if (scope.scope_type === 'division' && scope.division_id) {
-        const { data: regions, error: regionError } = await sb
-          .from('regions')
-          .select('id')
-          .eq('division_id', scope.division_id)
-          .eq('is_active', true);
-        if (regionError) throw regionError;
-
-        const regionIds = (regions || []).map(x => x.id);
-        if (!regionIds.length) return [];
-
-        const { data: parks, error: parkError } = await sb
-          .from('parks')
-          .select('id')
-          .in('region_id', regionIds)
-          .in('status', ['activo','construccion','adquirido']);
-        if (parkError) throw parkError;
-        return (parks || []).map(x => x.id);
-      }
-
-      // Compatibilidad temporal si aún existe un Regional con alcance Región.
       if (scope.scope_type === 'region' && scope.region_id) {
         const { data, error } = await sb
           .from('parks')
@@ -588,7 +609,6 @@
         if (error) throw error;
         return (data || []).map(x => x.id);
       }
-
       return [];
     }
 
@@ -1127,7 +1147,7 @@
   }
 
   function can(action, context = {}) {
-    if (!window.ParksPermissions) return true;
+    if (!window.ParksPermissions) return false;
     return window.ParksPermissions.can(action, {
       ...context,
       role: permissionRole(),
@@ -1138,9 +1158,10 @@
   function uploadDecision(meta = {}) {
     if (!window.ParksPermissions) {
       return {
-        allowed: true,
-        publication: 'pending',
-        approvalScope: 'none'
+        allowed: false,
+        publication: 'blocked',
+        approvalScope: 'none',
+        reason: 'No fue posible validar los permisos de la sesión.'
       };
     }
 
@@ -1152,9 +1173,30 @@
     });
   }
 
+  function validateUploadFile(file) {
+    if (!file || typeof file.size !== 'number') throw new Error('Selecciona un archivo válido.');
+    if (file.size <= 0) throw new Error('El archivo está vacío.');
+
+    const allowedExt = new Set((cfg.allowedUploadExtensions || ['pdf','png','jpg','jpeg','docx','xlsx']).map(x => String(x).toLowerCase()));
+    const allowedMime = new Set((cfg.allowedUploadMimeTypes || [
+      'application/pdf','image/png','image/jpeg',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ]).map(x => String(x).toLowerCase()));
+    const maxBytes = Math.max(1, Number(cfg.maxUploadMB || 50)) * 1024 * 1024;
+    const ext = String(file.name || '').split('.').pop().toLowerCase();
+    const mime = String(file.type || '').toLowerCase();
+
+    if (!allowedExt.has(ext)) throw new Error(`Extensión .${ext || '?'} no permitida.`);
+    if (mime && !allowedMime.has(mime)) throw new Error(`Tipo de archivo no permitido (${mime}).`);
+    if (file.size > maxBytes) throw new Error(`El archivo excede el límite de ${Number(cfg.maxUploadMB || 50)} MB.`);
+    return true;
+  }
+
   async function upload(file, meta) {
     if (!configured || !session) throw new Error('Se requiere una sesión activa.');
     if (!meta?.parkId) throw new Error('La carga requiere el UUID del parque.');
+    validateUploadFile(file);
 
     if (!can('upload', { meta })) {
       throw new Error('Tu rol no tiene permiso para cargar documentos.');
