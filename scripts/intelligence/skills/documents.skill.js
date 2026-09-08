@@ -7,7 +7,9 @@
       const documentName = parsed.document || parsed.entities?.document?.label || '';
       const q = parsed.normalized;
       const physical = /\b(archivo|archivos|pdf|descargar|abre|abrir|biblioteca|evidencia)\b/.test(q);
-      const pending = /\b(pendiente|pendientes|falta|faltan|faltante|faltantes)\b/.test(q);
+      const fuzzy = global.ParksIntelligenceParser?.fuzzyIncludes;
+      const pending = /\b(pendiente|pendientes|falta|faltan|faltante|faltantes)\b/.test(q) ||
+        (typeof fuzzy === 'function' && ['pendiente', 'faltante', 'por validar'].some(term => fuzzy(q, term)));
       let statusRows = [];
       parks.forEach(park => {
         Object.entries(park.statuses || {}).forEach(([name, rawStatus]) => {
@@ -27,6 +29,16 @@
         f.storage_path || f.path || '', f.__park?.cloud_id || f.__park?.park || f.park || '',
         f.filename || f.file_name || '', f.document_type || f.folder || '', f.year || ''
       ].join('|')));
+
+      // Si la consulta pide pendientes, el KPI de archivos debe respetar exactamente
+      // el mismo subconjunto de parques mostrado en la respuesta. Antes mostraba el
+      // total nacional del tipo documental, lo que podía inducir a error.
+      if (pending) {
+        const resultParkKeys = new Set(statusRows.map(r => C.normalize(r.park.cloud_id || r.park.park)));
+        files = files.filter(f => resultParkKeys.has(C.normalize(
+          f.__park?.cloud_id || f.__park?.park || f.park || ''
+        )));
+      }
 
       const commonFilters = {
         region: parsed.region || '',
@@ -51,7 +63,7 @@
             <div class="intel-result-card"><small>Pendientes</small><strong>${C.number(summary.pending)}</strong></div>
             <div class="intel-result-card"><small>Por validar</small><strong>${C.number(summary.validating)}</strong></div>
             <div class="intel-result-card"><small>N/A</small><strong>${C.number(summary.na)}</strong></div>
-            <div class="intel-result-card"><small>Archivos físicos</small><strong>${C.number(files.length)}</strong></div>
+            <div class="intel-result-card"><small>${pending ? 'Archivos físicos vinculados' : 'Archivos físicos'}</small><strong>${C.number(files.length)}</strong></div>
           </div>${C.listHtml(statusRows,r=>({
             title:r.park.park,subtitle:`${r.park.region||''} · ${r.park.administrator||'Por asignar'}`,value:r.status.label
           }))}`,

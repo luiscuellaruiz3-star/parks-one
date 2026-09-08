@@ -111,8 +111,43 @@
       ? `<div class="intel-note"><b>Fuentes:</b> ${(response.evidence || []).map(Core.escapeHtml).join(' · ')}</div>`
       : '';
 
-    const effectiveScopeText = response.scopeText || Engine.scope?.().label || 'Información autorizada para tu perfil';
-    const scope = `<div class="intel-scope-notice ${response.scopeRestricted ? 'restricted' : ''}"><b>🔒 Alcance:</b> ${Core.escapeHtml(effectiveScopeText)}</div>`;
+    const scopeInfo = Engine.scope?.() || {};
+    const humanRegion = value => {
+      const raw = String(value || '').trim();
+      const match = raw.match(/^R\s*(\d+)$/i);
+      return match ? `Región ${match[1]}` : raw;
+    };
+    const authorizedScope = (() => {
+      if (scopeInfo.level === 'national') return 'Nacional';
+      if (scopeInfo.level === 'division') {
+        const division = String(scopeInfo.division || '').trim();
+        if (!division) return 'División asignada';
+        const numeric = division.match(/(?:division|división)?\s*(\d+)/i);
+        return numeric ? `División ${numeric[1]}` : division;
+      }
+      if (scopeInfo.level === 'region') {
+        const region = humanRegion(scopeInfo.region || '');
+        return region || 'Región asignada';
+      }
+      return String(scopeInfo.label || 'Información autorizada').replace(/^Consulta\s*/i, '').trim();
+    })();
+
+    const diagnostic = response.diagnostic || {};
+    const semanticPark = diagnostic.semantic?.park && diagnostic.semantic.park !== 'No detectado'
+      ? diagnostic.semantic.park
+      : '';
+    const diagnosticRegion = diagnostic.filters?.region && diagnostic.filters.region !== 'Sin filtro'
+      ? diagnostic.filters.region
+      : '';
+    const queryFilter = semanticPark
+      ? `Parque ${semanticPark}`
+      : diagnosticRegion
+        ? humanRegion(diagnosticRegion)
+        : (scopeInfo.level === 'national' ? 'Nacional' : `Dentro de ${authorizedScope}`);
+
+    const scope = `<div class="intel-scope-notice"><b>🔒 Alcance autorizado:</b> ${Core.escapeHtml(authorizedScope)}</div>
+      <div class="intel-scope-notice"><b>🎯 Filtro de consulta:</b> ${Core.escapeHtml(queryFilter)}</div>
+      ${response.scopeRestricted ? `<div class="intel-scope-notice restricted"><b>⚠️ Restricción aplicada:</b> ${Core.escapeHtml(response.scopeText || 'Los resultados fueron limitados automáticamente al alcance autorizado.')}</div>` : ''}`;
 
     const answerId = `intel-answer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     host.insertAdjacentHTML('beforeend', `<article id="${answerId}" class="intel-chat-answer"><div class="intel-message-content">
