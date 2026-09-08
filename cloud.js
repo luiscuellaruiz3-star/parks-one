@@ -101,10 +101,20 @@
     }
 
     window.SIGOP_DATA = payload.sigop;
-    window.TOP5_DATA = payload.top5 || {
+    // Mantener la misma referencia de TOP5_DATA durante todo el ciclo de vida.
+    // El index captura este objeto antes de que termine el bootstrap; reemplazarlo
+    // hacía que la UI siguiera leyendo una copia vacía y ocultara cierres dinámicos
+    // (por ejemplo, Agosto cargado en Supabase).
+    const protectedTop5 = payload.top5 || {
       months: [], records: [], admins: [], regions: [],
       executiveClose: {}, officialMonths: {}, officialRegions: {}
     };
+    if (window.TOP5_DATA && typeof window.TOP5_DATA === 'object') {
+      Object.keys(window.TOP5_DATA).forEach(key => delete window.TOP5_DATA[key]);
+      Object.assign(window.TOP5_DATA, protectedTop5);
+    } else {
+      window.TOP5_DATA = protectedTop5;
+    }
     window.PARKS_HYDRICA_MASTER_SEED = payload.hydrica || {
       source: 'Fuente protegida PARKS ONE',
       sheet: '',

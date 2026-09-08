@@ -1406,6 +1406,30 @@ body:not(.architect) #inteligencia{
   #inteligencia .intel-compact-disclaimer{display:none}
   #inteligencia .intel-composer-toggle{font-size:10px}
 }
+
+/* PARKS ONE V7.4.0A2 · recuperación de layout validado
+   Sidebar fija a toda la altura del viewport; evita que el fondo verde termine
+   al acabar la lista de módulos. */
+@media (min-width:721px){
+  .app{display:block !important;min-height:100dvh !important;}
+  .side{
+    position:fixed !important;
+    left:0 !important;top:0 !important;bottom:0 !important;
+    width:270px !important;
+    height:100dvh !important;min-height:100vh !important;
+    overflow-y:auto !important;overflow-x:hidden !important;
+    z-index:50 !important;
+  }
+  .main{margin-left:270px !important;min-width:0 !important;}
+}
+@media (min-width:721px) and (max-width:900px){
+  .side{width:82px !important;}
+  .main{margin-left:82px !important;}
+}
+@media (max-width:720px){
+  .side{display:none !important;}
+  .main{margin-left:0 !important;}
+}
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -2045,7 +2069,7 @@ window.PARKS_RELEASE=Object.freeze({
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="config.js"></script>
 <script src="scripts/permisos.js?v=8.3.0"></script>
-<script src="cloud.js?v=7.3.9"></script>
+<script src="cloud.js?v=7.4.0a2"></script>
 <script src="scripts/migration_v740.js?v=7.4.0a1"></script>
 
 
@@ -4633,6 +4657,11 @@ function initAlertsModule(){
  );
  window.ParksAlertsEngine?.init?.();
  renderAlerts();
+}
+
+function documentStorageRef(file){
+ const f=file||{};
+ return f.storage_path||f.path||f.local_url||f.url||'';
 }
 
 function renderDocs(){
