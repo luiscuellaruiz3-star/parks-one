@@ -1,4 +1,4 @@
-// PARKS ONE 7.3.2 - Bootstrap protegido.
+// PARKS ONE 7.3.3 - Bootstrap protegido + trazabilidad de fuentes.
 // Función serverless Vercel: la información operativa no se expone como archivo estático.
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://xmiushrjmlatrogfrsxu.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
@@ -200,13 +200,54 @@ export default async function handler(req, res) {
     const user = await userResponse.json();
 
     const profileRows = await supabaseGet(
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=role,is_active`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&select=role,is_active,full_name`,
       token
     );
     const profile = profileRows?.[0];
     if (!profile?.is_active) {
       return res.status(403).json({error:'Usuario inactivo'});
     }
+
+    // V7.3.3 · Trazabilidad de fuente.
+    // Sólo se consulta metadato, nunca el payload completo de datasets.
+    // Todas las consultas conservan el JWT del usuario y, por tanto, respetan RLS.
+    const datasetMetaRows = await supabaseGet(
+      '/rest/v1/datasets?select=name,source_filename,updated_at,updated_by&order=updated_at.desc',
+      token
+    ).catch(() => []);
+
+    const latestDocumentRows = await supabaseGet(
+      '/rest/v1/documents?select=id,updated_at,uploaded_by&order=updated_at.desc&limit=1',
+      token
+    ).catch(() => []);
+    const latestDocument = latestDocumentRows?.[0] || null;
+
+    const actorIds = [...new Set([
+      ...(datasetMetaRows || []).map(row => row.updated_by),
+      latestDocument?.uploaded_by
+    ].filter(Boolean))];
+
+    let actorRows = [];
+    if (actorIds.length) {
+      const ids = actorIds.map(id => encodeURIComponent(id)).join(',');
+      actorRows = await supabaseGet(
+        `/rest/v1/profiles?id=in.(${ids})&select=id,full_name`,
+        token
+      ).catch(() => []);
+    }
+    const actorMap = new Map((actorRows || []).map(row => [String(row.id), row.full_name || '']));
+    const actorLabel = id => {
+      if (!id) return 'No registrado en la fuente';
+      const name = actorMap.get(String(id));
+      return name || `Usuario Supabase ${String(id).slice(0,8)}…`;
+    };
+    const newestDataset = predicate => (datasetMetaRows || [])
+      .filter(predicate)
+      .sort((a,b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))[0] || null;
+
+    const top5Meta = newestDataset(row => /^top5:\d{4}-\d{2}$/.test(String(row.name || '')));
+    const hydricaMeta = newestDataset(row => String(row.name || '') === 'hydrica:current');
+    const alertsMeta = newestDataset(row => String(row.name || '') === 'alerts:state');
 
     const role = String(profile.role || 'consulta').toLowerCase();
     const national = ['arquitecto','divisional','direccion','director','ceo'].includes(role);
@@ -258,7 +299,7 @@ export default async function handler(req, res) {
 
     const sigop = {
       generated: SIGOP_BASELINE.generated,
-      version: '7.3.2-protected-bootstrap',
+      version: '7.3.3-protected-bootstrap',
       metrics: computed.metrics,
       parks,
       documents: computed.documents,
@@ -293,12 +334,63 @@ export default async function handler(req, res) {
       hydrica,
       annual,
       meta: {
-        version: '7.3.2',
+        version: '7.3.3',
         environment: 'production',
         generated_at: new Date().toISOString(),
         role,
         scoped: !national,
-        visible_parks: parks.length
+        visible_parks: parks.length,
+        traceability: {
+          sigop: {
+            source: 'Consolidado documental SIGOP protegido',
+            updated_at: SIGOP_BASELINE.generated || null,
+            source_file: 'Repositorio documental / Top 23 consolidado',
+            process: 'api/bootstrap + RLS + conciliación de padrón y evidencia',
+            responsible: 'Responsable no registrado en la línea base histórica'
+          },
+          documents: {
+            source: 'Supabase public.documents + Storage privado',
+            updated_at: latestDocument?.updated_at || null,
+            source_file: 'Carga documental autenticada',
+            process: 'Carga → validación de alcance → flujo de revisión/publicación',
+            responsible: actorLabel(latestDocument?.uploaded_by)
+          },
+          top5: {
+            source: 'Supabase datasets · cierres Top 5',
+            updated_at: top5Meta?.updated_at || TOP5_BASELINE.months?.at(-1)?.cutoff || null,
+            source_file: top5Meta?.source_filename || TOP5_BASELINE.months?.at(-1)?.source_filename || 'Cierre mensual Top 5',
+            process: 'Importador Top 5 → validación de estructura → consolidación multiparque',
+            responsible: actorLabel(top5Meta?.updated_by)
+          },
+          hydrica: {
+            source: 'Matriz Hídrica protegida PARKS ONE',
+            updated_at: hydricaMeta?.updated_at || SIGOP_BASELINE.hydrica_updated || null,
+            source_file: hydricaMeta?.source_filename || HYDRICA_BASELINE.source || null,
+            process: `Hoja ${HYDRICA_BASELINE.sheet || 'matriz'} → homologación con padrón → KPI sólo con registros enlazados`,
+            responsible: actorLabel(hydricaMeta?.updated_by)
+          },
+          annual: {
+            source: ANNUAL_BASELINE.source || 'Documentos anuales 2026',
+            updated_at: SIGOP_BASELINE.generated || null,
+            source_file: ANNUAL_BASELINE.generated_from || null,
+            process: 'Carga anual → homologación de parque → estado current / process / missing',
+            responsible: 'Responsable no registrado en la línea base histórica'
+          },
+          alerts: {
+            source: 'Motor interno de alertas + Supabase alerts:state',
+            updated_at: alertsMeta?.updated_at || SIGOP_BASELINE.generated || null,
+            source_file: alertsMeta?.source_filename || 'Cálculo interno PARKS ONE',
+            process: 'Reglas de vigencia, riesgo y seguimiento sobre datos autorizados',
+            responsible: actorLabel(alertsMeta?.updated_by)
+          },
+          session: {
+            source: 'Supabase Auth + RLS',
+            updated_at: new Date().toISOString(),
+            source_file: 'api/bootstrap',
+            process: 'JWT validado antes de entregar información',
+            responsible: profile?.full_name || user.email || 'Usuario autenticado'
+          }
+        }
       }
     });
   } catch (error) {

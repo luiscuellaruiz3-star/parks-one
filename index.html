@@ -1366,10 +1366,17 @@ html,body{max-width:100%;overflow-x:hidden}
 .intel-help p{margin:6px 0}
 @media(max-width:980px){.alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.alerts-change-grid-four{grid-template-columns:1fr}.intel-suggestion{width:100%}}
+/* V7.3.3 · trazabilidad visible por módulo */
+.parks-traceability{margin:0 0 16px;border:1px solid #cfe0da;background:#f8fbfa;border-radius:13px;box-shadow:0 5px 18px #0a503b0b;overflow:hidden}
+.parks-traceability>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--gd);font-weight:800;background:#eef6f3}
+.parks-traceability>summary::-webkit-details-marker{display:none}.parks-traceability>summary:before{content:'ⓘ';margin-right:8px}.parks-traceability>summary .trace-cut{margin-left:auto;font-size:11px;color:var(--mut);font-weight:600;text-align:right}
+.trace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #dbe8e3}.trace-item{padding:11px 13px;border-right:1px solid #e2ece8;border-bottom:1px solid #e2ece8;min-width:0}.trace-item:nth-child(3n){border-right:0}.trace-item b{display:block;color:#31594e;font-size:11px;text-transform:uppercase;letter-spacing:.35px;margin-bottom:4px}.trace-item span{display:block;font-size:12px;line-height:1.4;overflow-wrap:anywhere}.trace-foot{padding:9px 13px;font-size:11px;color:var(--mut);background:#fff}.trace-status-ok{color:#087a5a;font-weight:800}.trace-status-warn{color:#9a6200;font-weight:800}
+@media(max-width:900px){.trace-grid{grid-template-columns:1fr 1fr}.trace-item:nth-child(3n){border-right:1px solid #e2ece8}.trace-item:nth-child(2n){border-right:0}}
+@media(max-width:560px){.trace-grid{grid-template-columns:1fr}.trace-item,.trace-item:nth-child(3n){border-right:0}.parks-traceability>summary{align-items:flex-start}.parks-traceability>summary .trace-cut{max-width:46%}}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.2',
+  version:'7.3.3',
   releasedAt:'2026-09-08',
   environment:'production'
 });
@@ -1397,7 +1404,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.2</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.3</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -2974,10 +2981,100 @@ window.handleNationalSmartFile=async function(input){
   setTimeout(()=>{try{input.value='';}catch(_){ }},0);
  }
 };
+function traceDate(value){
+ if(!value)return 'No registrada en la fuente';
+ const raw=String(value);
+ try{
+  const d=/^\d{4}-\d{2}-\d{2}$/.test(raw)?new Date(raw+'T12:00:00'):new Date(raw);
+  if(Number.isNaN(d.getTime()))return raw;
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw)
+   ?d.toLocaleDateString('es-MX',{year:'numeric',month:'short',day:'2-digit'})+' · hora no registrada'
+   :d.toLocaleString('es-MX',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+ }catch(_){return raw;}
+}
+function traceModuleConfig(id){
+ const map={
+  inicio:{source:'sigop',rule:'Los KPI se calculan con el mismo consolidado visible. N/A se excluye del denominador y “por definir” permanece separado.'},
+  parques:{source:'sigop',rule:'Sólo se muestran parques dentro del alcance validado por Supabase; el detalle se deriva de evidencia y requisitos aplicables.'},
+  top23:{source:'sigop',rule:'✅ = evidencia integrada; ❌ = pendiente aplicable; N/A no impacta cumplimiento; “por definir” no se convierte en cumplimiento.'},
+  top5:{source:'top5',rule:'Cierre mensual consolidado por Administrador; la regla multiparque evita duplicar cumplimiento y los registros conservan su origen.'},
+  alertas:{source:'alerts',rule:'Alertas críticas de vigencia y rezago documental crítico son señales distintas; no se mezclan en un mismo indicador.'},
+  documentos:{source:'documents',rule:'KPI y tabla usan la misma evidencia autorizada. Las descargas usan acceso temporal y el alcance se valida por parque.'},
+  importacion:{source:'session',rule:'Cada carga se analiza antes de impactar indicadores; los registros no homologados o rechazados deben permanecer identificados.'},
+  agua:{source:'hydrica',rule:'Los KPI operativos usan sólo registros hidráulicos enlazados al padrón visible. “Por confirmar” no equivale a Sí ni a No.'},
+  inteligencia:{source:'session',rule:'Consulta únicamente fuentes disponibles para la sesión y su alcance. Si no existe evidencia suficiente, no completa información por inferencia.'},
+  flujo:{source:'documents',rule:'Las cargas sujetas a revisión no impactan como aprobadas hasta completar el flujo; la decisión conserva estado y actor.'},
+  calendario:{source:'documents',rule:'Las señales temporales provienen de fechas registradas o identificadas en la evidencia; PARKS ONE no inventa vigencias.'},
+  reportes:{source:'sigop',rule:'Los reportes reutilizan la misma fuente y reglas de los módulos; exportar no recalcula ni altera los datos.'},
+  moduloUsuarios:{source:'session',rule:'Roles y alcances proceden de Supabase; la interfaz no amplía permisos por encima de RLS.'},
+  configuracionMaestra:{source:'session',rule:'El padrón, regiones y divisiones se gobiernan desde la configuración autorizada; cambios requieren permisos de arquitectura.'}
+ };
+ return map[id]||map.inicio;
+}
+function tracePending(id){
+ try{
+  if(id==='top23'){
+   const req=C?.requirements||[];
+   const pending=req.reduce((n,x)=>n+Number(x.no||0),0);
+   const validating=req.reduce((n,x)=>n+Number(x.val||0),0);
+   return `${fmt(pending)} pendientes aplicables · ${fmt(validating)} por definir`;
+  }
+  if(id==='documentos'||id==='flujo'||id==='calendario'){
+   const files=C?.files||[];
+   const review=files.filter(x=>/revision|revisión/i.test(String(x.workflow_status||x.status||''))).length;
+   const returned=files.filter(x=>/devuelto|returned|rechaz/i.test(String(x.workflow_status||x.status||''))).length;
+   return `${fmt(review)} en revisión · ${fmt(returned)} devueltos/rechazados dentro del alcance visible`;
+  }
+  if(id==='agua'){
+   const rec=(typeof waterCatalogReconciliation==='function'&&typeof waterRows==='function')?waterCatalogReconciliation(waterRows()):null;
+   return rec?`${fmt(rec.unmatched.length)} registros históricos o por homologar · ${fmt(rec.linked.length)} enlazados`:'Conciliación disponible al cargar la matriz';
+  }
+  if(id==='top5'){
+   const selected=$('#top5Month')?.value||T5?.months?.at?.(-1)?.month;
+   const row=(T5?.months||[]).find(x=>x.month===selected)||(T5?.months||[]).at?.(-1);
+   if(!row)return 'Sin periodo Top 5 disponible';
+   const gap=Math.max(0,Number(row.expected||0)-Number(row.records||0));
+   return `${fmt(row.records||0)} registros consolidados · ${fmt(gap)} de diferencia contra la meta esperada`;
+  }
+  if(id==='alertas')return `${fmt((D?.alerts||[]).length)} alertas visibles; seguimientos y estado se conservan por separado`;
+  if(id==='parques'||id==='configuracionMaestra'||id==='moduloUsuarios')return `${fmt(C?.parks?.length||0)} parques visibles según el alcance de la sesión`;
+  if(id==='inicio'||id==='reportes')return `${fmt(C?.metrics?.pending||D?.metrics?.pending||0)} obligaciones aplicables pendientes en el consolidado visible`;
+  if(id==='inteligencia')return 'Consultas sin evidencia suficiente se devuelven como información insuficiente; no se rellenan por inferencia.';
+  if(id==='importacion')return 'Registros rechazados/no homologados se mantienen separados y no deben convertirse automáticamente en cumplimiento.';
+ }catch(error){console.warn('Trazabilidad pendiente:',error);}
+ return 'Sin pendientes específicos reportados por este módulo.';
+}
+function renderTraceability(id){
+ const page=document.getElementById(id);if(!page)return;
+ const cfg=traceModuleConfig(id);
+ const meta=window.PARKS_BOOTSTRAP_META||{};
+ const trace=meta.traceability?.[cfg.source]||meta.traceability?.sigop||{};
+ let box=page.querySelector('.parks-traceability');
+ if(!box){
+  box=document.createElement('details');box.className='parks-traceability';box.dataset.module=id;
+  const anchor=page.querySelector(':scope > .headline, :scope > .intel-shell > .intel-header');
+  if(anchor&&anchor.parentElement===page)anchor.insertAdjacentElement('afterend',box);else page.insertBefore(box,page.firstChild);
+ }
+ const cut=trace.updated_at||meta.generated_at||'';
+ const scope=meta.scoped?`${meta.role||'perfil'} · ${fmt(meta.visible_parks||0)} parques visibles`:`${meta.role||'perfil'} · alcance nacional`;
+ box.innerHTML=`
+  <summary><span>Trazabilidad de la información</span><span class="trace-cut">Fuente: ${esc(trace.source||'PARKS ONE protegido')} · ${esc(traceDate(cut))}</span></summary>
+  <div class="trace-grid">
+   <div class="trace-item"><b>Origen de los datos</b><span>${esc(trace.source||'PARKS ONE protegido')}</span></div>
+   <div class="trace-item"><b>Última actualización de fuente</b><span>${esc(traceDate(trace.updated_at))}</span></div>
+   <div class="trace-item"><b>Archivo / proceso</b><span>${esc(trace.source_file||trace.process||'Proceso protegido PARKS ONE')}</span></div>
+   <div class="trace-item"><b>Responsable de carga</b><span>${esc(trace.responsible||'No registrado en la fuente')}</span></div>
+   <div class="trace-item"><b>Regla de cálculo / uso</b><span>${esc(cfg.rule)}</span></div>
+   <div class="trace-item"><b>Rechazados / pendientes</b><span class="trace-status-warn">${esc(tracePending(id))}</span></div>
+  </div>
+  <div class="trace-foot">Consulta protegida: ${esc(traceDate(meta.generated_at))} · Alcance: ${esc(scope)} · Versión ${esc(meta.version||window.PARKS_RELEASE?.version||'')}</div>`;
+}
+
 function renderPage(id){
  const target=document.getElementById(id)?id:'inicio';
  $$('.page').forEach(x=>x.classList.toggle('active',x.id===target));
  $$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===target));
+ try{renderTraceability(target);}catch(error){console.warn('Trazabilidad:',error);}
  window.scrollTo(0,0);
  return target;
 }
@@ -5257,6 +5354,7 @@ async function boot(){
   window.C=C;
   window.D=D;
   window.SIGOP_COMPUTED=C;
+  try{renderTraceability(currentPage());}catch(error){console.warn('Trazabilidad inicial:',error);}
 
   if(!D.metrics)D.metrics={};
   D.metrics.compliance=(D.metrics.evaluated||0)
