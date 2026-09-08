@@ -135,6 +135,18 @@
     return ROLE_ALIASES[clean] || clean || 'consulta';
   }
 
+  function divisionKey(value) {
+    const clean = normalize(value).replace(/\s+/g, ' ');
+    const match = clean.match(/^(?:D|DIVISION)\s*0*(\d+)$/);
+    return match ? `D${Number(match[1])}` : clean;
+  }
+
+  function regionKey(value) {
+    const clean = normalize(value).replace(/\s+/g, ' ');
+    const match = clean.match(/^R\s*0*(\d+)$/);
+    return match ? `R${Number(match[1])}` : clean;
+  }
+
   function profile() {
     return typeof window.ParksCloud?.profile === 'function'
       ? (window.ParksCloud.profile() || {})
@@ -214,7 +226,7 @@
   function userDivision(context = {}) {
     const p = context.profile || profile();
     const s = context.scope || accessScope();
-    return normalize(
+    return divisionKey(
       context.userDivision ||
       s.division_code ||
       s.division_name ||
@@ -228,7 +240,7 @@
 
   function sameDivision(context = {}) {
     const user = userDivision(context);
-    const target = normalize(
+    const target = divisionKey(
       context.documentDivision ||
       context.division ||
       context.parkDivision ||
@@ -240,7 +252,7 @@
   function userRegion(context = {}) {
     const p = context.profile || profile();
     const s = context.scope || accessScope();
-    return normalize(
+    return regionKey(
       context.userRegion ||
       s.region_code ||
       s.region_name ||
@@ -254,7 +266,7 @@
 
   function sameRegion(context = {}) {
     const user = userRegion(context);
-    const target = normalize(
+    const target = regionKey(
       context.documentRegion ||
       context.region ||
       context.parkRegion ||
@@ -447,7 +459,7 @@
   }
 
   window.ParksPermissions = Object.freeze({
-    ROLE_PERMISSIONS, MODULES, normalizeRole, currentRole,
+    ROLE_PERMISSIONS, MODULES, normalizeRole, divisionKey, regionKey, currentRole,
     realRole, isRealArchitect, setSimulatedRole, clearSimulatedRole,
     permissionsFor, userDivision, sameDivision, userRegion, sameRegion, userPark, samePark, can, canModule,
     workflowMode, canSeeWorkflowRequest, canApproveRequest,

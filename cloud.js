@@ -173,6 +173,12 @@
     await loadAccessScope();
     await loadProtectedBootstrap();
     await mergeCloudData();
+    try {
+      window.PARKS_WORKFLOW_REQUESTS = await listWorkflowDocuments();
+    } catch (workflowError) {
+      console.warn('Flujos no disponibles durante el arranque:', workflowError);
+      window.PARKS_WORKFLOW_REQUESTS = [];
+    }
     applyIdentity();
     installInactivityWatch();
     document.documentElement.dataset.cloud = 'online';
@@ -1073,6 +1079,22 @@
         document.requirements?.requirement_number ??
         null;
 
+      // V7.3.9: un documento aprobado debe impactar el checklist también
+      // después de recargar la página. El estado lógico del Top 23 se conserva
+      // separado del enum document_status de la base.
+      if (String(document.workflow_status || '').toLowerCase() === 'aprobado') {
+        const reqNumber = document.requirements?.requirement_number;
+        const reqName = normalizeName(document.requirements?.name || document.title || '');
+        const keys = Object.keys(park.statuses || {});
+        const targetKey = keys.find(key => {
+          const keyNumber = String(key).match(/^\s*(\d+)/)?.[1] || '';
+          if (reqNumber != null && String(reqNumber) === keyNumber) return true;
+          const keyName = normalizeName(String(key).replace(/^\s*\d+\s*[.\-:]?\s*/, ''));
+          return Boolean(reqName && keyName && (keyName === reqName || keyName.includes(reqName) || reqName.includes(keyName)));
+        });
+        if (targetKey) park.statuses[targetKey] = '✅';
+      }
+
       park.files.push({
         cloud_id: document.id,
         park_id: document.park_id,
@@ -1292,7 +1314,7 @@
       expiration_date: meta.expirationDate || null,
       // Regional, Divisional y Arquitecto publican directamente según
       // ParksPermissions.uploadDecision(). Administrador conserva revisión.
-      status: decision.publication === 'direct' ? 'integrado' : 'por_validar',
+      status: decision.publication === 'direct' ? 'vigente' : 'por_validar',
       workflow_status: decision.publication === 'direct' ? 'aprobado' : 'en_revision',
       storage_bucket: cfg.bucket,
       storage_path: storagePath,
@@ -1307,7 +1329,20 @@
         `PARKS_DOCUMENT_SCOPE=${String(meta.documentScope || 'ADMINISTRADOR').toUpperCase()}`
       ].filter(Boolean).join(' | '),
       source: 'PARKS ONE',
-      uploaded_by: session.user.id
+      uploaded_by: session.user.id,
+      metadata: {
+        ...(meta.metadata || {}),
+        parks_workflow_managed: true,
+        publication: decision.publication,
+        approval_scope: decision.approvalScope,
+        uploaded_by_name: profile?.full_name || profile?.email || session.user.email || 'Usuario',
+        uploaded_by_email: profile?.email || session.user.email || '',
+        uploaded_by_role: permissionRole(),
+        park_name: meta.parkName || '',
+        region_code: meta.regionCode || meta.region || '',
+        division_code: meta.divisionCode || meta.division || '',
+        document_year: meta.documentYear || null
+      }
     };
 
     const { data, error } = await sb.from('documents').insert(row).select().single();
@@ -1315,20 +1350,160 @@
       await sb.storage.from(cfg.bucket).remove([storagePath]);
       throw error;
     }
-    window.ParksAudit?.log?.('DOCUMENT_UPLOADED', {
-      category: 'document',
-      document_id: data?.id || null,
-      document_name: row.title,
-      file_name: row.original_filename,
-      park_id: row.park_id,
-      result: decision.publication === 'direct' ? 'success' : 'pending',
-      message:
-        decision.publication === 'direct'
-          ? 'Documento cargado para publicación directa.'
-          : 'Documento cargado y enviado a revisión.',
-      after_data: data || row
-    });
 
+    // V7.3.9: la carga se audita mediante trigger en Supabase para evitar duplicados y bypass de cliente.
+    window.PARKS_WORKFLOW_REQUESTS = await listWorkflowDocuments();
+    return data;
+  }
+
+
+  function workflowUiStatus(value) {
+    const clean = String(value || '').toLowerCase();
+    if (clean === 'aprobado') return 'Aprobado';
+    if (clean === 'rechazado') return 'Devuelto';
+    return 'En revisión';
+  }
+
+  function parseWorkflowNotes(notes) {
+    const text = String(notes || '');
+    const get = key => (text.match(new RegExp(`${key}=([^|]+)`, 'i'))?.[1] || '').trim();
+    return {
+      publication: get('PARKS_PUBLICATION').toLowerCase(),
+      permissionRole: get('PARKS_PERMISSION_ROLE').toLowerCase(),
+      approvalScope: get('PARKS_APPROVAL_SCOPE').toLowerCase(),
+      documentScope: get('PARKS_DOCUMENT_SCOPE').toUpperCase()
+    };
+  }
+
+  async function listWorkflowDocuments() {
+    if (!configured || !session) return [];
+    const { data, error } = await sb
+      .from('documents')
+      .select('id,park_id,requirement_id,title,status,workflow_status,original_filename,storage_path,mime_type,file_size,issue_date,expiration_date,notes,metadata,uploaded_by,approved_by,approved_at,created_at,updated_at,requirements(requirement_number,code,name)')
+      .eq('is_current', true)
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
+
+    const parks = window.SIGOP_DATA?.parks || [];
+    const parkById = new Map(parks.filter(p => p?.cloud_id).map(p => [String(p.cloud_id), p]));
+    const rows = (data || []).filter(doc => {
+      const md = doc.metadata || {};
+      return Boolean(
+        md.parks_workflow_managed ||
+        /PARKS_PUBLICATION=/i.test(String(doc.notes || '')) ||
+        ['en_revision','rechazado'].includes(String(doc.workflow_status || '').toLowerCase())
+      );
+    }).map(doc => {
+      const md = doc.metadata || {};
+      const parsed = parseWorkflowNotes(doc.notes);
+      const park = parkById.get(String(doc.park_id)) || {};
+      const original = doc.original_filename || doc.title || 'documento';
+      const status = workflowUiStatus(doc.workflow_status);
+      const reviewedBy = md.reviewed_by_name || md.approved_by_name || '';
+      const reviewedAt = md.reviewed_at || doc.approved_at || '';
+      return {
+        id: doc.id,
+        parkId: doc.park_id,
+        park: md.park_name || park.park || park.name || 'Parque',
+        division: md.division_code || park.division || park.division_name || '',
+        region: md.region_code || park.region || '',
+        document: doc.requirements?.name || doc.title || 'Documento',
+        filename: original,
+        extension: (original.split('.').pop() || '').toLowerCase(),
+        year: md.document_year || (doc.issue_date ? Number(String(doc.issue_date).slice(0, 4)) : null),
+        expiry: doc.expiration_date || '',
+        notes: String(doc.notes || '').split('|').filter(x => !/PARKS_/i.test(x)).join(' | ').trim(),
+        status,
+        workflowStatus: doc.workflow_status,
+        documentStatus: doc.status,
+        uploadedBy: md.uploaded_by_name || 'Usuario',
+        uploadedById: doc.uploaded_by || '',
+        uploadedByEmail: md.uploaded_by_email || '',
+        uploadedByRole: md.uploaded_by_role || parsed.permissionRole || '',
+        uploadedAt: doc.created_at ? new Date(doc.created_at).toLocaleString('es-MX') : '',
+        approvedBy: md.approved_by_name || '',
+        approvedAt: doc.approved_at ? new Date(doc.approved_at).toLocaleString('es-MX') : '',
+        reviewedBy,
+        reviewedAt: reviewedAt ? new Date(reviewedAt).toLocaleString('es-MX') : '',
+        reviewNotes: md.return_note || '',
+        dataUrl: doc.storage_path,
+        storagePath: doc.storage_path,
+        publication: md.publication || parsed.publication,
+        approvalScope: md.approval_scope || parsed.approvalScope
+      };
+    });
+    window.PARKS_WORKFLOW_REQUESTS = rows;
+    return rows;
+  }
+
+  async function getWorkflowDocument(documentId) {
+    const { data, error } = await sb
+      .from('documents')
+      .select('id,park_id,title,status,workflow_status,original_filename,storage_path,metadata,uploaded_by,approved_by,approved_at,created_at,updated_at')
+      .eq('id', documentId)
+      .eq('is_current', true)
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async function approveWorkflowDocument(documentId) {
+    if (!configured || !session) throw new Error('Se requiere una sesión activa.');
+    const before = await getWorkflowDocument(documentId);
+    const md = before.metadata || {};
+    const now = new Date().toISOString();
+    const { data, error } = await sb
+      .from('documents')
+      .update({
+        workflow_status: 'aprobado',
+        approved_by: session.user.id,
+        approved_at: now,
+        metadata: {
+          ...md,
+          reviewed_by_name: profile?.full_name || profile?.email || session.user.email || 'Usuario',
+          reviewed_by_email: profile?.email || session.user.email || '',
+          reviewed_by_role: permissionRole(),
+          reviewed_at: now,
+          approved_by_name: profile?.full_name || profile?.email || session.user.email || 'Usuario',
+          return_note: null
+        }
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+    if (error) throw error;
+    window.PARKS_WORKFLOW_REQUESTS = await listWorkflowDocuments();
+    return data;
+  }
+
+  async function returnWorkflowDocument(documentId, observation) {
+    if (!configured || !session) throw new Error('Se requiere una sesión activa.');
+    const note = String(observation || '').trim();
+    if (!note) throw new Error('La devolución requiere una observación.');
+    const before = await getWorkflowDocument(documentId);
+    const md = before.metadata || {};
+    const now = new Date().toISOString();
+    const { data, error } = await sb
+      .from('documents')
+      .update({
+        workflow_status: 'rechazado',
+        approved_by: null,
+        approved_at: null,
+        metadata: {
+          ...md,
+          reviewed_by_name: profile?.full_name || profile?.email || session.user.email || 'Usuario',
+          reviewed_by_email: profile?.email || session.user.email || '',
+          reviewed_by_role: permissionRole(),
+          reviewed_at: now,
+          return_note: note
+        }
+      })
+      .eq('id', documentId)
+      .select()
+      .single();
+    if (error) throw error;
+    window.PARKS_WORKFLOW_REQUESTS = await listWorkflowDocuments();
     return data;
   }
 
@@ -1401,6 +1576,10 @@
     documentExists,
     can,
     uploadDecision,
-    accessibleParkIds
+    accessibleParkIds,
+    listWorkflowDocuments,
+    workflowRequests: () => window.PARKS_WORKFLOW_REQUESTS || [],
+    approveWorkflowDocument,
+    returnWorkflowDocument
   };
 })();
