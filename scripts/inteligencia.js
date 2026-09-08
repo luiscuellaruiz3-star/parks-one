@@ -6,6 +6,41 @@
   if (!Engine || !Core) throw new Error('Parks ONE: el motor de inteligencia no terminó de cargar.');
 
   const $ = selector => document.querySelector(selector);
+  const MAX_INPUT_HEIGHT = 168;
+
+  function resizeQuestionInput(input) {
+    if (!input) return;
+    input.style.height = 'auto';
+    const next = Math.min(Math.max(input.scrollHeight, 24), MAX_INPUT_HEIGHT);
+    input.style.height = `${next}px`;
+    input.style.overflowY = input.scrollHeight > MAX_INPUT_HEIGHT ? 'auto' : 'hidden';
+  }
+
+  function setComposerExpanded(expanded, options = {}) {
+    const composer = $('#intelComposer');
+    const extras = $('#intelComposerExtras');
+    const toggle = $('#intelComposerToggle');
+    if (!composer || !extras || !toggle) return;
+
+    const open = Boolean(expanded);
+    extras.hidden = !open;
+    composer.classList.toggle('is-expanded', open);
+    composer.classList.toggle('intel-bottom-compact', !open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? 'Ocultar sugerencias y ayuda ▾' : 'Mostrar sugerencias y ayuda ▴';
+
+    if (options.focus) $('#intelQuestion')?.focus();
+  }
+
+  function scrollAnswerToStart(host, answer) {
+    if (!host || !answer) return;
+    requestAnimationFrame(() => {
+      const hostRect = host.getBoundingClientRect();
+      const answerRect = answer.getBoundingClientRect();
+      const target = host.scrollTop + (answerRect.top - hostRect.top) - 6;
+      host.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+    });
+  }
 
   function ensureHost() {
     const host = $('#intelResultPanel');
@@ -67,25 +102,32 @@
     const host = ensureHost();
     if (!host) return;
 
-    const actions = (response.actions || []).map(action =>
-      `<button class="btn ghost" data-intel-page="${Core.escapeHtml(action.page)}">${Core.escapeHtml(action.label)}</button>`
-    ).join('');
+    const actions = (response.actions || []).map(action => {
+      const encoded = encodeURIComponent(JSON.stringify(action.filters || {}));
+      return `<button class="btn ghost" data-intel-page="${Core.escapeHtml(action.page)}" data-intel-filters="${Core.escapeHtml(encoded)}">${Core.escapeHtml(action.label)}</button>`;
+    }).join('');
 
     const evidence = (response.evidence || []).length
       ? `<div class="intel-note"><b>Fuentes:</b> ${(response.evidence || []).map(Core.escapeHtml).join(' · ')}</div>`
       : '';
 
-    host.insertAdjacentHTML('beforeend', `<article class="intel-chat-answer"><div class="intel-message-content">
+    const effectiveScopeText = response.scopeText || Engine.scope?.().label || 'Información autorizada para tu perfil';
+    const scope = `<div class="intel-scope-notice ${response.scopeRestricted ? 'restricted' : ''}"><b>🔒 Alcance:</b> ${Core.escapeHtml(effectiveScopeText)}</div>`;
+
+    const answerId = `intel-answer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    host.insertAdjacentHTML('beforeend', `<article id="${answerId}" class="intel-chat-answer"><div class="intel-message-content">
       <h3>${Core.escapeHtml(response.title)}</h3>
       <p>${Core.escapeHtml(response.text)}</p>
       ${response.html || ''}
       ${actions ? `<div class="intel-actions">${actions}</div>` : ''}
       ${response.note ? `<div class="intel-note">${Core.escapeHtml(response.note)}</div>` : ''}
+      ${scope}
       ${evidence}
       ${diagnosticHtml(response.diagnostic)}
     </div></article>`);
 
-    host.scrollTop = host.scrollHeight;
+    setComposerExpanded(false);
+    scrollAnswerToStart(host, document.getElementById(answerId));
   }
 
   function errorView(error, id) {
@@ -100,6 +142,7 @@
   async function ask(question) {
     const clean = String(question || '').trim();
     if (!clean) return;
+    if ($('#intelScopeText')) $('#intelScopeText').textContent = Engine.scope().label;
     appendQuestion(clean);
     const id = thinking();
     try {
@@ -125,9 +168,48 @@
     const input = $('#intelQuestion');
     if (input) {
       input.value = '';
-      input.style.height = 'auto';
+      resizeQuestionInput(input);
       input.focus();
     }
+    setComposerExpanded(false);
+  }
+
+  function applyNavigationFilters(page, filters = {}) {
+    try { sessionStorage.setItem('parksOneIntelligenceNavigation', JSON.stringify({ page, filters, at: Date.now() })); } catch (_) {}
+
+    const setValue = (id, value) => {
+      if (!value) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    setTimeout(() => {
+      if (page === 'documentos') {
+        setValue('docRegion', filters.region);
+        setValue('docSearch', filters.park || filters.document || filters.search);
+        if (typeof window.renderDocs === 'function') window.renderDocs();
+      } else if (page === 'parques') {
+        setValue('regionFilter', filters.region);
+        setValue('riskFilter', filters.risk);
+        setValue('parkSearch', filters.park || filters.administrator || filters.search);
+        if (typeof window.renderParks === 'function') window.renderParks();
+      } else if (page === 'top5') {
+        setValue('top5Month', filters.month);
+        setValue('top5Region', filters.region);
+        setValue('top5Admin', filters.administrator || filters.park);
+        if (typeof window.renderTop5 === 'function') window.renderTop5();
+      } else if (page === 'alertas') {
+        setValue('alertSearch', filters.park || filters.document || filters.search);
+        if (typeof window.renderAlerts === 'function') window.renderAlerts();
+      } else if (page === 'agua') {
+        setValue('waterRegion', filters.region);
+        setValue('waterSearch', filters.park || filters.administrator || filters.search);
+        if (typeof window.renderWater === 'function') window.renderWater();
+      }
+    }, 60);
   }
 
   function bind() {
@@ -137,15 +219,14 @@
       const question = input?.value || '';
       if (input) {
         input.value = '';
-        input.style.height = 'auto';
+        resizeQuestionInput(input);
       }
+      setComposerExpanded(false);
       ask(question);
     });
 
     $('#intelQuestion')?.addEventListener('input', event => {
-      const input = event.currentTarget;
-      input.style.height = 'auto';
-      input.style.height = `${Math.min(input.scrollHeight, 150)}px`;
+      resizeQuestionInput(event.currentTarget);
     });
 
     $('#intelQuestion')?.addEventListener('keydown', event => {
@@ -156,6 +237,10 @@
     });
 
     $('#intelClear')?.addEventListener('click', clear);
+    $('#intelComposerToggle')?.addEventListener('click', () => {
+      const expanded = $('#intelComposerToggle')?.getAttribute('aria-expanded') === 'true';
+      setComposerExpanded(!expanded, { focus: false });
+    });
 
     document.addEventListener('click', event => {
       const diagnosticButton = event.target.closest('[data-intel-diagnostic]');
@@ -172,14 +257,21 @@
       if (suggestion) {
         const question = suggestion.dataset.intelQuestion;
         const input = $('#intelQuestion');
-        if (input) input.value = question;
+        if (input) {
+          input.value = question;
+          resizeQuestionInput(input);
+        }
+        setComposerExpanded(false);
         ask(question);
         return;
       }
 
       const action = event.target.closest('[data-intel-page]');
       if (action) {
+        let filters = {};
+        try { filters = JSON.parse(decodeURIComponent(action.dataset.intelFilters || '%7B%7D')); } catch (_) {}
         document.querySelector(`.nav button[data-page="${action.dataset.intelPage}"]`)?.click();
+        applyNavigationFilters(action.dataset.intelPage, filters);
       }
     });
   }
@@ -188,6 +280,8 @@
     if ($('#intelScopeText')) $('#intelScopeText').textContent = Engine.scope().label;
     renderSuggestions();
     bind();
+    setComposerExpanded(false);
+    resizeQuestionInput($('#intelQuestion'));
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

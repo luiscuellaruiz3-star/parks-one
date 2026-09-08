@@ -1345,6 +1345,66 @@ body:not(.architect) #inteligencia{
 #inteligencia .intel-shell{min-height:0!important}
 #inteligencia .intel-transcript{min-height:0!important;max-height:none!important}
 #inteligencia .intel-bottom{flex-shrink:0!important;margin-bottom:0!important}
+
+/* PARKS ONE V7.3.7 · compositor compacto tipo chat */
+#inteligencia .intel-bottom{
+  padding:8px 10px 7px!important;
+  transition:padding .18s ease,box-shadow .18s ease;
+}
+#inteligencia .intel-prompt{
+  min-height:50px!important;
+  padding:6px 8px 6px 14px!important;
+  align-items:end!important;
+}
+#inteligencia .intel-prompt textarea{
+  min-height:24px!important;
+  max-height:168px!important;
+  overflow-y:hidden;
+  resize:none!important;
+  padding:7px 0!important;
+  line-height:1.45!important;
+}
+#inteligencia .intel-composer-meta{
+  min-height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:3px 4px 0;
+}
+#inteligencia .intel-composer-toggle{
+  border:0;
+  background:transparent;
+  color:#d8ebe5;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  padding:2px 0;
+}
+#inteligencia .intel-composer-toggle:hover{color:#fff;text-decoration:underline}
+#inteligencia .intel-compact-disclaimer{
+  color:#c6ddd5;
+  font-size:10px;
+  white-space:nowrap;
+}
+#inteligencia .intel-composer-extras{
+  padding-top:3px;
+}
+#inteligencia .intel-composer-extras[hidden]{display:none!important}
+#inteligencia .intel-bottom.is-expanded{padding-bottom:9px!important}
+#inteligencia .intel-bottom.is-expanded .intel-compact-disclaimer{display:none}
+#inteligencia .intel-bottom:not(.is-expanded) .intel-help,
+#inteligencia .intel-bottom:not(.is-expanded) .intel-suggestions,
+#inteligencia .intel-bottom:not(.is-expanded) .intel-disclaimer{display:none!important}
+#inteligencia .intel-transcript{
+  scroll-padding-top:8px;
+  scroll-padding-bottom:8px;
+}
+@media(max-width:700px){
+  #inteligencia .intel-composer-meta{justify-content:flex-start}
+  #inteligencia .intel-compact-disclaimer{display:none}
+  #inteligencia .intel-composer-toggle{font-size:10px}
+}
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -1855,27 +1915,38 @@ window.PARKS_RELEASE=Object.freeze({
       </div>
     </main>
 
-    <footer class="intel-bottom">
+    <footer id="intelComposer" class="intel-bottom intel-bottom-compact">
       <form id="intelForm" class="intel-prompt">
         <textarea
           id="intelQuestion"
           rows="1"
           placeholder="Escribe una pregunta sobre la operación…"
           autocomplete="off"
+          aria-label="Pregunta para el Centro de Inteligencia"
         ></textarea>
         <button id="intelAsk" class="intel-send" type="submit" aria-label="Consultar">➤</button>
       </form>
-      <div id="intelSuggestions" class="intel-suggestions"></div>
-      <small class="intel-disclaimer">Las respuestas se generan únicamente con datos disponibles en PARKS ONE y respetan el alcance del usuario.</small>
-      <details class="intel-help">
-        <summary>Alcance y funcionamiento del Centro de Inteligencia</summary>
-        <div>
-          <p><b>Motor:</b> consultas y reglas internas de PARKS ONE; no envía información operativa a un servicio externo de IA.</p>
-          <p><b>Fuentes:</b> Top 23, Top 5, parques, documentos, alertas, usuarios y matriz hídrica disponibles para la sesión.</p>
-          <p><b>Permisos:</b> cada respuesta usa únicamente la información autorizada por el perfil y alcance validados en Supabase.</p>
-          <p><b>Limitaciones:</b> si la fuente no contiene evidencia suficiente, la respuesta debe indicarlo y no completar información por inferencia.</p>
-        </div>
-      </details>
+
+      <div class="intel-composer-meta">
+        <button id="intelComposerToggle" class="intel-composer-toggle" type="button" aria-expanded="false" aria-controls="intelComposerExtras">
+          Mostrar sugerencias y ayuda ▴
+        </button>
+        <small class="intel-compact-disclaimer">🔒 Datos PARKS ONE · alcance según tu perfil</small>
+      </div>
+
+      <div id="intelComposerExtras" class="intel-composer-extras" hidden>
+        <div id="intelSuggestions" class="intel-suggestions"></div>
+        <small class="intel-disclaimer">Las respuestas se generan únicamente con datos disponibles en PARKS ONE y respetan el alcance del usuario.</small>
+        <details class="intel-help">
+          <summary>Alcance y funcionamiento del Centro de Inteligencia</summary>
+          <div>
+            <p><b>Motor:</b> consultas y reglas internas de PARKS ONE; no envía información operativa a un servicio externo de IA.</p>
+            <p><b>Fuentes:</b> Top 23, Top 5, parques, documentos, alertas, usuarios y matriz hídrica disponibles para la sesión.</p>
+            <p><b>Permisos:</b> cada respuesta usa únicamente la información autorizada por el perfil y alcance validados en Supabase.</p>
+            <p><b>Limitaciones:</b> si la fuente no contiene evidencia suficiente, la respuesta debe indicarlo y no completar información por inferencia.</p>
+          </div>
+        </details>
+      </div>
     </footer>
 
     <div id="intelligenceKpis" hidden></div>
@@ -5280,10 +5351,10 @@ boot();
 <script src="scripts/usuarios.js?v=7.2.0"></script>
 <script src="scripts/configuracion-maestra.js?v=7.2.0"></script>
 
-<script src="scripts/intelligence/parser.js?v=11.2.0"></script>
+<script src="scripts/intelligence/parser.js?v=11.2.2"></script>
 <script src="scripts/intelligence/core.js?v=11.2.0"></script>
 <script src="scripts/intelligence/aliases.js?v=11.0.0"></script>
-<script src="scripts/intelligence/resolver.js?v=11.2.0"></script>
+<script src="scripts/intelligence/resolver.js?v=11.2.2"></script>
 <script src="scripts/intelligence/knowledge.js?v=11.0.0"></script>
 <script src="scripts/intelligence/memory.js?v=11.2.0"></script>
 <script src="scripts/intelligence/registry.js?v=11.0.0"></script>
@@ -5300,7 +5371,7 @@ boot();
 <script src="scripts/intelligence/skills/audit.skill.js?v=11.0.0"></script>
 <script src="scripts/intelligence/skills/executive.skill.js?v=11.0.0"></script>
 <script src="scripts/intelligence/engine.js?v=11.2.0"></script>
-<script src="scripts/inteligencia.js?v=11.2.0"></script>
+<script src="scripts/inteligencia.js?v=11.2.2"></script>
 
 
 <script>

@@ -57,45 +57,94 @@
 
     for (let row = 1; row <= b.length; row++) {
       for (let col = 1; col <= a.length; col++) {
-        matrix[row][col] = Math.min(
+        let value = Math.min(
           matrix[row - 1][col] + 1,
           matrix[row][col - 1] + 1,
           matrix[row - 1][col - 1] +
             (b[row - 1] === a[col - 1] ? 0 : 1)
         );
+
+        // Damerau-Levenshtein: trata una inversión adyacente como un solo error
+        // (ej. "ptra" -> "ptar", "regoin" -> "region").
+        if (
+          row > 1 &&
+          col > 1 &&
+          b[row - 1] === a[col - 2] &&
+          b[row - 2] === a[col - 1]
+        ) {
+          value = Math.min(value, matrix[row - 2][col - 2] + 1);
+        }
+
+        matrix[row][col] = value;
       }
     }
 
     return matrix[b.length][a.length];
   }
 
+  function stemToken(value) {
+    const token = normalize(value);
+    if (token.length > 6 && token.endsWith('es')) return token.slice(0, -2);
+    if (token.length > 5 && token.endsWith('s')) return token.slice(0, -1);
+    return token;
+  }
+
+  function tokenClose(token, candidate) {
+    const a = stemToken(token);
+    const b = stemToken(candidate);
+    if (!a || !b) return false;
+    if (a === b) return true;
+
+    // Términos de 1-3 caracteres (R1, PC, NA, etc.) sólo coinciden exactamente.
+    if (a.length < 4 || b.length < 4) return false;
+
+    const maxLen = Math.max(a.length, b.length);
+    const maxDistance = maxLen >= 8 ? 2 : 1;
+    return distance(a, b) <= maxDistance;
+  }
+
   function fuzzyIncludes(text, candidate) {
     const cleanText = normalize(text);
     const cleanCandidate = normalize(candidate);
+    if (!cleanText || !cleanCandidate) return false;
 
-    if (cleanText.includes(cleanCandidate)) return true;
+    // Coincidencia por frase completa con límites de palabra. Evita falsos positivos
+    // como "n a" dentro de "quien administra".
+    if (` ${cleanText} `.includes(` ${cleanCandidate} `)) return true;
 
-    return cleanText.split(' ').some(token => {
-      if (token.length < 4 || cleanCandidate.length < 4) return false;
-      const maxDistance = Math.max(token.length, cleanCandidate.length) >= 8 ? 2 : 1;
-      return distance(token, cleanCandidate) <= maxDistance;
-    });
+    const textTokens = cleanText.split(' ').filter(Boolean);
+    const candidateTokens = cleanCandidate.split(' ').filter(Boolean);
+    if (!candidateTokens.length) return false;
+
+    if (candidateTokens.length === 1) {
+      return textTokens.some(token => tokenClose(token, candidateTokens[0]));
+    }
+
+    for (let start = 0; start <= textTokens.length - candidateTokens.length; start++) {
+      const windowTokens = textTokens.slice(start, start + candidateTokens.length);
+      if (candidateTokens.every((part, index) => tokenClose(windowTokens[index], part))) return true;
+    }
+
+    return false;
   }
 
   function detectDomain(question) {
     const q = normalize(question);
 
-    // Prioridades explícitas para evitar empates como
-    // “¿Qué parques tienen PTAR?”, que antes se clasificaba como parques.
-    if (/\b(ptar|pozo|agua|hidraulica|descarga|descargas|suministro)\b/.test(q)) {
+    // Prioridades explícitas y tolerantes a errores ortográficos para evitar empates
+    // como “¿Qué parques tienen PTRA?”, que no debe clasificarse como parques.
+    if (['ptar', 'pozo', 'agua', 'hidraulica', 'descarga', 'suministro'].some(term => fuzzyIncludes(q, term))) {
       return 'water';
     }
 
-    if (/\b(alerta|alertas|vencimiento|vencen|critico|criticos)\b/.test(q)) {
+    if (['alerta', 'vencimiento', 'critico'].some(term => fuzzyIncludes(q, term))) {
       return 'alerts';
     }
 
-    if (/\b(predial|prediales|proteccion civil|uso de suelo|licencia|archivo|archivos|documento|documentos)\b/.test(q)) {
+    if ([
+      'predial', 'proteccion civil', 'uso de suelo', 'licencia',
+      'archivo', 'documento'
+    ].some(term => fuzzyIncludes(q, term))) {
       return 'documents';
     }
 
@@ -103,8 +152,8 @@
       /\btop\s*5\b/.test(q) ||
       /\btop5\b/.test(q) ||
       (
-        /\b(rendimiento|cumplimiento|matutino|vespertino)\b/.test(q) &&
-        /\b(administrador|administradores|admin|admins|region|regional)\b/.test(q)
+        ['rendimiento', 'cumplimiento', 'matutino', 'vespertino'].some(term => fuzzyIncludes(q, term)) &&
+        ['administrador', 'admin', 'region', 'regional'].some(term => fuzzyIncludes(q, term))
       )
     ) return 'top5';
 
@@ -126,13 +175,14 @@
 
   function detectIntent(question) {
     const q = normalize(question);
+    const any = terms => terms.some(term => fuzzyIncludes(q, term));
 
-    if (/\b(cuantos|cuantas|total|cantidad|conteo|numero de)\b/.test(q)) return 'count';
-    if (/\b(compara|comparar|contra|versus|vs|mejoro|bajo|subio)\b/.test(q)) return 'compare';
-    if (/\b(peor|mejor|mayor|menor|ranking|rendimiento|desempeno)\b/.test(q)) return 'rank';
-    if (/\b(lista|listado|muestrame|mostrar|ensename|dame|cuales|quienes)\b/.test(q)) return 'list';
-    if (/\b(resumen|resume|panorama|estado general)\b/.test(q)) return 'summary';
-    if (/\b(busca|buscar|encuentra|localiza)\b/.test(q)) return 'search';
+    if (any(['cuantos', 'cuantas', 'total', 'cantidad', 'conteo', 'numero'])) return 'count';
+    if (any(['compara', 'comparar', 'contra', 'versus', 'mejoro', 'bajo', 'subio']) || /\bvs\b/.test(q)) return 'compare';
+    if (any(['peor', 'mejor', 'mayor', 'menor', 'ranking', 'rendimiento', 'desempeno'])) return 'rank';
+    if (any(['lista', 'listado', 'muestrame', 'mostrar', 'ensename', 'dame', 'cuales', 'quienes'])) return 'list';
+    if (any(['resumen', 'resume', 'panorama']) || fuzzyIncludes(q, 'estado general')) return 'summary';
+    if (any(['busca', 'buscar', 'encuentra', 'localiza'])) return 'search';
     return 'answer';
   }
 
@@ -181,6 +231,13 @@
     const numeric = q.match(/\b(?:region|r)\s*(10|[1-9])\b/);
     if (numeric) return `R${numeric[1]}`;
 
+    // Tolera errores como “regoin 1” o “regin 3”.
+    const tokens = q.split(' ').filter(Boolean);
+    for (let index = 0; index < tokens.length - 1; index++) {
+      const number = tokens[index + 1].match(/^(10|[1-9])$/);
+      if (number && fuzzyIncludes(tokens[index], 'region')) return `R${number[1]}`;
+    }
+
     const words = {
       uno: 'R1', dos: 'R2', tres: 'R3', cuatro: 'R4', cinco: 'R5',
       seis: 'R6', siete: 'R7', ocho: 'R8', nueve: 'R9', diez: 'R10'
@@ -188,6 +245,7 @@
 
     for (const [word, region] of Object.entries(words)) {
       if (new RegExp(`\\bregion\\s+${word}\\b`).test(q)) return region;
+      if (tokens.some((token, index) => fuzzyIncludes(token, 'region') && tokens[index + 1] === word)) return region;
     }
 
     return '';
@@ -195,9 +253,14 @@
 
   function detectScopeRequest(question) {
     const q = normalize(question);
-    if (/\b(nacional|nivel nacional|todo el pais|todos los parques|todas las regiones)\b/.test(q)) return 'national';
-    if (/\b(mi division|division asignada|mi alcance divisional)\b/.test(q)) return 'division';
-    if (/\b(mi region|region asignada)\b/.test(q)) return 'region';
+    if (
+      fuzzyIncludes(q, 'nacional') ||
+      fuzzyIncludes(q, 'todo el pais') ||
+      fuzzyIncludes(q, 'todos los parques') ||
+      fuzzyIncludes(q, 'todas las regiones')
+    ) return 'national';
+    if (fuzzyIncludes(q, 'mi division') || fuzzyIncludes(q, 'division asignada') || fuzzyIncludes(q, 'alcance divisional')) return 'division';
+    if (fuzzyIncludes(q, 'mi region') || fuzzyIncludes(q, 'region asignada')) return 'region';
     return '';
   }
 
@@ -206,6 +269,18 @@
     if (!q) return false;
     if (/^(y|tambien|ademas|ahora)\b/.test(q)) return true;
     if (/\b(su|sus|ese|esa|esos|esas|el mismo|la misma|lo anterior|los pendientes|las pendientes)\b/.test(q) && q.split(' ').length <= 10) return true;
+
+    // Preguntas elípticas como “¿cuáles están pendientes?” dependen del objeto
+    // inmediatamente anterior. Se acepta también ortografía imperfecta.
+    const startsAsQuestion = ['cual', 'cuales', 'que', 'quienes'].some(term => fuzzyIncludes(q.split(' ')[0], term));
+    if (startsAsQuestion && q.split(' ').length <= 9 && (
+      fuzzyIncludes(q, 'pendiente') ||
+      fuzzyIncludes(q, 'faltante') ||
+      fuzzyIncludes(q, 'por validar')
+    )) return true;
+
+    if (/^(cual|cuales)\s+(falta|faltan|quedo|quedan)\b/.test(q) && q.split(' ').length <= 7) return true;
+
     return /^(quien lo|quien la|tiene|cuantos faltan|cuantas faltan|y los|y las)\b/.test(q);
   }
 
@@ -220,6 +295,7 @@
 
   function parse(question, options = {}) {
     const periods = options.top5Periods || options.periods || [];
+    const explicitMonth = MONTHS.some(([term]) => fuzzyIncludes(question, term));
 
     return {
       raw: question,
@@ -235,7 +311,7 @@
       followUp: isFollowUp(question),
       explicitRegion: Boolean(detectRegion(question)),
       explicitDocument: Boolean(detectDocument(question)),
-      explicitMonth: MONTHS.some(([term]) => new RegExp(`\\b${term}\\b`).test(normalize(question)))
+      explicitMonth
     };
   }
 

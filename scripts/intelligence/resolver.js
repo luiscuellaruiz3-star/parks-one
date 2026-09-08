@@ -5,14 +5,39 @@
   const Aliases = global.ParksIntelligenceAliases;
 
   function compact(value) {
+    const roman = {
+      '1': 'i', '2': 'ii', '3': 'iii', '4': 'iv', '5': 'v',
+      '6': 'vi', '7': 'vii', '8': 'viii', '9': 'ix', '10': 'x'
+    };
+
     return Core.normalize(value)
-      .replace(/\b(parque|park|industrial|industriales)\b/g, ' ')
+      // Tolera PARK pegado y errores comunes del sufijo: Tultipark, Tultiprak, Tultiprk.
+      .replace(/\b([a-z0-9]{3,})(?:park|prak|prk)\b/g, '$1 ')
+      .replace(/\b(parque|park|prak|prk|industrial|industriales)\b/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim()
+      .split(' ')
+      .map(token => roman[token] || token)
+      .join(' ');
   }
 
   function words(value) {
     return compact(value).split(' ').filter(Boolean);
+  }
+
+  function phraseIncludes(text, phrase) {
+    const t = ` ${String(text || '').trim()} `;
+    const p = ` ${String(phrase || '').trim()} `;
+    return Boolean(phrase && t.includes(p));
+  }
+
+  function tokenMatches(token, word) {
+    if (token === word) return true;
+    // I, II, III, IV, V... y demás tokens cortos deben coincidir exactamente.
+    // El fuzzy anterior hacía que “I” coincidiera con cualquier palabra que tuviera i,
+    // provocando que TULTI PARK III pudiera resolverse como TULTI PARK I.
+    if (token.length < 4 || word.length < 4) return false;
+    return Core.fuzzyIncludes(token, word);
   }
 
   function similarity(question, candidate) {
@@ -22,13 +47,13 @@
     if (q === c) return 100;
     // Evita falsos positivos con nombres que al compactarse quedan en 1-3 caracteres.
     if (c.length < 4) return 0;
-    if (q.includes(c)) return 96;
-    if (c.includes(q) && q.length >= 4) return 91;
+    if (phraseIncludes(q, c)) return 98;
+    if (q.length >= 4 && phraseIncludes(c, q)) return 93;
 
     const qWords = words(q);
     const cWords = words(c);
     const overlap = cWords.filter(word =>
-      qWords.some(token => token === word || Core.fuzzyIncludes(token, word))
+      qWords.some(token => tokenMatches(token, word))
     ).length;
 
     if (!overlap) return 0;
