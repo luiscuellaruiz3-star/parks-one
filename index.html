@@ -1374,9 +1374,110 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:900px){.trace-grid{grid-template-columns:1fr 1fr}.trace-item:nth-child(3n){border-right:1px solid #e2ece8}.trace-item:nth-child(2n){border-right:0}}
 @media(max-width:560px){.trace-grid{grid-template-columns:1fr}.trace-item,.trace-item:nth-child(3n){border-right:0}.parks-traceability>summary{align-items:flex-start}.parks-traceability>summary .trace-cut{max-width:46%}}
 </style>
+
+<style id="parks-v735-responsive">
+/* ============================================================
+   PARKS ONE V7.3.5 · Adaptación visual / responsive
+   Atiende observación 2.4 de Sistemas.
+   ============================================================ */
+
+/* Ningún módulo o tarjeta puede ampliar el viewport completo. */
+html,body,.app,.main,.content,.page{max-width:100%;overflow-x:hidden}
+.headline,.actions,.toolbar,.alerts-standard-layout,.alerts-change-grid,
+.intel-shell,.intel-header,.intel-bottom,.intel-prompt,.intel-suggestions{min-width:0;max-width:100%}
+
+/* Encabezados de módulo: el bloque de acciones baja de línea si no cabe. */
+.headline{align-items:flex-start;flex-wrap:wrap}
+.headline>div:first-child{min-width:0;flex:1 1 420px}
+.headline .actions{flex:0 1 auto;justify-content:flex-end}
+.headline h1,.headline p{overflow-wrap:anywhere}
+
+/* Centro de alertas: el cambio de corte queda contenido dentro de su tarjeta. */
+#alertas{width:100%;max-width:1500px;margin-inline:auto}
+#alertas .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+#alertas .alerts-standard-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:15px;align-items:start}
+#alertas .alerts-attention-card,#alertas .alerts-change-card,#alertas .alerts-explore-card{min-width:0;overflow:hidden}
+#alertas .alerts-change-grid,#alertas .alerts-change-grid-four{width:100%;min-width:0}
+#alertas .alerts-change-grid>div{min-width:0;max-width:100%}
+#alertas .alerts-change-grid strong,#alertas .alerts-change-grid small{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#alertas .alerts-toolbar{display:flex;align-items:stretch;gap:8px;max-width:100%}
+#alertas .alerts-toolbar input,#alertas .alerts-toolbar select{flex:1 1 180px;min-width:0;max-width:100%}
+#alertas .alerts-toolbar input{flex-basis:280px}
+#alertas .alerts-row{max-width:100%;min-width:0}
+#alertas .alerts-row-main,#alertas .alerts-row-type{min-width:0;overflow-wrap:anywhere}
+
+/* Centro de Inteligencia: sugerencias siempre visibles y sin recortes. */
+#inteligencia .intel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#inteligencia .intel-header>div{min-width:0;flex:1 1 420px}
+#inteligencia .intel-header h1,#inteligencia .intel-header p{overflow-wrap:anywhere}
+#inteligencia .intel-new-chat{flex:0 0 auto}
+#inteligencia .intel-bottom{min-width:0;max-width:100%;overflow:hidden}
+#inteligencia .intel-prompt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;width:100%;min-width:0}
+#inteligencia .intel-prompt textarea{min-width:0;width:100%;max-width:100%;overflow-wrap:anywhere}
+#inteligencia .intel-suggestions{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))!important;
+  gap:8px!important;
+  width:100%;
+  overflow:visible!important;
+}
+#inteligencia .intel-suggestion{
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;text-align:left;
+}
+#inteligencia .intel-help,#inteligencia .intel-help div{max-width:100%;overflow-wrap:anywhere}
+
+/* Biblioteca y tablas: desbordamiento sólo dentro de la tabla, nunca en la página. */
+#documentos .tablewrap,#agua .tablewrap,.top23-table-card{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+#documentos .toolbar input,#documentos .toolbar select{min-width:0;max-width:100%}
+
+/* Tablet */
+@media(max-width:1100px){
+  #alertas .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #alertas .alerts-standard-layout{grid-template-columns:1fr}
+  #alertas .alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .headline .actions{justify-content:flex-start}
+}
+
+/* Teléfono */
+@media(max-width:720px){
+  .content{padding:14px}
+  .headline{gap:10px;margin-bottom:14px}
+  .headline>div:first-child{flex-basis:100%}
+  .headline h1{font-size:27px}
+  .headline .actions{width:100%}
+  .headline .actions .btn,.headline .actions .alerts-scope-badge{flex:1 1 auto;text-align:center;justify-content:center}
+
+  #alertas .kpis{grid-template-columns:1fr}
+  #alertas .alerts-change-grid-four{grid-template-columns:1fr}
+  #alertas .alerts-toolbar{display:grid;grid-template-columns:1fr}
+  #alertas .alerts-toolbar input,#alertas .alerts-toolbar select{width:100%;min-width:0}
+  #alertas .alerts-row{grid-template-columns:1fr;padding:12px 2px;gap:6px}
+  #alertas .alerts-row-type,#alertas .alerts-row-action{grid-column:auto}
+  #alertas .alerts-severity{justify-self:start}
+
+  #inteligencia{width:100%!important}
+  #inteligencia .intel-header{padding-inline:0!important}
+  #inteligencia .intel-header>div{flex-basis:100%}
+  #inteligencia .intel-new-chat{width:100%}
+  #inteligencia .intel-bottom{border-radius:14px!important;padding:9px!important}
+  #inteligencia .intel-suggestions{grid-template-columns:1fr!important}
+  #inteligencia .intel-suggestion{width:100%!important}
+  #inteligencia .intel-help summary{line-height:1.35}
+}
+
+/* Pantallas muy estrechas */
+@media(max-width:420px){
+  .content{padding:10px}
+  #inteligencia .intel-prompt{grid-template-columns:minmax(0,1fr) 44px}
+  #inteligencia .intel-send{width:44px;height:44px}
+  .parks-traceability>summary{display:block}
+  .parks-traceability>summary .trace-cut{display:block;max-width:100%;margin:5px 0 0;text-align:left}
+}
+</style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.4.1',
+  version:'7.3.5',
   releasedAt:'2026-09-08',
   environment:'production'
 });
