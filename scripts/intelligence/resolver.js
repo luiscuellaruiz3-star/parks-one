@@ -20,6 +20,8 @@
     const c = compact(candidate);
     if (!q || !c) return 0;
     if (q === c) return 100;
+    // Evita falsos positivos con nombres que al compactarse quedan en 1-3 caracteres.
+    if (c.length < 4) return 0;
     if (q.includes(c)) return 96;
     if (c.includes(q) && q.length >= 4) return 91;
 

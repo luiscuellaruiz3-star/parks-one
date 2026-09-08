@@ -3,9 +3,9 @@
 <title>Parks ONE | Plataforma Integral de Operaciones</title>
 <style>
 :root{--g:#087a5a;--gd:#03483a;--gl:#82c743;--bg:#f2f7f5;--ink:#15352e;--mut:#6b7e78;--line:#dbe7e2;--white:#fff;--red:#df4444;--amber:#d48b00;--blue:#286db7;--shadow:0 10px 28px rgba(4,72,58,.09)}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.app{display:block;min-height:100vh}.side{background:linear-gradient(180deg,#05523f,#033a30);color:#fff;padding:19px 14px;position:fixed;inset:0 auto 0 0;width:270px;height:100vh;height:100dvh;overflow:auto;z-index:40}.brand{display:flex;gap:12px;align-items:center;padding:2px 4px 18px;border-bottom:1px solid #ffffff25}.brand img{width:130px;background:#fff;border-radius:10px;padding:7px}.brand b{font-size:18px}.brand small{display:block;color:#d2e5df;margin-top:3px}.nav{padding-top:14px}.nav button{width:100%;border:0;background:transparent;color:#e7f1ee;text-align:left;padding:12px;border-radius:10px;margin:2px 0;cursor:pointer;display:flex;gap:10px;align-items:center}.nav button:hover,.nav button.active{background:#ffffff17}.nav .ic{width:22px;text-align:center}.side-note{margin-top:20px;border:1px solid #ffffff28;background:#ffffff0b;border-radius:12px;padding:12px;font-size:12px;line-height:1.45}.main{min-width:0;margin-left:270px}.top{height:78px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:30}.search{position:relative;width:min(760px,58vw)}.search input{width:100%;padding:13px 18px 13px 42px;border:1px solid var(--line);border-radius:24px;background:#fbfdfc;outline:none}.search:before{content:'⌕';position:absolute;left:15px;top:8px;font-size:25px;color:var(--mut)}.search-results{display:none;position:absolute;top:51px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:430px;overflow:auto;z-index:70}.search-results.show{display:block}.sr{padding:11px 14px;border-bottom:1px solid #edf2f0;cursor:pointer}.sr:hover{background:#f0f7f4}.sr small{display:block;color:var(--mut)}.profile{display:flex;align-items:center;gap:13px}.profile select{padding:10px;border:1px solid var(--line);border-radius:9px;background:#f8fbfa;font-weight:700}.profile b{display:block}.profile small{color:var(--mut)}.content{padding:26px}.page{display:none}.page.active{display:block}.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:17px}.headline h1{margin:0;color:var(--gd);font-size:30px}.headline p{margin:5px 0 0;color:var(--mut)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}.ghost{background:#eaf4f0;color:var(--g)}.hero{min-height:275px;border-radius:20px;background:linear-gradient(90deg,rgba(3,60,48,.97),rgba(3,60,48,.72),rgba(3,60,48,.15)),url('assets/park_hero.jpg') center/cover;color:#fff;padding:30px;position:relative;box-shadow:var(--shadow);margin-bottom:17px}.hero .eyebrow{font-size:12px;font-weight:800;letter-spacing:1px;color:#b9e593;text-transform:uppercase}.hero h2{font-size:35px;max-width:640px;margin:12px 0 8px}.hero p{max-width:690px;color:#d9e9e4;line-height:1.55}.hero-chips{position:absolute;left:30px;bottom:23px;display:flex;gap:10px;flex-wrap:wrap}.chip{background:#ffffff18;border:1px solid #ffffff32;border-radius:10px;padding:9px 12px;font-size:13px}.kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:13px;margin:17px 0}.card{background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.kpi{padding:17px;cursor:pointer;position:relative;overflow:hidden;transition:.18s}.kpi:hover{transform:translateY(-3px)}.kpi:after{content:'';position:absolute;right:-21px;bottom:-24px;width:78px;height:78px;border-radius:50%;background:#eff7f4}.kpi small{color:var(--mut)}.kpi strong{display:block;font-size:29px;color:var(--gd);margin:7px 0}.kpi .sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.good{border-top:4px solid var(--g)}.danger{border-top:4px solid var(--red)}.warn{border-top:4px solid var(--amber)}.info{border-top:4px solid var(--blue)}.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.section{padding:19px}.section h3{margin:0 0 13px;color:var(--gd)}.regrow{display:grid;grid-template-columns:72px 1fr 58px;gap:10px;align-items:center;margin:11px 0}.bar{height:11px;background:#e4eeea;border-radius:10px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g),var(--gl));border-radius:10px}.alert{padding:11px 13px;border:1px solid var(--line);border-left:5px solid var(--amber);border-radius:10px;margin:8px 0}.alert.critical{border-left-color:var(--red)}.alert.medium{border-left-color:var(--blue)}.alert small{display:block;color:var(--mut);margin-top:3px}.mini{display:grid;grid-template-columns:150px 1fr 55px;gap:9px;align-items:center;margin:11px 0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}.tablewrap{overflow:auto;border-radius:14px}table{border-collapse:collapse;width:100%;background:#fff}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12.5px;vertical-align:top}th{background:#f4f8f6;color:#36564d;position:sticky;top:0}.badge{display:inline-flex;padding:5px 8px;border-radius:20px;font-size:11px;font-weight:800}.bgreen{background:#e4f4ed;color:var(--g)}.bred{background:#fde8e8;color:var(--red)}.bamber{background:#fff1d5;color:#8a5900}.bgray{background:#edf1ef;color:#66736f}.parks{display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:13px}.park{cursor:pointer;overflow:hidden;transition:.18s}.park:hover{transform:translateY(-3px)}.park-img{height:96px;background:linear-gradient(135deg,rgba(0,111,82,.9),rgba(128,195,66,.38)),url('assets/park_hero.jpg') center/cover;color:#fff;padding:13px;display:flex;align-items:flex-end;font-weight:800}.park-body{padding:13px}.park h3{font-size:15px;margin:0 0 4px}.meta{font-size:12px;color:var(--mut)}.parkstats{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:9px;font-size:12px}.modal{position:fixed;inset:0;background:#062d267c;display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal.show{display:flex}.modalbox{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:17px;box-shadow:0 28px 90px #0005}.modalhead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}.modalhead h3{margin:0}.x{border:0;background:#edf3f1;border-radius:50%;width:34px;height:34px;cursor:pointer}.modalbody{padding:18px}.chartgrid{display:grid;grid-template-columns:280px 1fr;gap:22px;align-items:center}.donut{width:220px;height:220px;border-radius:50%;display:grid;place-items:center;margin:auto}.donut span{width:145px;height:145px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;font-size:28px;font-weight:800;color:var(--gd)}.detail-list{display:grid;gap:8px}.detail-row{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center}.editable{position:relative}.architect .editable:hover{outline:1px dashed var(--gl);outline-offset:3px}.edit-pencil{display:none;position:absolute;right:3px;top:3px;border:0;background:#fff;border-radius:50%;width:27px;height:27px;box-shadow:0 2px 9px #0002;cursor:pointer;z-index:4}.architect .editable .edit-pencil{display:block}.empty{padding:35px;text-align:center;color:var(--mut)}.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow:auto;margin-bottom:13px}.tabs button{border:0;background:transparent;padding:11px 13px;white-space:nowrap;cursor:pointer;color:var(--mut)}.tabs button.active{color:var(--g);font-weight:800;border-bottom:3px solid var(--g)}.panel{display:none}.panel.active{display:block}.doccards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.doccard{padding:14px}.doccard h4{margin:0 0 6px}.doccard p{margin:4px 0;color:var(--mut);font-size:12px}.toast{position:fixed;right:20px;bottom:20px;background:var(--gd);color:#fff;padding:12px 15px;border-radius:9px;display:none;z-index:150}.adminbar{display:none;background:#fff8dc;border:1px solid #ead281;border-radius:12px;padding:10px 13px;margin-bottom:14px;align-items:center;justify-content:space-between}.architect .adminbar{display:flex}.footnote{font-size:11px;color:var(--mut);margin-top:10px}.profile.view-locked select{display:none}.view-badge{display:none;padding:7px 10px;border-radius:999px;background:#e8f4ef;color:var(--gd);font-size:11px;font-weight:800}.profile.view-locked .view-badge{display:inline-flex}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.app{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}.side{background:linear-gradient(180deg,#05523f,#033a30);color:#fff;padding:19px 14px;position:sticky;top:0;height:100vh;overflow:auto}.brand{display:flex;gap:12px;align-items:center;padding:2px 4px 18px;border-bottom:1px solid #ffffff25}.brand img{width:130px;background:#fff;border-radius:10px;padding:7px}.brand b{font-size:18px}.brand small{display:block;color:#d2e5df;margin-top:3px}.nav{padding-top:14px}.nav button{width:100%;border:0;background:transparent;color:#e7f1ee;text-align:left;padding:12px;border-radius:10px;margin:2px 0;cursor:pointer;display:flex;gap:10px;align-items:center}.nav button:hover,.nav button.active{background:#ffffff17}.nav .ic{width:22px;text-align:center}.side-note{margin-top:20px;border:1px solid #ffffff28;background:#ffffff0b;border-radius:12px;padding:12px;font-size:12px;line-height:1.45}.main{min-width:0}.top{height:78px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:30}.search{position:relative;width:min(760px,58vw)}.search input{width:100%;padding:13px 18px 13px 42px;border:1px solid var(--line);border-radius:24px;background:#fbfdfc;outline:none}.search:before{content:'⌕';position:absolute;left:15px;top:8px;font-size:25px;color:var(--mut)}.search-results{display:none;position:absolute;top:51px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:430px;overflow:auto;z-index:70}.search-results.show{display:block}.sr{padding:11px 14px;border-bottom:1px solid #edf2f0;cursor:pointer}.sr:hover{background:#f0f7f4}.sr small{display:block;color:var(--mut)}.profile{display:flex;align-items:center;gap:13px}.profile select{padding:10px;border:1px solid var(--line);border-radius:9px;background:#f8fbfa;font-weight:700}.profile b{display:block}.profile small{color:var(--mut)}.content{padding:26px}.page{display:none}.page.active{display:block}.headline{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:17px}.headline h1{margin:0;color:var(--gd);font-size:30px}.headline p{margin:5px 0 0;color:var(--mut)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}.ghost{background:#eaf4f0;color:var(--g)}.hero{min-height:275px;border-radius:20px;background:linear-gradient(90deg,rgba(3,60,48,.97),rgba(3,60,48,.72),rgba(3,60,48,.15)),url('assets/park_hero.jpg') center/cover;color:#fff;padding:30px;position:relative;box-shadow:var(--shadow);margin-bottom:17px}.hero .eyebrow{font-size:12px;font-weight:800;letter-spacing:1px;color:#b9e593;text-transform:uppercase}.hero h2{font-size:35px;max-width:640px;margin:12px 0 8px}.hero p{max-width:690px;color:#d9e9e4;line-height:1.55}.hero-chips{position:absolute;left:30px;bottom:23px;display:flex;gap:10px;flex-wrap:wrap}.chip{background:#ffffff18;border:1px solid #ffffff32;border-radius:10px;padding:9px 12px;font-size:13px}.kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:13px;margin:17px 0}.card{background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.kpi{padding:17px;cursor:pointer;position:relative;overflow:hidden;transition:.18s}.kpi:hover{transform:translateY(-3px)}.kpi:after{content:'';position:absolute;right:-21px;bottom:-24px;width:78px;height:78px;border-radius:50%;background:#eff7f4}.kpi small{color:var(--mut)}.kpi strong{display:block;font-size:29px;color:var(--gd);margin:7px 0}.kpi .sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.good{border-top:4px solid var(--g)}.danger{border-top:4px solid var(--red)}.warn{border-top:4px solid var(--amber)}.info{border-top:4px solid var(--blue)}.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.section{padding:19px}.section h3{margin:0 0 13px;color:var(--gd)}.regrow{display:grid;grid-template-columns:72px 1fr 58px;gap:10px;align-items:center;margin:11px 0}.bar{height:11px;background:#e4eeea;border-radius:10px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g),var(--gl));border-radius:10px}.alert{padding:11px 13px;border:1px solid var(--line);border-left:5px solid var(--amber);border-radius:10px;margin:8px 0}.alert.critical{border-left-color:var(--red)}.alert.medium{border-left-color:var(--blue)}.alert small{display:block;color:var(--mut);margin-top:3px}.mini{display:grid;grid-template-columns:150px 1fr 55px;gap:9px;align-items:center;margin:11px 0}.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}.tablewrap{overflow:auto;border-radius:14px}table{border-collapse:collapse;width:100%;background:#fff}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12.5px;vertical-align:top}th{background:#f4f8f6;color:#36564d;position:sticky;top:0}.badge{display:inline-flex;padding:5px 8px;border-radius:20px;font-size:11px;font-weight:800}.bgreen{background:#e4f4ed;color:var(--g)}.bred{background:#fde8e8;color:var(--red)}.bamber{background:#fff1d5;color:#8a5900}.bgray{background:#edf1ef;color:#66736f}.parks{display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:13px}.park{cursor:pointer;overflow:hidden;transition:.18s}.park:hover{transform:translateY(-3px)}.park-img{height:96px;background:linear-gradient(135deg,rgba(0,111,82,.9),rgba(128,195,66,.38)),url('assets/park_hero.jpg') center/cover;color:#fff;padding:13px;display:flex;align-items:flex-end;font-weight:800}.park-body{padding:13px}.park h3{font-size:15px;margin:0 0 4px}.meta{font-size:12px;color:var(--mut)}.parkstats{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px;margin-top:9px;font-size:12px}.modal{position:fixed;inset:0;background:#062d267c;display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal.show{display:flex}.modalbox{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:17px;box-shadow:0 28px 90px #0005}.modalhead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}.modalhead h3{margin:0}.x{border:0;background:#edf3f1;border-radius:50%;width:34px;height:34px;cursor:pointer}.modalbody{padding:18px}.chartgrid{display:grid;grid-template-columns:280px 1fr;gap:22px;align-items:center}.donut{width:220px;height:220px;border-radius:50%;display:grid;place-items:center;margin:auto}.donut span{width:145px;height:145px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;font-size:28px;font-weight:800;color:var(--gd)}.detail-list{display:grid;gap:8px}.detail-row{display:grid;grid-template-columns:190px 1fr 70px;gap:10px;align-items:center}.editable{position:relative}.architect .editable:hover{outline:1px dashed var(--gl);outline-offset:3px}.edit-pencil{display:none;position:absolute;right:3px;top:3px;border:0;background:#fff;border-radius:50%;width:27px;height:27px;box-shadow:0 2px 9px #0002;cursor:pointer;z-index:4}.architect .editable .edit-pencil{display:block}.empty{padding:35px;text-align:center;color:var(--mut)}.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow:auto;margin-bottom:13px}.tabs button{border:0;background:transparent;padding:11px 13px;white-space:nowrap;cursor:pointer;color:var(--mut)}.tabs button.active{color:var(--g);font-weight:800;border-bottom:3px solid var(--g)}.panel{display:none}.panel.active{display:block}.doccards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.doccard{padding:14px}.doccard h4{margin:0 0 6px}.doccard p{margin:4px 0;color:var(--mut);font-size:12px}.toast{position:fixed;right:20px;bottom:20px;background:var(--gd);color:#fff;padding:12px 15px;border-radius:9px;display:none;z-index:150}.adminbar{display:none;background:#fff8dc;border:1px solid #ead281;border-radius:12px;padding:10px 13px;margin-bottom:14px;align-items:center;justify-content:space-between}.architect .adminbar{display:flex}.footnote{font-size:11px;color:var(--mut);margin-top:10px}.profile.view-locked select{display:none}.view-badge{display:none;padding:7px 10px;border-radius:999px;background:#e8f4ef;color:var(--gd);font-size:11px;font-weight:800}.profile.view-locked .view-badge{display:inline-flex}
 .splash{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#033b30,#087a5a);display:grid;place-items:center;color:#fff;transition:opacity .45s ease,visibility .45s ease}.splash.hide{opacity:0;visibility:hidden}.splash-box{text-align:center;width:min(560px,86vw)}.splash-logo{width:230px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 18px 50px #0004}.splash h1{font-size:54px;margin:24px 0 4px}.splash p{margin:0 0 25px;letter-spacing:2px;text-transform:uppercase;color:#d9ebe5}.loader-track{height:8px;background:#ffffff2b;border-radius:20px;overflow:hidden}.loader-fill{height:100%;width:0;background:linear-gradient(90deg,#82c743,#d6f49a);border-radius:20px;transition:width .18s ease}.loader-text{font-size:13px;margin-top:10px;color:#e6f2ee}.park{border-radius:18px}.park-img{height:125px;position:relative}.park-img:after{content:'';position:absolute;inset:auto 12px 12px auto;width:52px;height:52px;border-radius:50%;background:#fff;box-shadow:0 5px 16px #0003}.park-score{position:absolute;right:23px;bottom:28px;z-index:2;color:var(--gd);font-size:12px;font-weight:900}.park-body h3{font-size:17px}.parkstats{gap:8px}.finding-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.finding-box{padding:16px;border-radius:14px;background:#f8fbfa;border:1px solid var(--line)}.finding-box h4{margin:0 0 8px;color:var(--gd)}.finding-box.critical{border-left:5px solid var(--red)}.finding-box.action{border-left:5px solid var(--g)}
-@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.parks{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.side{width:82px}.main{margin-left:82px}.brand img{width:51px}.brand div,.nav .txt,.side-note{display:none}.profile .who{display:none}.content{padding:15px}.grid2,.grid3,.chartgrid{grid-template-columns:1fr}.parks{grid-template-columns:repeat(2,1fr)}.finding-grid{grid-template-columns:1fr}.splash h1{font-size:38px}}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.parks{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.app{grid-template-columns:82px 1fr}.brand img{width:51px}.brand div,.nav .txt,.side-note{display:none}.profile .who{display:none}.content{padding:15px}.grid2,.grid3,.chartgrid{grid-template-columns:1fr}.parks{grid-template-columns:repeat(2,1fr)}.finding-grid{grid-template-columns:1fr}.splash h1{font-size:38px}}
 
 /* Panel ejecutivo 2.0 */
 .kpis{grid-template-columns:repeat(3,minmax(240px,1fr));gap:18px}
@@ -28,7 +28,7 @@
 .finding-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.finding-box{padding:16px;border-radius:14px;border:1px solid var(--line)}.finding-box.critical{background:#fff7f7;border-left:5px solid var(--red)}.finding-box.action{background:#f2f9f6;border-left:5px solid var(--g)}
 .modalbox{width:min(1100px,96vw)}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(220px,1fr))}.executive-band,.grid2{grid-template-columns:1fr}.parks{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:720px){.side{display:none}.main{margin-left:0}.content{padding:15px}.top{padding:0 14px}.search{width:100%}.profile{display:none}.kpis{grid-template-columns:1fr}.parks{grid-template-columns:1fr}.hero h2{font-size:28px}.hero{padding:22px}.executive-band{grid-template-columns:1fr}.finding-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.app{grid-template-columns:1fr}.side{display:none}.content{padding:15px}.top{padding:0 14px}.search{width:100%}.profile{display:none}.kpis{grid-template-columns:1fr}.parks{grid-template-columns:1fr}.hero h2{font-size:28px}.hero{padding:22px}.executive-band{grid-template-columns:1fr}.finding-grid{grid-template-columns:1fr}}
 
 /* PARKS ONE 2.1 · ficha ejecutiva y flujo de aprobación */
 .modalbox.park-sheet{width:min(1240px,97vw)}
@@ -1336,6 +1336,15 @@ body:not(.architect) #inteligencia{
   }
 }
 
+
+/* PARKS ONE V7.3.2 · Inteligencia: alcance visible y scroll seguro */
+#inteligencia .intel-scope-notice{margin-top:10px;padding:9px 11px;border:1px solid #cfe2da;border-radius:10px;background:#f4faf7;color:#28584b;font-size:12px;line-height:1.45}
+#inteligencia .intel-scope-notice.restricted{border-color:#ead6a6;background:#fff9e9;color:#775b13}
+#inteligencia.page.active{min-height:0!important;max-height:calc(100vh - 112px)!important}
+.architect #inteligencia.page.active{max-height:calc(100vh - 205px)!important}
+#inteligencia .intel-shell{min-height:0!important}
+#inteligencia .intel-transcript{min-height:0!important;max-height:none!important}
+#inteligencia .intel-bottom{flex-shrink:0!important;margin-bottom:0!important}
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -1366,119 +1375,11 @@ html,body{max-width:100%;overflow-x:hidden}
 .intel-help p{margin:6px 0}
 @media(max-width:980px){.alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.alerts-change-grid-four{grid-template-columns:1fr}.intel-suggestion{width:100%}}
-/* V7.3.4 · navegación, filtros persistentes y paginación */
-.parks-traceability{margin:0 0 16px;border:1px solid #cfe0da;background:#f8fbfa;border-radius:13px;box-shadow:0 5px 18px #0a503b0b;overflow:hidden}
-.parks-traceability>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--gd);font-weight:800;background:#eef6f3}
-.parks-traceability>summary::-webkit-details-marker{display:none}.parks-traceability>summary:before{content:'ⓘ';margin-right:8px}.parks-traceability>summary .trace-cut{margin-left:auto;font-size:11px;color:var(--mut);font-weight:600;text-align:right}
-.trace-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid #dbe8e3}.trace-item{padding:11px 13px;border-right:1px solid #e2ece8;border-bottom:1px solid #e2ece8;min-width:0}.trace-item:nth-child(3n){border-right:0}.trace-item b{display:block;color:#31594e;font-size:11px;text-transform:uppercase;letter-spacing:.35px;margin-bottom:4px}.trace-item span{display:block;font-size:12px;line-height:1.4;overflow-wrap:anywhere}.trace-foot{padding:9px 13px;font-size:11px;color:var(--mut);background:#fff}.trace-status-ok{color:#087a5a;font-weight:800}.trace-status-warn{color:#9a6200;font-weight:800}
-@media(max-width:900px){.trace-grid{grid-template-columns:1fr 1fr}.trace-item:nth-child(3n){border-right:1px solid #e2ece8}.trace-item:nth-child(2n){border-right:0}}
-@media(max-width:560px){.trace-grid{grid-template-columns:1fr}.trace-item,.trace-item:nth-child(3n){border-right:0}.parks-traceability>summary{align-items:flex-start}.parks-traceability>summary .trace-cut{max-width:46%}}
-</style>
-
-<style id="parks-v735-responsive">
-/* ============================================================
-   PARKS ONE V7.3.5 · Adaptación visual / responsive
-   Atiende observación 2.4 de Sistemas.
-   ============================================================ */
-
-/* Ningún módulo o tarjeta puede ampliar el viewport completo. */
-html,body,.app,.main,.content,.page{max-width:100%;overflow-x:hidden}
-.headline,.actions,.toolbar,.alerts-standard-layout,.alerts-change-grid,
-.intel-shell,.intel-header,.intel-bottom,.intel-prompt,.intel-suggestions{min-width:0;max-width:100%}
-
-/* Encabezados de módulo: el bloque de acciones baja de línea si no cabe. */
-.headline{align-items:flex-start;flex-wrap:wrap}
-.headline>div:first-child{min-width:0;flex:1 1 420px}
-.headline .actions{flex:0 1 auto;justify-content:flex-end}
-.headline h1,.headline p{overflow-wrap:anywhere}
-
-/* Centro de alertas: el cambio de corte queda contenido dentro de su tarjeta. */
-#alertas{width:100%;max-width:1500px;margin-inline:auto}
-#alertas .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
-#alertas .alerts-standard-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:15px;align-items:start}
-#alertas .alerts-attention-card,#alertas .alerts-change-card,#alertas .alerts-explore-card{min-width:0;overflow:hidden}
-#alertas .alerts-change-grid,#alertas .alerts-change-grid-four{width:100%;min-width:0}
-#alertas .alerts-change-grid>div{min-width:0;max-width:100%}
-#alertas .alerts-change-grid strong,#alertas .alerts-change-grid small{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
-#alertas .alerts-toolbar{display:flex;align-items:stretch;gap:8px;max-width:100%}
-#alertas .alerts-toolbar input,#alertas .alerts-toolbar select{flex:1 1 180px;min-width:0;max-width:100%}
-#alertas .alerts-toolbar input{flex-basis:280px}
-#alertas .alerts-row{max-width:100%;min-width:0}
-#alertas .alerts-row-main,#alertas .alerts-row-type{min-width:0;overflow-wrap:anywhere}
-
-/* Centro de Inteligencia: sugerencias siempre visibles y sin recortes. */
-#inteligencia .intel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-#inteligencia .intel-header>div{min-width:0;flex:1 1 420px}
-#inteligencia .intel-header h1,#inteligencia .intel-header p{overflow-wrap:anywhere}
-#inteligencia .intel-new-chat{flex:0 0 auto}
-#inteligencia .intel-bottom{min-width:0;max-width:100%;overflow:hidden}
-#inteligencia .intel-prompt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;width:100%;min-width:0}
-#inteligencia .intel-prompt textarea{min-width:0;width:100%;max-width:100%;overflow-wrap:anywhere}
-#inteligencia .intel-suggestions{
-  display:grid!important;
-  grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))!important;
-  gap:8px!important;
-  width:100%;
-  overflow:visible!important;
-}
-#inteligencia .intel-suggestion{
-  width:100%!important;max-width:100%!important;min-width:0!important;
-  white-space:normal!important;overflow-wrap:anywhere!important;text-align:left;
-}
-#inteligencia .intel-help,#inteligencia .intel-help div{max-width:100%;overflow-wrap:anywhere}
-
-/* Biblioteca y tablas: desbordamiento sólo dentro de la tabla, nunca en la página. */
-#documentos .tablewrap,#agua .tablewrap,.top23-table-card{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
-#documentos .toolbar input,#documentos .toolbar select{min-width:0;max-width:100%}
-
-/* Tablet */
-@media(max-width:1100px){
-  #alertas .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #alertas .alerts-standard-layout{grid-template-columns:1fr}
-  #alertas .alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .headline .actions{justify-content:flex-start}
-}
-
-/* Teléfono */
-@media(max-width:720px){
-  .content{padding:14px}
-  .headline{gap:10px;margin-bottom:14px}
-  .headline>div:first-child{flex-basis:100%}
-  .headline h1{font-size:27px}
-  .headline .actions{width:100%}
-  .headline .actions .btn,.headline .actions .alerts-scope-badge{flex:1 1 auto;text-align:center;justify-content:center}
-
-  #alertas .kpis{grid-template-columns:1fr}
-  #alertas .alerts-change-grid-four{grid-template-columns:1fr}
-  #alertas .alerts-toolbar{display:grid;grid-template-columns:1fr}
-  #alertas .alerts-toolbar input,#alertas .alerts-toolbar select{width:100%;min-width:0}
-  #alertas .alerts-row{grid-template-columns:1fr;padding:12px 2px;gap:6px}
-  #alertas .alerts-row-type,#alertas .alerts-row-action{grid-column:auto}
-  #alertas .alerts-severity{justify-self:start}
-
-  #inteligencia{width:100%!important}
-  #inteligencia .intel-header{padding-inline:0!important}
-  #inteligencia .intel-header>div{flex-basis:100%}
-  #inteligencia .intel-new-chat{width:100%}
-  #inteligencia .intel-bottom{border-radius:14px!important;padding:9px!important}
-  #inteligencia .intel-suggestions{grid-template-columns:1fr!important}
-  #inteligencia .intel-suggestion{width:100%!important}
-  #inteligencia .intel-help summary{line-height:1.35}
-}
-
-/* Pantallas muy estrechas */
-@media(max-width:420px){
-  .content{padding:10px}
-  #inteligencia .intel-prompt{grid-template-columns:minmax(0,1fr) 44px}
-  #inteligencia .intel-send{width:44px;height:44px}
-  .parks-traceability>summary{display:block}
-  .parks-traceability>summary .trace-cut{display:block;max-width:100%;margin:5px 0 0;text-align:left}
-}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.5.1',
-  releasedAt:'2026-09-08',
+  version:'7.3.1',
+  releasedAt:'2026-09-07',
   environment:'production'
 });
 </script>
@@ -1505,7 +1406,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.5.1</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.1</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1549,7 +1450,7 @@ window.PARKS_RELEASE=Object.freeze({
   <div id="dashboardTop5Comparison"></div>
 </div>
 </section>
-<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, riesgo y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div><div id="parksPager" class="list-pager"></div></section>
+<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, riesgo y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div></section>
 <section id="top23" class="page">
   <div class="headline">
     <div>
@@ -1673,7 +1574,6 @@ window.PARKS_RELEASE=Object.freeze({
           <tbody id="top5AdminBody"></tbody>
         </table>
       </div>
-      <div id="top5AdminPager" class="list-pager"></div>
     </div>
   </div>
 
@@ -1689,7 +1589,6 @@ window.PARKS_RELEASE=Object.freeze({
           <tbody id="top5RecordsBody"></tbody>
         </table>
       </div>
-      <div id="top5RecordsPager" class="list-pager"></div>
       <div class="footnote">Un Administrador con varios parques se consolida una sola vez. La carga mensual respeta el consolidado del Excel fuente.</div>
     </div>
   </div>
@@ -1757,7 +1656,7 @@ window.PARKS_RELEASE=Object.freeze({
         <option value="document_returned">Documento devuelto</option>
       </select>
     </div>
-    <div id="alertsList"></div><div id="alertsPager" class="list-pager"></div>
+    <div id="alertsList"></div>
   </div>
 </section>
 
@@ -1859,7 +1758,7 @@ window.PARKS_RELEASE=Object.freeze({
     </div>
   </div>
 </section>
-<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div id="docSourceBanner" class="water-source-banner" style="margin-bottom:12px"></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div><div id="docsPager" class="list-pager"></div></section>
+<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div></section>
 <section id="agua" class="page">
   <div class="headline">
     <div>
@@ -3084,147 +2983,10 @@ window.handleNationalSmartFile=async function(input){
   setTimeout(()=>{try{input.value='';}catch(_){ }},0);
  }
 };
-function traceDate(value){
- if(!value)return 'No registrada en la fuente';
- const raw=String(value);
- try{
-  const d=/^\d{4}-\d{2}-\d{2}$/.test(raw)?new Date(raw+'T12:00:00'):new Date(raw);
-  if(Number.isNaN(d.getTime()))return raw;
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw)
-   ?d.toLocaleDateString('es-MX',{year:'numeric',month:'short',day:'2-digit'})+' · hora no registrada'
-   :d.toLocaleString('es-MX',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
- }catch(_){return raw;}
-}
-function traceModuleConfig(id){
- const map={
-  inicio:{source:'sigop',rule:'Los KPI se calculan con el mismo consolidado visible. N/A se excluye del denominador y “por definir” permanece separado.'},
-  parques:{source:'sigop',rule:'Sólo se muestran parques dentro del alcance validado por Supabase; el detalle se deriva de evidencia y requisitos aplicables.'},
-  top23:{source:'sigop',rule:'✅ = evidencia integrada; ❌ = pendiente aplicable; N/A no impacta cumplimiento; “por definir” no se convierte en cumplimiento.'},
-  top5:{source:'top5',rule:'Cierre mensual consolidado por Administrador; la regla multiparque evita duplicar cumplimiento y los registros conservan su origen.'},
-  alertas:{source:'alerts',rule:'Alertas críticas de vigencia y rezago documental crítico son señales distintas; no se mezclan en un mismo indicador.'},
-  documentos:{source:'documents',rule:'KPI y tabla usan la misma evidencia autorizada. Las descargas usan acceso temporal y el alcance se valida por parque.'},
-  importacion:{source:'session',rule:'Cada carga se analiza antes de impactar indicadores; los registros no homologados o rechazados deben permanecer identificados.'},
-  agua:{source:'hydrica',rule:'Los KPI operativos usan sólo registros hidráulicos enlazados al padrón visible. “Por confirmar” no equivale a Sí ni a No.'},
-  inteligencia:{source:'session',rule:'Consulta únicamente fuentes disponibles para la sesión y su alcance. Si no existe evidencia suficiente, no completa información por inferencia.'},
-  flujo:{source:'documents',rule:'Las cargas sujetas a revisión no impactan como aprobadas hasta completar el flujo; la decisión conserva estado y actor.'},
-  calendario:{source:'documents',rule:'Las señales temporales provienen de fechas registradas o identificadas en la evidencia; PARKS ONE no inventa vigencias.'},
-  reportes:{source:'sigop',rule:'Los reportes reutilizan la misma fuente y reglas de los módulos; exportar no recalcula ni altera los datos.'},
-  moduloUsuarios:{source:'session',rule:'Roles y alcances proceden de Supabase; la interfaz no amplía permisos por encima de RLS.'},
-  configuracionMaestra:{source:'session',rule:'El padrón, regiones y divisiones se gobiernan desde la configuración autorizada; cambios requieren permisos de arquitectura.'}
- };
- return map[id]||map.inicio;
-}
-function tracePending(id){
- try{
-  if(id==='top23'){
-   const req=C?.requirements||[];
-   const pending=req.reduce((n,x)=>n+Number(x.no||0),0);
-   const validating=req.reduce((n,x)=>n+Number(x.val||0),0);
-   return `${fmt(pending)} pendientes aplicables · ${fmt(validating)} por definir`;
-  }
-  if(id==='documentos'||id==='flujo'||id==='calendario'){
-   const files=C?.files||[];
-   const review=files.filter(x=>/revision|revisión/i.test(String(x.workflow_status||x.status||''))).length;
-   const returned=files.filter(x=>/devuelto|returned|rechaz/i.test(String(x.workflow_status||x.status||''))).length;
-   return `${fmt(review)} en revisión · ${fmt(returned)} devueltos/rechazados dentro del alcance visible`;
-  }
-  if(id==='agua'){
-   const rec=(typeof waterCatalogReconciliation==='function'&&typeof waterRows==='function')?waterCatalogReconciliation(waterRows()):null;
-   return rec?`${fmt(rec.unmatched.length)} registros históricos o por homologar · ${fmt(rec.linked.length)} enlazados`:'Conciliación disponible al cargar la matriz';
-  }
-  if(id==='top5'){
-   const selected=$('#top5Month')?.value||T5?.months?.at?.(-1)?.month;
-   const row=(T5?.months||[]).find(x=>x.month===selected)||(T5?.months||[]).at?.(-1);
-   if(!row)return 'Sin periodo Top 5 disponible';
-   const gap=Math.max(0,Number(row.expected||0)-Number(row.records||0));
-   return `${fmt(row.records||0)} registros consolidados · ${fmt(gap)} de diferencia contra la meta esperada`;
-  }
-  if(id==='alertas')return `${fmt((D?.alerts||[]).length)} alertas visibles; seguimientos y estado se conservan por separado`;
-  if(id==='parques'||id==='configuracionMaestra'||id==='moduloUsuarios')return `${fmt(C?.parks?.length||0)} parques visibles según el alcance de la sesión`;
-  if(id==='inicio'||id==='reportes')return `${fmt(C?.metrics?.pending||D?.metrics?.pending||0)} obligaciones aplicables pendientes en el consolidado visible`;
-  if(id==='inteligencia')return 'Consultas sin evidencia suficiente se devuelven como información insuficiente; no se rellenan por inferencia.';
-  if(id==='importacion')return 'Registros rechazados/no homologados se mantienen separados y no deben convertirse automáticamente en cumplimiento.';
- }catch(error){console.warn('Trazabilidad pendiente:',error);}
- return 'Sin pendientes específicos reportados por este módulo.';
-}
-function renderTraceability(id){
- const page=document.getElementById(id);if(!page)return;
- const cfg=traceModuleConfig(id);
- const meta=window.PARKS_BOOTSTRAP_META||{};
- const trace=meta.traceability?.[cfg.source]||meta.traceability?.sigop||{};
- let box=page.querySelector('.parks-traceability');
- if(!box){
-  box=document.createElement('details');box.className='parks-traceability';box.dataset.module=id;
-  const anchor=page.querySelector(':scope > .headline, :scope > .intel-shell > .intel-header');
-  if(anchor&&anchor.parentElement===page)anchor.insertAdjacentElement('afterend',box);else page.insertBefore(box,page.firstChild);
- }
- const cut=trace.updated_at||meta.generated_at||'';
- const scope=meta.scoped?`${meta.role||'perfil'} · ${fmt(meta.visible_parks||0)} parques visibles`:`${meta.role||'perfil'} · alcance nacional`;
- box.innerHTML=`
-  <summary><span>Trazabilidad de la información</span><span class="trace-cut">Fuente: ${esc(trace.source||'PARKS ONE protegido')} · ${esc(traceDate(cut))}</span></summary>
-  <div class="trace-grid">
-   <div class="trace-item"><b>Origen de los datos</b><span>${esc(trace.source||'PARKS ONE protegido')}</span></div>
-   <div class="trace-item"><b>Última actualización de fuente</b><span>${esc(traceDate(trace.updated_at))}</span></div>
-   <div class="trace-item"><b>Archivo / proceso</b><span>${esc(trace.source_file||trace.process||'Proceso protegido PARKS ONE')}</span></div>
-   <div class="trace-item"><b>Responsable de carga</b><span>${esc(trace.responsible||'No registrado en la fuente')}</span></div>
-   <div class="trace-item"><b>Regla de cálculo / uso</b><span>${esc(cfg.rule)}</span></div>
-   <div class="trace-item"><b>Rechazados / pendientes</b><span class="trace-status-warn">${esc(tracePending(id))}</span></div>
-  </div>
-  <div class="trace-foot">Consulta protegida: ${esc(traceDate(meta.generated_at))} · Alcance: ${esc(scope)} · Versión ${esc(meta.version||window.PARKS_RELEASE?.version||'')}</div>`;
-}
-
-
-/* V7.3.4 · estado de consulta por sesión y paginación */
-const PARKS_UI_STATE_KEY='parksOneUiStateV734';
-const LIST_PAGES={parks:1,alerts:1,docs:1,top5Admins:1,top5Records:1};
-const PAGE_SIZES={parks:18,alerts:50,docs:50,top5Admins:25,top5Records:50};
-function readUiState(){
- try{return JSON.parse(sessionStorage.getItem(PARKS_UI_STATE_KEY)||'{}')||{}}catch{return {}}
-}
-function writeUiState(next){
- try{sessionStorage.setItem(PARKS_UI_STATE_KEY,JSON.stringify(next||{}))}catch{}
-}
-function saveFilterValue(id){
- const el=document.getElementById(id);if(!el)return;
- const state=readUiState();state.filters=state.filters||{};state.filters[id]=el.value;writeUiState(state);
-}
-function restoreFilterValue(id){
- const el=document.getElementById(id);if(!el)return;
- const value=readUiState()?.filters?.[id];
- if(value===undefined||value===null)return;
- if(el.tagName==='SELECT'&&!Array.from(el.options).some(o=>o.value===value))return;
- el.value=value;
-}
-function resetListPage(key){LIST_PAGES[key]=1;}
-function pageData(items,key){
- const size=PAGE_SIZES[key]||50,total=items.length,pages=Math.max(1,Math.ceil(total/size));
- LIST_PAGES[key]=Math.min(Math.max(1,LIST_PAGES[key]||1),pages);
- const page=LIST_PAGES[key],start=(page-1)*size;
- return {rows:items.slice(start,start+size),page,pages,total,size,start};
-}
-function pagerHtml(key,total){
- const size=PAGE_SIZES[key]||50,pages=Math.max(1,Math.ceil(total/size));
- const page=Math.min(Math.max(1,LIST_PAGES[key]||1),pages);LIST_PAGES[key]=page;
- if(total<=size)return total?`<div class="list-count">${fmt(total)} registros</div>`:'';
- const from=(page-1)*size+1,to=Math.min(total,page*size);
- return `<div class="list-pager-inner"><span class="list-count">Mostrando ${fmt(from)}–${fmt(to)} de ${fmt(total)}</span><div class="list-pager-actions"><button class="btn ghost" ${page<=1?'disabled':''} onclick="setListPage('${key}',${page-1})">← Anterior</button><span>Página ${fmt(page)} de ${fmt(pages)}</span><button class="btn ghost" ${page>=pages?'disabled':''} onclick="setListPage('${key}',${page+1})">Siguiente →</button></div></div>`;
-}
-function setListPage(key,page){
- LIST_PAGES[key]=Math.max(1,Number(page)||1);
- ({parks:renderParks,alerts:renderAlerts,docs:renderDocs,top5Admins:renderTop5,top5Records:renderTop5}[key]||(()=>{}))();
- const host={parks:'parksPager',alerts:'alertsPager',docs:'docsPager',top5Admins:'top5AdminPager',top5Records:'top5RecordsPager'}[key];
- document.getElementById(host)?.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function bindPersistentFilter(id,eventName,renderFn,pageKeys=[]){
- const el=document.getElementById(id);if(!el)return;
- restoreFilterValue(id);
- el.addEventListener(eventName,()=>{pageKeys.forEach(resetListPage);saveFilterValue(id);renderFn();});
-}
 function renderPage(id){
  const target=document.getElementById(id)?id:'inicio';
  $$('.page').forEach(x=>x.classList.toggle('active',x.id===target));
  $$('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===target));
- try{renderTraceability(target);}catch(error){console.warn('Trazabilidad:',error);}
  window.scrollTo(0,0);
  return target;
 }
@@ -3595,8 +3357,7 @@ function dashboardAlertsData(){
 }
 
 function dashboardWaterData(){
- const sourceRows=typeof waterRows==='function'?waterRows():[];
- const rows=typeof waterCatalogReconciliation==='function'?waterCatalogReconciliation(sourceRows).linked:sourceRows;
+ const rows=typeof waterRows==='function'?waterRows():[];
  const yes=typeof waterYes==='function'?waterYes:(v=>{
    const t=String(v||'').trim().toUpperCase();
    return !!t&&!['NO','N/A','NA','POR CONFIRMAR','POR VALIDAR'].includes(t)&&/(^|\b)(SI|SÍ)(\b|$)|TIENE/.test(t);
@@ -3739,8 +3500,7 @@ function renderDashboard(){
 
  $('#heroParks').textContent=fmt(t23.parks.length);
  $('#heroFiles').textContent=fmt(C.files.length);
- const operationalAdmins=new Set(t23.parks.map(p=>String(p.administrator||'').trim()).filter(v=>v&&!/^(VACANTE|POR ASIGNAR|SIN ASIGNAR)$/i.test(v)));
- $('#heroAdmins').textContent=fmt(operationalAdmins.size);
+ $('#heroAdmins').textContent=fmt(top5.admins.length);
  $('#heroRegions').textContent=fmt(C.regions.length);
 
  const audited=t23.parks.filter(p=>String(p.audit).toUpperCase()==='SI').length;
@@ -3751,14 +3511,14 @@ function renderDashboard(){
   ['pend','Pendientes documentales',fmt(t23.pending),'Obligaciones aplicables sin evidencia integrada','danger','!'],
   ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · cierre consolidado por Administrador`,'info','↗'],
   ['docs','Documentos cargados',fmt(C.files.length),`${fmt(new Set(C.files.map(f=>f.park).filter(Boolean)).size)} parques con evidencia`,'good','▤'],
-  ['alerts','Alertas críticas de vigencia',fmt(alerts.critical),'Vencidos o devueltos · distinto del rezago documental','warn','●'],
-  ['critical','Rezago documental crítico',fmt(critical),'Parques con 0% de cumplimiento en obligaciones aplicables','danger','⚠']
+  ['alerts','Alertas críticas',fmt(alerts.critical),'Centro de alertas · atención prioritaria','warn','●'],
+  ['critical','Parques con rezago crítico',fmt(critical),'15+ pendientes documentales aplicables','danger','⚠']
  ];
  $('#kpis').innerHTML=k.map(x=>`<div class="card kpi ${x[4]} editable" data-key="kpi-${x[0]}" onclick="kpiDetail('${x[0]}')"><span class="kpi-title">${x[1]}</span><span class="kpi-icon">${x[5]}</span><strong>${x[2]}</strong><div class="sub">${x[3]}</div><span class="kpi-action">Ver detalle →</span></div>`).join('');
 
  $('#summaryParks').textContent=`${fmt(t23.parks.length)} parques evaluados`;
  $('#summaryRegions').textContent=`${C.regions.length} regiones consolidadas`;
- $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. El Centro de alertas registra ${fmt(alerts.critical)} alertas críticas de vigencia; este indicador mide vencimientos o devoluciones y no equivale al rezago documental. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
+ $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
 
  const regional=[...new Set(t23.parks.map(p=>p.region))].map(region=>{
    const rp=t23.parks.filter(p=>p.region===region);
@@ -3802,14 +3562,7 @@ function renderDashboard(){
  applyEditable();
 }
 function regionDetail(reg){const r=C.regions.find(x=>x.region===reg), ps=C.parks.filter(p=>p.region===reg).sort((a,b)=>b.compliance-a.compliance);openModal(`Detalle ${reg}`,`<p>${r.parks} parques · ${fmt(r.files)} archivos · ${fmt(r.integrated)} requisitos integrados.</p><div class="detail-list">${ps.map(p=>`<div class="detail-row"><b>${esc(p.park)}</b><div class="bar"><i style="width:${p.compliance*100}%"></i></div><span>${pct(p.compliance)}</span></div>`).join('')}</div>`)}
-function renderParks(){
- C.parks=C.parks.filter(isCanonicalPark);
- const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;
- const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));
- const page=pageData(a,'parks');
- $('#parksGrid').innerHTML=page.rows.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>';
- if($('#parksPager'))$('#parksPager').innerHTML=pagerHtml('parks',a.length);
-}
+function renderParks(){C.parks=C.parks.filter(isCanonicalPark);const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));$('#parksGrid').innerHTML=a.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>'}
 
 function normalizeDocName(v){
  return String(v||'').toUpperCase().normalize('NFD')
@@ -4069,7 +3822,7 @@ function recalculateAll(){
  const fresh=compute();C.regions.splice(0,C.regions.length,...fresh.regions);C.requirements.splice(0,C.requirements.length,...fresh.requirements);C.files.splice(0,C.files.length,...fresh.files);D.regions=C.regions;D.all_files=C.files;
 }
 
-let T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[]};
+const T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[]};
 
 function top5Class(v){return v>=.9?'top5-high':v>=.75?'top5-mid':'top5-low'}
 
@@ -4243,9 +3996,7 @@ function renderTop5(){
       ${low?`<div class="alert critical"><b>Menor avance: ${esc(low.region)}</b><small>${pct(low.compliance,2)} de cumplimiento regional.</small></div>`:''}`;
   }
 
-  const adminPage=pageData(filteredAdmins,'top5Admins');
-  const recordsPage=pageData(filteredRecords,'top5Records');
-  $('#top5AdminBody').innerHTML=adminPage.rows.map(x=>`
+  $('#top5AdminBody').innerHTML=filteredAdmins.map(x=>`
     <tr>
       <td><b>${esc(x.region)}</b></td>
       <td>${esc(x.administrator)}</td>
@@ -4256,12 +4007,10 @@ function renderTop5(){
       <td>${fmt(x.expected)}</td>
       <td><b class="${top5Class(Number(x.compliance)||0)}">${pct(Number(x.compliance)||0,2)}</b></td>
     </tr>`).join('')||'<tr><td colspan="8" class="empty">Sin coincidencias.</td></tr>';
-  if($('#top5AdminPager'))$('#top5AdminPager').innerHTML=pagerHtml('top5Admins',filteredAdmins.length);
 
-  $('#top5RecordsBody').innerHTML=recordsPage.rows.map(x=>`
+  $('#top5RecordsBody').innerHTML=filteredRecords.slice(0,800).map(x=>`
     <tr><td>${esc(x.date)}</td><td>${esc(x.region)}</td><td>${esc(x.administrator)}</td><td>${esc(x.park||'')}</td><td>${esc(x.shift)}</td><td><b>${esc(x.time)}</b></td></tr>`
   ).join('')||'<tr><td colspan="6" class="empty">Sin registros para el filtro actual.</td></tr>';
-  if($('#top5RecordsPager'))$('#top5RecordsPager').innerHTML=pagerHtml('top5Records',filteredRecords.length);
 }
 
 function refreshTop5Selectors(){
@@ -4283,8 +4032,7 @@ function refreshTop5Selectors(){
 
 function initTop5(){
   refreshTop5Selectors();
-  ['top5Month','top5Region','top5Admin'].forEach(id=>restoreFilterValue(id));
-  ['top5Month','top5Region','top5Admin'].forEach(id=>bindPersistentFilter(id,id==='top5Admin'?'input':'change',renderTop5,['top5Admins','top5Records']));
+  ['top5Month','top5Region','top5Admin'].forEach(id=>$('#'+id)?.addEventListener('input',renderTop5));
   renderTop5();
 }
 
@@ -4733,8 +4481,7 @@ function renderAlerts(){
      ? `Último corte del motor: ${esc(new Date(diff.at).toLocaleString('es-MX'))}`
      : 'Primera línea base pendiente de guardar.'}</div>`;
 
- const alertsPage=pageData(filtered,'alerts');
- $('#alertsList').innerHTML=alertsPage.rows.map(a=>`
+ $('#alertsList').innerHTML=filtered.slice(0,400).map(a=>`
    <button class="alerts-row" onclick="openAlertRecord('${encodeURIComponent(a.key)}')">
     <span class="alerts-severity ${a.severity}">${esc(alertSeverityLabel(a.severity))}</span>
     <div class="alerts-row-main">
@@ -4744,7 +4491,6 @@ function renderAlerts(){
     <span class="alerts-row-type">${esc(alertTypeLabel(a.type))}</span>
     <span class="alerts-row-action">Ver →</span>
    </button>`).join('')||'<div class="empty">Sin alertas para los filtros seleccionados.</div>';
- if($('#alertsPager'))$('#alertsPager').innerHTML=pagerHtml('alerts',filtered.length);
 
  engine.scheduleSync(all);
 }
@@ -4757,26 +4503,11 @@ function initAlertsModule(){
   region.innerHTML='<option value="">Todas las regiones</option>'+regions.map(r=>`<option>${esc(r)}</option>`).join('');
   if(regions.includes(current))region.value=current;
  }
- ['alertSearch','alertRegion','alertSeverity','alertType'].forEach(id=>restoreFilterValue(id));
  ['alertSearch','alertRegion','alertSeverity','alertType'].forEach(id=>
-   bindPersistentFilter(id,id==='alertSearch'?'input':'change',renderAlerts,['alerts'])
+   $('#'+id)?.addEventListener(id==='alertSearch'?'input':'change',renderAlerts)
  );
  window.ParksAlertsEngine?.init?.();
  renderAlerts();
-}
-
-function documentStorageRef(file){
- const f=file||{};
- const direct=String(f.storage_path||'').trim();
- if(direct)return direct;
- /* Los registros provenientes de public.documents se identifican con cloud_id.
-    Solo en esos casos usamos la ruta fusionada; evitamos reactivar rutas públicas
-    heredadas documents_repo de la fuente histórica. */
- if(f.cloud_id){
-  const merged=String(f.local_url||f.path||'').trim();
-  if(merged)return merged;
- }
- return '';
 }
 
 function renderDocs(){
@@ -4785,13 +4516,7 @@ function renderDocs(){
   const searchable=[f.filename,f.park,f.folder,f.document_type,f.year,f.region].join(' ').toLowerCase();
   return searchable.includes(q)&&(!reg||f.region===reg);
  });
- const docsPage=pageData(a,'docs');
  const years=new Set(C.files.map(f=>f.year).filter(Boolean));
- const docBanner=$('#docSourceBanner');
- if(docBanner){
-  const parkCount=new Set(C.files.map(f=>f.park).filter(Boolean)).size;
-  docBanner.innerHTML=`<b>Fuente conciliada:</b> ${fmt(C.files.length)} archivos indexados en ${fmt(parkCount)} parques con evidencia. <b>La tabla usa exactamente la misma fuente.</b> Mostrando ${fmt(a.length?docsPage.start+1:0)}–${fmt(Math.min(a.length,docsPage.start+docsPage.rows.length))} de ${fmt(a.length)} coincidencias${(q||reg)?' con los filtros actuales':''}.`;
- }
  const kpis=[
   ['all','Archivos indexados',C.files.length,'Repositorio nacional','good'],
   ['parks','Parques con archivos',new Set(C.files.map(f=>f.park).filter(Boolean)).size,'Cobertura física','info'],
@@ -4799,12 +4524,11 @@ function renderDocs(){
   ['pdf','PDF',C.files.filter(f=>String(f.extension||'').toLowerCase()==='pdf').length,'Formato predominante','good']
  ];
  $('#docKpis').innerHTML=kpis.map(x=>`<div class="card kpi ${x[4]}" onclick="openDocumentKpi('${x[0]}')"><small>${esc(x[1])}</small><strong>${fmt(x[2])}</strong><div class="sub">${esc(x[3])}</div><span class="kpi-action">Ver desglose →</span></div>`).join('');
- $('#docsBody').innerHTML=docsPage.rows.map(f=>{
+ $('#docsBody').innerHTML=a.slice(0,500).map(f=>{
   const ref=documentStorageRef(f),park=encodeURIComponent(f.park||''),name=encodeURIComponent(f.filename||'');
   const actions=`<div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn secondary" onclick="showDocumentDetail('${park}','${name}')">Ficha</button>${ref?`<button class="btn ghost" onclick="openDocument('${encodeURIComponent(ref)}')">Abrir</button>`:'<span class="meta" title="El registro existe, pero el archivo no está vinculado al bucket parks-documents">Sin archivo en Storage</span>'}</div>`;
   return `<tr><td><b>${esc(f.filename)}</b></td><td>${esc(f.park)}</td><td>${esc(f.document_type||f.folder||'Sin clasificar')}</td><td>${esc(f.year||'Sin año')}</td><td>${esc(f.region||'Sin región')}</td><td>${actions}</td></tr>`;
  }).join('')||'<tr><td colspan="6"><div class="empty">No se localizaron documentos con los filtros seleccionados.</div></td></tr>';
- if($('#docsPager'))$('#docsPager').innerHTML=pagerHtml('docs',a.length);
 }
 function openDocumentKpi(type){
  const files=C.files||[];
@@ -4938,48 +4662,6 @@ function waterRows(){
  })).filter(x=>x.p.park);
 }
 
-function waterParkIdentity(value){
- return String(value||'')
-  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-  .toUpperCase()
-  .replace(/\([^)]*\)/g,' ')
-  .replace(/\bPARQUE INDUSTRIAL\b/g,'PARK')
-  .replace(/[^A-Z0-9]+/g,' ')
-  .replace(/\s+/g,' ')
-  .trim();
-}
-
-function waterCatalogReconciliation(rows=waterRows()){
- const catalog=new Map();
- (C?.parks||[]).forEach(p=>{
-  [p.park,p.name,p.commercial_name,p.code].forEach(value=>{
-   const key=waterParkIdentity(value);
-   if(key&&!catalog.has(key))catalog.set(key,p);
-  });
- });
- const linked=[],unmatched=[];
- (rows||[]).forEach(row=>{
-  const key=waterParkIdentity(row?.p?.park);
-  const match=key?catalog.get(key):null;
-  if(match)linked.push({...row,catalogPark:match});
-  else unmatched.push(row);
- });
- return {source:rows||[],linked,unmatched,catalogCount:(C?.parks||[]).length};
-}
-
-function waterEnvironmentalRiskReasons(h){
- const reasons=[];
- const text=waterRegulationText(h);
- const ptarText=String(h.ptar||'').toUpperCase();
- if(text.includes('NO CUENTA CON PERMISO')||text.includes('SIN PERMISO'))reasons.push('Descarga sin permiso explícitamente identificado');
- if(text.includes('REGULARIZAR')||text.includes('REGULARICE')||text.includes('POR REGULARIZAR')||text.includes('SE TIENE QUE REGULAR'))reasons.push('Regularización de descarga o trámite pendiente');
- if(text.includes('NO SE HAN PAGADO PORQUE NO SE DETERMINA')||text.includes('NO SE DETERMINA PORQUE NO SE SABE A QUE MUNICIPIO'))reasons.push('Autoridad o esquema de pago de descarga sin determinar');
- if(waterYes(h.ptar)&&(ptarText.includes('NO FUNCIONA')||text.includes('PTAR NO ACTIVA')||text.includes('PTAR INACTIVA')))reasons.push('PTAR identificada pero fuera de operación');
- if(text.includes('DESCARGA A LA CALLE'))reasons.push('Descarga a la calle reportada');
- if(text.includes('CONEXIÓN DESCUBIERTA')||text.includes('CONEXION DESCUBIERTA'))reasons.push('Conexión de descarga descubierta reportada');
- return [...new Set(reasons)];
-}
-
 function waterSnapshotStats(rows){
  return {
   total:rows.length,
@@ -5005,7 +4687,6 @@ function openWaterRecord(encodedName){
    <div><small>Pozo</small><b>${esc(h.pozo||'Por confirmar')}</b></div>
   </div>
   <div class="detail-list">
-   <div class="detail-row"><b>Riesgo ambiental</b><span>${esc(waterEnvironmentalRiskReasons(h).join('; ')||'Sin condición explícita de riesgo ambiental identificada en la fuente')}</span></div>
    <div class="detail-row"><b>Suministro</b><span>${esc(h.suministro||'Por confirmar')}</span></div>
    <div class="detail-row"><b>¿Parks paga agua?</b><span>${esc(h.parks_paga_agua||'Por confirmar')}</span></div>
    <div class="detail-row"><b>¿Parks suministra?</b><span>${esc(h.parks_suministra||'Por confirmar')}</span></div>
@@ -5019,8 +4700,7 @@ function openWaterRecord(encodedName){
 }
 
 function openWaterKpi(type){
- const reconciliation=waterCatalogReconciliation();
- const rows=reconciliation.linked;
+ const rows=waterRows();
  const config={
   ptar:['Parques con PTAR',rows.filter(x=>waterYes(x.h.ptar||x.p.ptar))],
   discharge:['Parques con descarga',rows.filter(x=>waterHasDischarge(x.h.tipo_descarga||x.p.discharge))],
@@ -5036,7 +4716,7 @@ function openWaterKpi(type){
     <td>${esc(p.region||'')}</td>
     <td>${esc(h.ptar||p.ptar||'')}</td>
     <td>${esc(h.tipo_descarga||p.discharge||'')}</td>
-    <td>${esc(type==='risk'?(waterEnvironmentalRiskReasons(h).join('; ')||h.pendientes||h.observaciones||'Condición de riesgo identificada'):(h.pendientes||h.observaciones||''))}</td>
+    <td>${esc(h.pendientes||h.observaciones||'')}</td>
     <td><button class="btn ghost" onclick="closeModal();openWaterRecord('${encodeURIComponent(p.park)}')">Ver parque</button></td>
    </tr>`).join('')}
   </tbody></table></div>`:'<div class="empty">No hay parques en esta condición.</div>');
@@ -5051,8 +4731,7 @@ function waterPreviousStats(){
   p:{park:row.park,region:row.region,administrator:row.administrator},
   h:row.hydrica||{}
  }));
- const linked=waterCatalogReconciliation(rows).linked;
- return {stats:waterSnapshotStats(linked),snapshot:previous};
+ return {stats:waterSnapshotStats(rows),snapshot:previous};
 }
 
 function renderWater(){
@@ -5072,11 +4751,9 @@ function renderWater(){
   return true;
  });
 
- const reconciliation=waterCatalogReconciliation(all);
- const operational=reconciliation.linked;
- const stats=waterSnapshotStats(operational);
+ const stats=waterSnapshotStats(all);
  if($('#waterSourceBanner')){
-   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra conciliada:</b> ${fmt(all.length)} registros hidráulicos fuente · <b>${fmt(operational.length)} enlazados al padrón visible de ${fmt(reconciliation.catalogCount)} parques</b> · ${fmt(reconciliation.unmatched.length)} históricos o por homologar. Los KPI operativos se calculan únicamente con registros enlazados. “Por confirmar” no se interpreta como Sí ni como No.`;
+   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra:</b> HIDRICA_FINAL_FUENTE · <b>${fmt(all.length)} registros hidráulicos cargados</b>. “Por confirmar” no se interpreta como Sí ni como No.`;
  }
  $('#waterKpis').innerHTML=[
   ['ptar','Parques con PTAR',fmt(stats.ptar),'PTAR identificada en la fuente maestra','good'],
@@ -5097,9 +4774,9 @@ function renderWater(){
  }
 
  const attention=[
-  ...operational.filter(x=>waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Riesgo ambiental',priority:0,detail:waterEnvironmentalRiskReasons(x.h).join('; ')||waterRelevantPending(x.h)||x.h.ptar})),
-  ...operational.filter(x=>waterNeedsPermit(x.h)&&!waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Permiso / trámite pendiente',priority:1,detail:waterRelevantPending(x.h)})),
-  ...operational.filter(x=>waterNeedsValidation(x.h)).map(x=>{
+  ...all.filter(x=>waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Riesgo ambiental',priority:0,detail:waterRelevantPending(x.h)||x.h.ptar})),
+  ...all.filter(x=>waterNeedsPermit(x.h)&&!waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Permiso / trámite pendiente',priority:1,detail:waterRelevantPending(x.h)})),
+  ...all.filter(x=>waterNeedsValidation(x.h)).map(x=>{
     const pendingFields=[
       ['Pago de agua',x.h.parks_paga_agua],['Pago clientes',x.h.clientes_pagan_agua],
       ['Suministro Parks',x.h.parks_suministra],['Suministro',x.h.suministro],
@@ -5342,13 +5019,7 @@ function renderCalendar(){
    ${priorities.map(a=>`<button type="button" class="calendar-priority-item ${a.severity||'medium'}" onclick="go('alertas');setTimeout(()=>{const q=document.getElementById('alertSearch');if(q){q.value='${esc(a.park).replace(/'/g,'')}';renderAlerts()}},50)"><span class="calendar-dot"></span><div><b>${esc(a.park)} · ${esc(a.document)}</b><small>${esc(alertTypeLabel(a.type))} · ${esc(a.message||'')}</small></div><span>Ver →</span></button>`).join('')||'<div class="empty">No existen vigencias o actualizaciones prioritarias con la información disponible.</div>'}
   </div>`;
 }
-function initFilters(){
- const regs=[...new Set(C.parks.map(p=>p.region))].sort();
- ['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});
- ['parkSearch','regionFilter','riskFilter','docSearch','docRegion'].forEach(id=>restoreFilterValue(id));
- ['parkSearch','regionFilter','riskFilter'].forEach(id=>bindPersistentFilter(id,id==='parkSearch'?'input':'change',renderParks,['parks']));
- ['docSearch','docRegion'].forEach(id=>bindPersistentFilter(id,id==='docSearch'?'input':'change',renderDocs,['docs']));
-}
+function initFilters(){const regs=[...new Set(C.parks.map(p=>p.region))].sort();['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});['parkSearch','regionFilter','riskFilter'].forEach(id=>$('#'+id).addEventListener('input',renderParks));['alertSearch','alertSeverity'].forEach(id=>$('#'+id).addEventListener('input',renderAlerts));['docSearch','docRegion'].forEach(id=>$('#'+id).addEventListener('input',renderDocs))}
 function globalSearch(){const q=$('#globalSearch').value.toLowerCase().trim(),el=$('#searchResults');if(q.length<2){el.classList.remove('show');return}const ps=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)).slice(0,7).map(p=>`<div class="sr" onclick="parkDetail('${encodeURIComponent(p.park)}');$('#searchResults').classList.remove('show')"><b>${esc(p.park)}</b><small>Parque · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`);const fs=C.files.filter(f=>(f.filename+' '+f.document_type+' '+f.park).toLowerCase().includes(q)).slice(0,8).map(f=>`<div class="sr" onclick="go('documentos');$('#docSearch').value='${esc(f.filename).replace(/'/g,'')}';renderDocs();$('#searchResults').classList.remove('show')"><b>${esc(f.filename)}</b><small>Archivo · ${esc(f.park)} · ${esc(f.document_type)}</small></div>`);el.innerHTML=[...ps,...fs].join('')||'<div class="sr">Sin coincidencias.</div>';el.classList.add('show')}
 $('#globalSearch').addEventListener('input',globalSearch);document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('#searchResults').classList.remove('show')});
 const labels={
@@ -5516,8 +5187,6 @@ async function boot(){
   }
 
   D=window.SIGOP_DATA;
-  // TOP 5 se carga después de autenticar; sincroniza la fuente protegida real.
-  T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[],officialMonths:{},officialRegions:{}};
 
   if(!D){
    throw new Error('No se pudo cargar la información protegida de PARKS ONE');
@@ -5541,7 +5210,6 @@ async function boot(){
   window.C=C;
   window.D=D;
   window.SIGOP_COMPUTED=C;
-  try{renderTraceability(currentPage());}catch(error){console.warn('Trazabilidad inicial:',error);}
 
   if(!D.metrics)D.metrics={};
   D.metrics.compliance=(D.metrics.evaluated||0)
@@ -5564,11 +5232,10 @@ async function boot(){
    const region=$('#top23Region');
    if(region){
     region.innerHTML='<option value="">Todas las regiones</option>'+[...new Set((C.parks||[]).map(p=>p.region).filter(Boolean))].sort().map(r=>`<option>${esc(r)}</option>`).join('');
+    region.addEventListener('change',renderTop23);
    }
-   ['top23Region','top23Search','top23Status'].forEach(id=>restoreFilterValue(id));
-   bindPersistentFilter('top23Region','change',renderTop23);
-   bindPersistentFilter('top23Search','input',renderTop23);
-   bindPersistentFilter('top23Status','change',renderTop23);
+   $('#top23Search')?.addEventListener('input',renderTop23);
+   $('#top23Status')?.addEventListener('change',renderTop23);
   });
   safeRender('Parques',renderParks);
   safeRender('Top 23',renderTop23);
@@ -5613,27 +5280,27 @@ boot();
 <script src="scripts/usuarios.js?v=7.2.0"></script>
 <script src="scripts/configuracion-maestra.js?v=7.2.0"></script>
 
-<script src="scripts/intelligence/parser.js?v=11.0.0"></script>
-<script src="scripts/intelligence/core.js?v=11.0.0"></script>
+<script src="scripts/intelligence/parser.js?v=11.2.0"></script>
+<script src="scripts/intelligence/core.js?v=11.2.0"></script>
 <script src="scripts/intelligence/aliases.js?v=11.0.0"></script>
-<script src="scripts/intelligence/resolver.js?v=11.0.0"></script>
+<script src="scripts/intelligence/resolver.js?v=11.2.0"></script>
 <script src="scripts/intelligence/knowledge.js?v=11.0.0"></script>
-<script src="scripts/intelligence/memory.js?v=11.1.0"></script>
+<script src="scripts/intelligence/memory.js?v=11.2.0"></script>
 <script src="scripts/intelligence/registry.js?v=11.0.0"></script>
-<script src="scripts/intelligence/planner.js?v=11.1.0"></script>
-<script src="scripts/intelligence/skills/general.skill.js?v=11.0.0"></script>
+<script src="scripts/intelligence/planner.js?v=11.2.0"></script>
+<script src="scripts/intelligence/skills/general.skill.js?v=11.2.0"></script>
 <script src="scripts/intelligence/skills/top5.skill.js?v=11.0.0"></script>
 <script src="scripts/intelligence/skills/top23.skill.js?v=11.0.0"></script>
-<script src="scripts/intelligence/skills/documents.skill.js?v=11.0.0"></script>
-<script src="scripts/intelligence/skills/parks.skill.js?v=11.0.0"></script>
-<script src="scripts/intelligence/skills/alerts.skill.js?v=11.0.0"></script>
+<script src="scripts/intelligence/skills/documents.skill.js?v=11.2.0"></script>
+<script src="scripts/intelligence/skills/parks.skill.js?v=11.2.0"></script>
+<script src="scripts/intelligence/skills/alerts.skill.js?v=11.2.0"></script>
 <script src="scripts/intelligence/skills/water.skill.js?v=11.1.0"></script>
 <script src="scripts/intelligence/skills/users.skill.js?v=11.0.0"></script>
-<script src="scripts/intelligence/skills/workflow.skill.js?v=11.0.0"></script>
+<script src="scripts/intelligence/skills/workflow.skill.js?v=11.2.0"></script>
 <script src="scripts/intelligence/skills/audit.skill.js?v=11.0.0"></script>
 <script src="scripts/intelligence/skills/executive.skill.js?v=11.0.0"></script>
-<script src="scripts/intelligence/engine.js?v=11.0.0"></script>
-<script src="scripts/inteligencia.js?v=11.0.0"></script>
+<script src="scripts/intelligence/engine.js?v=11.2.0"></script>
+<script src="scripts/inteligencia.js?v=11.2.0"></script>
 
 
 <script>
@@ -5680,57 +5347,4 @@ boot();
 #flujo .kpi:after,
 #calendario .kpi:after,
 #agua .kpi:after{display:none !important;content:none !important}
-</style>
-
-
-<style>
-/* V7.3.4 · paginación y volumen de información */
-.list-pager{margin:14px 0 4px;min-height:24px}
-.list-pager-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
-.list-count{font-size:13px;color:var(--muted);font-weight:700}
-.list-pager-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.list-pager .btn{padding:7px 11px;min-height:34px}
-.list-pager .btn:disabled{opacity:.45;cursor:not-allowed}
-@media(max-width:720px){.list-pager-inner{align-items:stretch}.list-pager-actions{width:100%;justify-content:space-between}.list-pager-actions span{text-align:center;flex:1}}
-
-
-/* ============================================================
-   PARKS ONE V7.3.5.1 · Centro de Inteligencia sin recorte vertical
-   Corrección visual puntual: el módulo deja de forzar una altura
-   de viewport y permite que la página gestione el desplazamiento.
-   ============================================================ */
-#inteligencia,
-.architect #inteligencia,
-body:not(.architect) #inteligencia{
-  height:auto !important;
-  min-height:0 !important;
-  overflow:visible !important;
-  padding-bottom:28px;
-}
-#inteligencia .intel-shell{
-  height:auto !important;
-  min-height:0 !important;
-  grid-template-rows:auto auto auto !important;
-  overflow:visible !important;
-}
-#inteligencia .intel-transcript{
-  min-height:260px !important;
-  max-height:none !important;
-  overflow:visible !important;
-  padding-bottom:18px !important;
-  scrollbar-gutter:auto !important;
-}
-#inteligencia .intel-welcome{
-  min-height:260px !important;
-}
-#inteligencia .intel-bottom{
-  position:relative !important;
-  margin:10px 0 24px !important;
-  overflow:visible !important;
-}
-@media(max-width:760px){
-  #inteligencia .intel-transcript,
-  #inteligencia .intel-welcome{min-height:220px !important;}
-  #inteligencia{padding-bottom:18px;}
-}
 </style>

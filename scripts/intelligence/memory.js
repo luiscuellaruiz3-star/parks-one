@@ -7,46 +7,49 @@
     const previous = state.context || {};
     const entities = parsed.entities || {};
     const previousEntities = previous.entities || {};
+    const followUp = Boolean(parsed.followUp);
 
-    // Un dominio explícito nuevo no debe arrastrar filtros semánticos incompatibles
-    // de la consulta anterior. Ej.: Predial -> "¿Qué parques tienen PTAR?".
-    const explicitDomain = parsed.domain && parsed.domain !== 'general';
-    const domainChanged = explicitDomain && previous.domain && parsed.domain !== previous.domain;
-    const keepDocument = !domainChanged && ['documents', 'parks', 'general'].includes(parsed.domain || 'general');
-    const keepConcept = !domainChanged && ['water', 'parks', 'general'].includes(parsed.domain || 'general');
-    const keepRisk = !domainChanged && ['alerts', 'parks', 'general'].includes(parsed.domain || 'general');
+    // Una consulta independiente SIEMPRE parte limpia. Esto evita que R3, un parque,
+    // un documento o un periodo de la pregunta anterior contaminen una consulta nueva.
+    if (!followUp) {
+      const clean = {
+        ...parsed,
+        region: parsed.region || '',
+        document: parsed.document || '',
+        risk: parsed.risk || '',
+        entities: { ...entities }
+      };
+      state.context = {
+        region: clean.region,
+        month: clean.month || '',
+        document: clean.document,
+        risk: clean.risk,
+        domain: clean.domain,
+        entities: clean.entities
+      };
+      return clean;
+    }
 
+    // Solo preguntas claramente de seguimiento pueden heredar contexto.
     const merged = {
       ...parsed,
-      region: parsed.region || previous.region || '',
-      month: parsed.month || previous.month || '',
-      document: parsed.document || (keepDocument ? previous.document : '') || '',
-      risk: parsed.risk || (keepRisk ? previous.risk : '') || '',
+      domain: parsed.domain && parsed.domain !== 'general' ? parsed.domain : (previous.domain || parsed.domain),
+      region: parsed.explicitRegion ? parsed.region : (previous.region || parsed.region || ''),
+      month: parsed.explicitMonth ? parsed.month : (previous.month || parsed.month || ''),
+      document: parsed.explicitDocument ? parsed.document : (parsed.document || previous.document || ''),
+      risk: parsed.risk || previous.risk || '',
       entities: {
         ...previousEntities,
         ...entities,
         park: entities.park || previousEntities.park || null,
         administrator: entities.administrator || previousEntities.administrator || null,
-        document: entities.document || (keepDocument ? previousEntities.document : null) || null,
-        concept: entities.concept || (keepConcept ? previousEntities.concept : null) || null
+        document: entities.document || previousEntities.document || null,
+        concept: entities.concept || previousEntities.concept || null
       }
     };
 
-    // Una intención hidráulica explícita siempre invalida documentos heredados.
-    if (parsed.domain === 'water' || entities.concept) {
-      merged.document = parsed.document || '';
-      merged.entities.document = entities.document || null;
-    }
-
-    // Una intención documental explícita invalida conceptos hidráulicos heredados.
-    if (parsed.domain === 'documents' || entities.document) {
-      merged.entities.concept = entities.concept || null;
-    }
-
-    // Cambiar a una entidad explícita nueva limpia relaciones incompatibles.
-    if (entities.park) {
-      merged.entities.administrator = entities.administrator || null;
-    }
+    // Pedir explícitamente nivel nacional limpia cualquier región heredada.
+    if (parsed.scopeRequest === 'national') merged.region = '';
 
     state.context = {
       region: merged.region,
@@ -56,33 +59,18 @@
       domain: merged.domain,
       entities: merged.entities
     };
-
     return merged;
   }
 
   function remember(question, parsed, response) {
-    state.history.push({
-      question, parsed, response,
-      at: new Date().toISOString()
-    });
+    state.history.push({ question, parsed, response, at: new Date().toISOString() });
     if (state.history.length > 50) state.history.shift();
   }
 
-  function clear() {
-    state.history = [];
-    state.context = null;
-  }
-
+  function clear() { state.history = []; state.context = null; }
   function snapshot() {
-    return {
-      history: [...state.history],
-      context: state.context
-        ? JSON.parse(JSON.stringify(state.context))
-        : null
-    };
+    return { history: [...state.history], context: state.context ? JSON.parse(JSON.stringify(state.context)) : null };
   }
 
-  global.ParksIntelligenceMemory = Object.freeze({
-    mergeContext, remember, clear, snapshot
-  });
+  global.ParksIntelligenceMemory = Object.freeze({ mergeContext, remember, clear, snapshot });
 })(window);

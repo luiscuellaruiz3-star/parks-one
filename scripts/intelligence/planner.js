@@ -19,6 +19,9 @@
     const entities = parsed.entities || {};
 
     if (entities.executive) return 'executive';
+    // Preguntas relacionales sobre un parque (quién administra, responsable, región)
+    // se resuelven desde la ficha del parque, no desde el directorio de usuarios.
+    if (entities.park && /\b(quien administra|quien lo administra|administrador|responsable|encargado|que region|cual region)\b/.test(parsed.normalized || '')) return 'parks';
     // El dominio explícito manda sobre entidades heredadas. Un concepto hidráulico
     // (PTAR/pozo/descarga) nunca debe ser desviado por un documento previo.
     if (parsed.domain === 'water' || entities.concept) return 'water';

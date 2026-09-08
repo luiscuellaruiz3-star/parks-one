@@ -19,6 +19,22 @@
     const rel = snapshot.relations;
     const alerts = snapshot.alerts || [];
 
+    const q = parsed.normalized || '';
+    if (/\b(quien administra|quien lo administra|administrador|responsable|encargado)\b/.test(q)) {
+      return C.result(`Administrador · ${park.park}`,
+        `${park.park} está asignado a ${rel.administrator || 'un Administrador por definir'} dentro de la información visible.`, {
+          actions:[{label:'Abrir Parques',page:'parques'}],
+          diagnosticData:{source:'Padrón de parques',records:1,formula:'Relación Parque → Administrador',calculation:park.park,result:rel.administrator||'Por asignar'}
+        });
+    }
+    if (/\b(que region|cual region|region pertenece|en que region)\b/.test(q)) {
+      return C.result(`Región · ${park.park}`,
+        `${park.park} pertenece a ${rel.region || 'una región por definir'}${rel.division ? ` · ${rel.division}` : ''}.`, {
+          actions:[{label:'Abrir Parques',page:'parques'}],
+          diagnosticData:{source:'Padrón de parques',records:1,formula:'Relación Parque → Región',calculation:park.park,result:rel.region||'Sin región'}
+        });
+    }
+
     const statusDocument = parsed.entities?.document;
     if (statusDocument) {
       const entries = Object.entries(park.statuses || {}).filter(([name]) =>

@@ -126,6 +126,38 @@
     }
 
     const response = await skill.execute(parsed, { plan });
+
+    // Cada acción conserva el contexto útil de la consulta para abrir el módulo fuente ya filtrado.
+    const defaultFilters = {
+      region: parsed.region || '',
+      month: parsed.month || '',
+      document: parsed.document || parsed.entities?.document?.label || '',
+      park: parsed.entities?.park?.label || '',
+      administrator: parsed.entities?.administrator?.label || '',
+      risk: parsed.risk || '',
+      status: /\b(pendiente|pendientes|falta|faltan|faltante|faltantes)\b/.test(parsed.normalized || '') ? 'pending' : ''
+    };
+    response.actions = (response.actions || [])
+      .filter(action => !global.ParksPermissions?.canModule || global.ParksPermissions.canModule(action.page, Core.getRole()))
+      .map(action => ({
+        ...action,
+        filters: { ...defaultFilters, ...(action.filters || {}) }
+      }));
+
+    // La respuesta siempre declara el alcance real aplicado. Si pidió algo fuera de su
+    // alcance, se informa explícitamente en lugar de aparentar que la pregunta cambió.
+    const scopeNotice = Core.scopeNotice(parsed);
+    const requestedRegionOutsideScope = Boolean(
+      parsed.region &&
+      !Core.visibleParks().some(p => Core.normalize(p.region) === Core.normalize(parsed.region)) &&
+      !['national','read'].includes(Core.scopeInfo().level)
+    );
+    const scopeText = requestedRegionOutsideScope
+      ? `La región ${parsed.region} no está dentro de tu alcance autorizado. Se mantuvo el límite de ${Core.scopeInfo().label.replace(/^Consulta\s*/i,'')}.`
+      : scopeNotice.text;
+    response.scopeText = scopeText;
+    response.scopeRestricted = Boolean(scopeNotice.restricted || requestedRegionOutsideScope);
+
     response.evidence = response.evidence?.length
       ? response.evidence
       : plan.sources;

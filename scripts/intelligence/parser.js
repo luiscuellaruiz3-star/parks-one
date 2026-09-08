@@ -193,6 +193,22 @@
     return '';
   }
 
+  function detectScopeRequest(question) {
+    const q = normalize(question);
+    if (/\b(nacional|nivel nacional|todo el pais|todos los parques|todas las regiones)\b/.test(q)) return 'national';
+    if (/\b(mi division|division asignada|mi alcance divisional)\b/.test(q)) return 'division';
+    if (/\b(mi region|region asignada)\b/.test(q)) return 'region';
+    return '';
+  }
+
+  function isFollowUp(question) {
+    const q = normalize(question);
+    if (!q) return false;
+    if (/^(y|tambien|ademas|ahora)\b/.test(q)) return true;
+    if (/\b(su|sus|ese|esa|esos|esas|el mismo|la misma|lo anterior|los pendientes|las pendientes)\b/.test(q) && q.split(' ').length <= 10) return true;
+    return /^(quien lo|quien la|tiene|cuantos faltan|cuantas faltan|y los|y las)\b/.test(q);
+  }
+
   function detectRisk(question) {
     const q = normalize(question);
     if (fuzzyIncludes(q, 'critico')) return 'CRÍTICO';
@@ -214,7 +230,12 @@
       document: detectDocument(question),
       month: detectMonth(question, periods),
       region: detectRegion(question),
-      risk: detectRisk(question)
+      risk: detectRisk(question),
+      scopeRequest: detectScopeRequest(question),
+      followUp: isFollowUp(question),
+      explicitRegion: Boolean(detectRegion(question)),
+      explicitDocument: Boolean(detectDocument(question)),
+      explicitMonth: MONTHS.some(([term]) => new RegExp(`\\b${term}\\b`).test(normalize(question)))
     };
   }
 
@@ -229,6 +250,8 @@
     detectMonth,
     detectRegion,
     detectRisk,
+    detectScopeRequest,
+    isFollowUp,
     parse
   });
 })(window);

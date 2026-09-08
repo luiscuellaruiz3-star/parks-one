@@ -47,52 +47,78 @@
     return normalize(scope.park_code || scope.park_name || scope.park_id || '');
   }
 
+  function currentRegion() {
+    const scope = getScope();
+    let region = normalize(scope.region_code || scope.region_name || scope.region_id || '');
+    if (!region && scope.park_id) {
+      const target = normalize(scope.park_id);
+      const matched = (dataSource().parks || []).find(p => [p.cloud_id,p.id,p.code,p.park].map(normalize).includes(target));
+      region = normalize(matched?.region || matched?.region_name || '');
+    }
+    return region;
+  }
+
+  function uniqueBy(rows, keyFn) {
+    const map = new Map();
+    (rows || []).filter(Boolean).forEach((row, index) => {
+      const key = String(keyFn(row, index) || '').trim() || `__${index}`;
+      if (!map.has(key)) map.set(key, row);
+    });
+    return [...map.values()];
+  }
+
   function scopeInfo() {
     const role = getRole();
     const division = currentDivision();
+    const region = currentRegion();
     const park = currentPark();
     if (['arquitecto', 'divisional', 'direccion', 'director', 'ceo', 'consulta'].includes(role)) {
-      return { level: 'national', label: 'Consulta nacional', division: '', park: '' };
+      return { level: 'national', label: 'Consulta nacional', division: '', region: '', park: '' };
     }
     if (role === 'regional') {
       return {
         level: 'division',
-        label: division ? `Consulta limitada a tu división: ${division.toUpperCase()}` : 'Tu perfil requiere una división asignada',
-        division, park: ''
+        label: division ? `Consulta limitada a tu división: ${division.toUpperCase()}` : 'Consulta limitada a tu división asignada',
+        division, region: '', park: ''
       };
     }
     if (role === 'administrador') {
       return {
-        level: 'park',
-        label: park ? `Consulta limitada a tu parque: ${park.toUpperCase()}` : 'Tu perfil requiere un parque asignado',
-        division, park
+        level: 'region',
+        label: region ? `Consulta limitada a tu región: ${region.toUpperCase()}` : 'Consulta limitada a tu región asignada',
+        division, region, park
       };
     }
-    return { level: 'read', label: 'Consulta de información autorizada', division, park };
+    return { level: 'read', label: 'Consulta de información autorizada', division, region, park };
   }
 
   function visibleParks() {
-    const parks = Array.isArray(dataSource().parks) ? dataSource().parks.filter(Boolean) : [];
+    const source = Array.isArray(dataSource().parks) ? dataSource().parks.filter(Boolean) : [];
+    const parks = uniqueBy(source, park => normalize(park.cloud_id || park.id || park.code || park.park));
     const scope = scopeInfo();
     if (scope.level === 'national' || scope.level === 'read') return parks;
     if (scope.level === 'division') {
-      if (!scope.division) return [];
+      if (!scope.division) return parks; // El bootstrap de Cloud ya entregó solo la división autorizada.
       return parks.filter(park => normalize(park.division || park.division_name) === scope.division);
     }
-    if (scope.level === 'park') {
-      if (!scope.park) return [];
-      return parks.filter(park => {
-        const values=[park.park, park.code, park.id].map(normalize).filter(Boolean);
-        return values.includes(scope.park);
-      });
+    if (scope.level === 'region') {
+      if (!scope.region) return parks; // Compatibilidad con cuentas legacy: Cloud ya recortó por región.
+      return parks.filter(park => normalize(park.region || park.region_name) === scope.region);
     }
     return [];
   }
 
   function visibleFiles() {
-    return visibleParks().flatMap(park =>
+    const rows = visibleParks().flatMap(park =>
       (park.files || []).map(file => ({ ...file, __park: park }))
     );
+    return uniqueBy(rows, file => normalize([
+      file.storage_path || file.path || file.local_url || '',
+      file.__park?.cloud_id || file.__park?.park || file.park || '',
+      file.filename || file.file_name || file.name || '',
+      file.document_type || file.folder || '',
+      file.year || file.document_year || ''
+    ].join('|')));
   }
 
   function parksForQuery(parsed) {
@@ -123,12 +149,27 @@
 
   function filesForQuery(parsed) {
     let files = visibleFiles();
+    const semanticPark = parsed?.entities?.park?.label || '';
+    if (semanticPark) {
+      files = files.filter(file => normalize(file.__park?.park || file.park) === normalize(semanticPark));
+    }
     if (parsed?.region) {
-      files = files.filter(file =>
-        normalize(file.region || file.__park?.region) === normalize(parsed.region)
-      );
+      files = files.filter(file => normalize(file.region || file.__park?.region) === normalize(parsed.region));
     }
     return files;
+  }
+
+  function scopeNotice(parsed) {
+    const scope = scopeInfo();
+    const requestedNational = parsed?.scopeRequest === 'national';
+    const restricted = requestedNational && scope.level !== 'national' && scope.level !== 'read';
+    return {
+      restricted,
+      label: scope.label,
+      text: restricted
+        ? `Solicitaste información nacional, pero tu perfil solo puede consultar ${scope.level === 'division' ? 'su división' : scope.level === 'region' ? 'su región' : 'su alcance asignado'}. Los resultados fueron limitados automáticamente.`
+        : `Alcance aplicado: ${scope.label.replace(/^Consulta\s*/i,'')}.`
+    };
   }
 
   function statusLabel(status) {
@@ -198,7 +239,7 @@
     return (top5Data().admins || []).filter(row => {
       if (!monthMatches(row.month, month)) return false;
       if (!regionMatches(row.region, region)) return false;
-      if (['division','park'].includes(scope.level)) {
+      if (['division','region'].includes(scope.level)) {
         const allowedParks = new Set(visibleParks().map(p => normalize(p.park)));
         if (!allowedParks.size) return false;
         const rowParks = Array.isArray(row.parks)
@@ -208,6 +249,9 @@
         if (scope.level === 'division') {
           const rowDivision = normalize(row.division || row.division_name);
           return Boolean(rowDivision && rowDivision === division);
+        }
+        if (scope.level === 'region') {
+          return normalize(row.region) === normalize(scope.region);
         }
         return false;
       }
@@ -274,7 +318,7 @@
 
   global.ParksIntelligenceCore = Object.freeze({
     normalize, fuzzyIncludes, escapeHtml,
-    getRole, getRealRole, getScope, scopeInfo, dataSource,
+    getRole, getRealRole, getScope, scopeInfo, dataSource, currentRegion, uniqueBy, scopeNotice,
     visibleParks, visibleFiles, parksForQuery, filesForQuery,
     statusLabel, documentMatchesName, visibleAlerts,
     top5Data, visibleTop5, availableTop5Periods,
