@@ -69,6 +69,57 @@
       .trim();
   }
 
+
+  async function loadProtectedBootstrap() {
+    if (!session?.access_token) {
+      throw new Error('No fue posible validar la sesión para cargar la información protegida.');
+    }
+
+    const response = await fetch('/api/bootstrap', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        Accept: 'application/json'
+      },
+      cache: 'no-store',
+      credentials: 'same-origin'
+    });
+
+    if (!response.ok) {
+      let detail = '';
+      try {
+        const body = await response.json();
+        detail = body?.error ? `: ${body.error}` : '';
+      } catch (_) {}
+      throw new Error(`No fue posible cargar la información autorizada${detail}`);
+    }
+
+    const payload = await response.json();
+
+    if (!payload?.sigop || !Array.isArray(payload.sigop.parks)) {
+      throw new Error('La respuesta protegida no contiene una estructura válida.');
+    }
+
+    window.SIGOP_DATA = payload.sigop;
+    window.TOP5_DATA = payload.top5 || {
+      months: [], records: [], admins: [], regions: [],
+      executiveClose: {}, officialMonths: {}, officialRegions: {}
+    };
+    window.PARKS_HYDRICA_MASTER_SEED = payload.hydrica || {
+      source: 'Fuente protegida PARKS ONE',
+      sheet: '',
+      records: 0,
+      rows: []
+    };
+    window.PARKS_ANNUAL_DOCS_2026 = payload.annual || {
+      year: 2026,
+      source: 'Fuente anual protegida PARKS ONE',
+      generated_from: 'Carga protegida',
+      rows: []
+    };
+    window.PARKS_BOOTSTRAP_META = payload.meta || {};
+  }
+
   function normalizePath(path) {
     let clean = String(path || '').trim();
     try { clean = decodeURIComponent(clean); } catch (_) {}
@@ -120,6 +171,7 @@
 
     await loadProfile();
     await loadAccessScope();
+    await loadProtectedBootstrap();
     await mergeCloudData();
     applyIdentity();
     installInactivityWatch();
@@ -905,7 +957,7 @@
      * Índice de rescate basado en el padrón original.
      *
      * El importador creó algunos documentos con park_id ligado a un registro
-     * duplicado o incorrecto. Sin embargo, data.js conserva el parque y requisito
+     * duplicado o incorrecto. Sin embargo, el bootstrap protegido conserva el parque y requisito
      * correctos de cada archivo. El nombre original del archivo es la llave más
      * estable para recuperar esa relación.
      */

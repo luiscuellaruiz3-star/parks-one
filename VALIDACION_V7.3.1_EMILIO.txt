@@ -1,0 +1,21 @@
+VALIDACIÓN TÉCNICA LOCAL — PARKS ONE 7.3.1
+Fecha: 2026-09-07
+
+OK  cloud.js sintaxis JavaScript.
+OK  api/bootstrap.js sintaxis JavaScript.
+OK  /api/bootstrap sin token responde 401 Sesión requerida.
+OK  index.html ya no carga data.js.
+OK  index.html ya no contiene PARKS_HYDRICA_MASTER_SEED incrustado.
+OK  annual_docs_2026.js eliminado del frontend público.
+OK  data.js eliminado.
+OK  hydrica_master_seed.js eliminado.
+OK  fuentes Excel operativas eliminadas de la carpeta de despliegue.
+OK  no hay referencias locales rotas detectadas en index.html.
+OK  búsquedas de nombres operativos representativos fuera de api/bootstrap: sin coincidencias.
+OK  vercel.json válido.
+
+PENDIENTE DE VALIDACIÓN EN PREVIEW VERCEL:
+- Login real Supabase.
+- Respuesta /api/bootstrap con JWT válido.
+- Alcance por Administrador / Regional / Divisional / Arquitecto.
+- Render de Biblioteca, Top 23, Alertas, Inteligencia y Agua con el bootstrap protegido.

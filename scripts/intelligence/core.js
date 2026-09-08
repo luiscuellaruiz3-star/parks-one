@@ -175,7 +175,7 @@
   }
 
   function top5Data() {
-    // TOP5_DATA es la fuente real cargada desde data.js.
+    // TOP5_DATA proviene del bootstrap protegido posterior a la autenticación.
     return global.TOP5_DATA ||
       global.D?.top5 ||
       global.SIGOP_DATA?.top5 ||

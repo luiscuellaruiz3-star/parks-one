@@ -1,0 +1,43 @@
+PARKS ONE 7.3.1 — CORRECCIONES DIRECTAS A RETROALIMENTACIÓN DE SISTEMAS
+
+Esta carpeta ya incluye las correcciones aplicadas sobre el proyecto actual V7.3:
+
+1) DATA.JS / INFORMACIÓN PÚBLICA
+- data.js eliminado del despliegue.
+- annual_docs_2026.js e hydrica_master_seed.js eliminados como fuentes públicas.
+- Los datos operativos se cargan después del login mediante /api/bootstrap.
+- /api/bootstrap exige Bearer token válido de Supabase y consulta parks con el mismo JWT/RLS.
+- No usa Service Role.
+
+2) SEGURIDAD WEB
+- CSP.
+- X-Frame-Options: DENY.
+- X-Content-Type-Options: nosniff.
+- Referrer-Policy.
+- Permissions-Policy.
+- HSTS.
+- Supabase JS fijado en 2.57.4.
+
+3) ARCHIVOS DE SOPORTE
+- .vercelignore impide publicar Excel, respaldos, SQL, TXT/MD y otros artefactos internos.
+- Se eliminó la descarga pública directa de la fuente hídrica.
+
+4) DISEÑO / NAVEGACIÓN
+- Centro de alertas sin desbordamiento horizontal.
+- Sugerencias de Inteligencia ahora ajustan a varias líneas.
+- Cada módulo usa ruta #page=<modulo> para conservar/favoritar la vista.
+- Centro de Inteligencia documenta motor, fuentes, permisos y limitaciones.
+
+5) CONTROL DE VERSIÓN
+- Versión general: 7.3.1.
+- CHANGELOG_V7.3.1.md incluido.
+
+IMPORTANTE PARA PROBAR:
+La carga protegida /api/bootstrap necesita ejecutarse en Vercel (Preview o Production). Abrir index.html directamente como archivo local o usar un servidor estático simple no ejecuta la función /api/bootstrap.
+
+FLUJO RECOMENDADO:
+1. Conserva tu carpeta actual como respaldo.
+2. Usa esta carpeta como la nueva base del proyecto.
+3. Sube a tu rama v7.3-security-hardening.
+4. Despliega primero como Preview en Vercel.
+5. Prueba login y perfiles antes de promover a Production.
