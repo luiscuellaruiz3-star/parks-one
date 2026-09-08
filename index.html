@@ -1376,7 +1376,7 @@ html,body{max-width:100%;overflow-x:hidden}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.4',
+  version:'7.3.4.1',
   releasedAt:'2026-09-08',
   environment:'production'
 });
@@ -1404,7 +1404,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.4</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.4.1</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -4662,6 +4662,20 @@ function initAlertsModule(){
  );
  window.ParksAlertsEngine?.init?.();
  renderAlerts();
+}
+
+function documentStorageRef(file){
+ const f=file||{};
+ const direct=String(f.storage_path||'').trim();
+ if(direct)return direct;
+ /* Los registros provenientes de public.documents se identifican con cloud_id.
+    Solo en esos casos usamos la ruta fusionada; evitamos reactivar rutas públicas
+    heredadas documents_repo de la fuente histórica. */
+ if(f.cloud_id){
+  const merged=String(f.local_url||f.path||'').trim();
+  if(merged)return merged;
+ }
+ return '';
 }
 
 function renderDocs(){
