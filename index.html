@@ -1366,7 +1366,7 @@ html,body{max-width:100%;overflow-x:hidden}
 .intel-help p{margin:6px 0}
 @media(max-width:980px){.alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.alerts-change-grid-four{grid-template-columns:1fr}.intel-suggestion{width:100%}}
-/* V7.3.3 · trazabilidad visible por módulo */
+/* V7.3.4 · navegación, filtros persistentes y paginación */
 .parks-traceability{margin:0 0 16px;border:1px solid #cfe0da;background:#f8fbfa;border-radius:13px;box-shadow:0 5px 18px #0a503b0b;overflow:hidden}
 .parks-traceability>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--gd);font-weight:800;background:#eef6f3}
 .parks-traceability>summary::-webkit-details-marker{display:none}.parks-traceability>summary:before{content:'ⓘ';margin-right:8px}.parks-traceability>summary .trace-cut{margin-left:auto;font-size:11px;color:var(--mut);font-weight:600;text-align:right}
@@ -1376,7 +1376,7 @@ html,body{max-width:100%;overflow-x:hidden}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.3',
+  version:'7.3.4',
   releasedAt:'2026-09-08',
   environment:'production'
 });
@@ -1404,7 +1404,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.3</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.4</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1448,7 +1448,7 @@ window.PARKS_RELEASE=Object.freeze({
   <div id="dashboardTop5Comparison"></div>
 </div>
 </section>
-<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, riesgo y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div></section>
+<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, riesgo y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div><div id="parksPager" class="list-pager"></div></section>
 <section id="top23" class="page">
   <div class="headline">
     <div>
@@ -1572,6 +1572,7 @@ window.PARKS_RELEASE=Object.freeze({
           <tbody id="top5AdminBody"></tbody>
         </table>
       </div>
+      <div id="top5AdminPager" class="list-pager"></div>
     </div>
   </div>
 
@@ -1587,6 +1588,7 @@ window.PARKS_RELEASE=Object.freeze({
           <tbody id="top5RecordsBody"></tbody>
         </table>
       </div>
+      <div id="top5RecordsPager" class="list-pager"></div>
       <div class="footnote">Un Administrador con varios parques se consolida una sola vez. La carga mensual respeta el consolidado del Excel fuente.</div>
     </div>
   </div>
@@ -1654,7 +1656,7 @@ window.PARKS_RELEASE=Object.freeze({
         <option value="document_returned">Documento devuelto</option>
       </select>
     </div>
-    <div id="alertsList"></div>
+    <div id="alertsList"></div><div id="alertsPager" class="list-pager"></div>
   </div>
 </section>
 
@@ -1756,7 +1758,7 @@ window.PARKS_RELEASE=Object.freeze({
     </div>
   </div>
 </section>
-<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div id="docSourceBanner" class="water-source-banner" style="margin-bottom:12px"></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div></section>
+<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div id="docSourceBanner" class="water-source-banner" style="margin-bottom:12px"></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div><div id="docsPager" class="list-pager"></div></section>
 <section id="agua" class="page">
   <div class="headline">
     <div>
@@ -3070,6 +3072,53 @@ function renderTraceability(id){
   <div class="trace-foot">Consulta protegida: ${esc(traceDate(meta.generated_at))} · Alcance: ${esc(scope)} · Versión ${esc(meta.version||window.PARKS_RELEASE?.version||'')}</div>`;
 }
 
+
+/* V7.3.4 · estado de consulta por sesión y paginación */
+const PARKS_UI_STATE_KEY='parksOneUiStateV734';
+const LIST_PAGES={parks:1,alerts:1,docs:1,top5Admins:1,top5Records:1};
+const PAGE_SIZES={parks:18,alerts:50,docs:50,top5Admins:25,top5Records:50};
+function readUiState(){
+ try{return JSON.parse(sessionStorage.getItem(PARKS_UI_STATE_KEY)||'{}')||{}}catch{return {}}
+}
+function writeUiState(next){
+ try{sessionStorage.setItem(PARKS_UI_STATE_KEY,JSON.stringify(next||{}))}catch{}
+}
+function saveFilterValue(id){
+ const el=document.getElementById(id);if(!el)return;
+ const state=readUiState();state.filters=state.filters||{};state.filters[id]=el.value;writeUiState(state);
+}
+function restoreFilterValue(id){
+ const el=document.getElementById(id);if(!el)return;
+ const value=readUiState()?.filters?.[id];
+ if(value===undefined||value===null)return;
+ if(el.tagName==='SELECT'&&!Array.from(el.options).some(o=>o.value===value))return;
+ el.value=value;
+}
+function resetListPage(key){LIST_PAGES[key]=1;}
+function pageData(items,key){
+ const size=PAGE_SIZES[key]||50,total=items.length,pages=Math.max(1,Math.ceil(total/size));
+ LIST_PAGES[key]=Math.min(Math.max(1,LIST_PAGES[key]||1),pages);
+ const page=LIST_PAGES[key],start=(page-1)*size;
+ return {rows:items.slice(start,start+size),page,pages,total,size,start};
+}
+function pagerHtml(key,total){
+ const size=PAGE_SIZES[key]||50,pages=Math.max(1,Math.ceil(total/size));
+ const page=Math.min(Math.max(1,LIST_PAGES[key]||1),pages);LIST_PAGES[key]=page;
+ if(total<=size)return total?`<div class="list-count">${fmt(total)} registros</div>`:'';
+ const from=(page-1)*size+1,to=Math.min(total,page*size);
+ return `<div class="list-pager-inner"><span class="list-count">Mostrando ${fmt(from)}–${fmt(to)} de ${fmt(total)}</span><div class="list-pager-actions"><button class="btn ghost" ${page<=1?'disabled':''} onclick="setListPage('${key}',${page-1})">← Anterior</button><span>Página ${fmt(page)} de ${fmt(pages)}</span><button class="btn ghost" ${page>=pages?'disabled':''} onclick="setListPage('${key}',${page+1})">Siguiente →</button></div></div>`;
+}
+function setListPage(key,page){
+ LIST_PAGES[key]=Math.max(1,Number(page)||1);
+ ({parks:renderParks,alerts:renderAlerts,docs:renderDocs,top5Admins:renderTop5,top5Records:renderTop5}[key]||(()=>{}))();
+ const host={parks:'parksPager',alerts:'alertsPager',docs:'docsPager',top5Admins:'top5AdminPager',top5Records:'top5RecordsPager'}[key];
+ document.getElementById(host)?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function bindPersistentFilter(id,eventName,renderFn,pageKeys=[]){
+ const el=document.getElementById(id);if(!el)return;
+ restoreFilterValue(id);
+ el.addEventListener(eventName,()=>{pageKeys.forEach(resetListPage);saveFilterValue(id);renderFn();});
+}
 function renderPage(id){
  const target=document.getElementById(id)?id:'inicio';
  $$('.page').forEach(x=>x.classList.toggle('active',x.id===target));
@@ -3652,7 +3701,14 @@ function renderDashboard(){
  applyEditable();
 }
 function regionDetail(reg){const r=C.regions.find(x=>x.region===reg), ps=C.parks.filter(p=>p.region===reg).sort((a,b)=>b.compliance-a.compliance);openModal(`Detalle ${reg}`,`<p>${r.parks} parques · ${fmt(r.files)} archivos · ${fmt(r.integrated)} requisitos integrados.</p><div class="detail-list">${ps.map(p=>`<div class="detail-row"><b>${esc(p.park)}</b><div class="bar"><i style="width:${p.compliance*100}%"></i></div><span>${pct(p.compliance)}</span></div>`).join('')}</div>`)}
-function renderParks(){C.parks=C.parks.filter(isCanonicalPark);const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));$('#parksGrid').innerHTML=a.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>'}
+function renderParks(){
+ C.parks=C.parks.filter(isCanonicalPark);
+ const q=($('#parkSearch').value||'').toLowerCase(),reg=$('#regionFilter').value,risk=$('#riskFilter').value;
+ const a=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)&&(!reg||p.region===reg)&&(!risk||p.risk===risk));
+ const page=pageData(a,'parks');
+ $('#parksGrid').innerHTML=page.rows.map(p=>`<div class="card park" onclick="parkDetail('${encodeURIComponent(p.park)}')"><div class="park-img"><span>${esc(p.park)}</span><span class="park-score">${pct(p.compliance)}</span></div><div class="park-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3>${esc(p.park)}</h3><div class="meta">${esc(p.region)} · ${esc(p.administrator)}</div></div><span class="badge ${p.risk==='CRÍTICO'?'bred':p.risk==='ALTO'?'bamber':'bgreen'}">${p.risk}</span></div><div class="parkstats"><span><b>${p.integrated}</b><br><small>integrados</small></span><span><b>${p.pending}</b><br><small>pendientes</small></span><span><b>${p.na}</b><br><small>N/A</small></span><span><b>${p.file_count}</b><br><small>archivos</small></span></div></div></div>`).join('')||'<div class="empty">Sin coincidencias.</div>';
+ if($('#parksPager'))$('#parksPager').innerHTML=pagerHtml('parks',a.length);
+}
 
 function normalizeDocName(v){
  return String(v||'').toUpperCase().normalize('NFD')
@@ -4086,7 +4142,9 @@ function renderTop5(){
       ${low?`<div class="alert critical"><b>Menor avance: ${esc(low.region)}</b><small>${pct(low.compliance,2)} de cumplimiento regional.</small></div>`:''}`;
   }
 
-  $('#top5AdminBody').innerHTML=filteredAdmins.map(x=>`
+  const adminPage=pageData(filteredAdmins,'top5Admins');
+  const recordsPage=pageData(filteredRecords,'top5Records');
+  $('#top5AdminBody').innerHTML=adminPage.rows.map(x=>`
     <tr>
       <td><b>${esc(x.region)}</b></td>
       <td>${esc(x.administrator)}</td>
@@ -4097,10 +4155,12 @@ function renderTop5(){
       <td>${fmt(x.expected)}</td>
       <td><b class="${top5Class(Number(x.compliance)||0)}">${pct(Number(x.compliance)||0,2)}</b></td>
     </tr>`).join('')||'<tr><td colspan="8" class="empty">Sin coincidencias.</td></tr>';
+  if($('#top5AdminPager'))$('#top5AdminPager').innerHTML=pagerHtml('top5Admins',filteredAdmins.length);
 
-  $('#top5RecordsBody').innerHTML=filteredRecords.slice(0,800).map(x=>`
+  $('#top5RecordsBody').innerHTML=recordsPage.rows.map(x=>`
     <tr><td>${esc(x.date)}</td><td>${esc(x.region)}</td><td>${esc(x.administrator)}</td><td>${esc(x.park||'')}</td><td>${esc(x.shift)}</td><td><b>${esc(x.time)}</b></td></tr>`
   ).join('')||'<tr><td colspan="6" class="empty">Sin registros para el filtro actual.</td></tr>';
+  if($('#top5RecordsPager'))$('#top5RecordsPager').innerHTML=pagerHtml('top5Records',filteredRecords.length);
 }
 
 function refreshTop5Selectors(){
@@ -4122,7 +4182,8 @@ function refreshTop5Selectors(){
 
 function initTop5(){
   refreshTop5Selectors();
-  ['top5Month','top5Region','top5Admin'].forEach(id=>$('#'+id)?.addEventListener('input',renderTop5));
+  ['top5Month','top5Region','top5Admin'].forEach(id=>restoreFilterValue(id));
+  ['top5Month','top5Region','top5Admin'].forEach(id=>bindPersistentFilter(id,id==='top5Admin'?'input':'change',renderTop5,['top5Admins','top5Records']));
   renderTop5();
 }
 
@@ -4571,7 +4632,8 @@ function renderAlerts(){
      ? `Último corte del motor: ${esc(new Date(diff.at).toLocaleString('es-MX'))}`
      : 'Primera línea base pendiente de guardar.'}</div>`;
 
- $('#alertsList').innerHTML=filtered.slice(0,400).map(a=>`
+ const alertsPage=pageData(filtered,'alerts');
+ $('#alertsList').innerHTML=alertsPage.rows.map(a=>`
    <button class="alerts-row" onclick="openAlertRecord('${encodeURIComponent(a.key)}')">
     <span class="alerts-severity ${a.severity}">${esc(alertSeverityLabel(a.severity))}</span>
     <div class="alerts-row-main">
@@ -4581,6 +4643,7 @@ function renderAlerts(){
     <span class="alerts-row-type">${esc(alertTypeLabel(a.type))}</span>
     <span class="alerts-row-action">Ver →</span>
    </button>`).join('')||'<div class="empty">Sin alertas para los filtros seleccionados.</div>';
+ if($('#alertsPager'))$('#alertsPager').innerHTML=pagerHtml('alerts',filtered.length);
 
  engine.scheduleSync(all);
 }
@@ -4593,8 +4656,9 @@ function initAlertsModule(){
   region.innerHTML='<option value="">Todas las regiones</option>'+regions.map(r=>`<option>${esc(r)}</option>`).join('');
   if(regions.includes(current))region.value=current;
  }
+ ['alertSearch','alertRegion','alertSeverity','alertType'].forEach(id=>restoreFilterValue(id));
  ['alertSearch','alertRegion','alertSeverity','alertType'].forEach(id=>
-   $('#'+id)?.addEventListener(id==='alertSearch'?'input':'change',renderAlerts)
+   bindPersistentFilter(id,id==='alertSearch'?'input':'change',renderAlerts,['alerts'])
  );
  window.ParksAlertsEngine?.init?.();
  renderAlerts();
@@ -4606,11 +4670,12 @@ function renderDocs(){
   const searchable=[f.filename,f.park,f.folder,f.document_type,f.year,f.region].join(' ').toLowerCase();
   return searchable.includes(q)&&(!reg||f.region===reg);
  });
+ const docsPage=pageData(a,'docs');
  const years=new Set(C.files.map(f=>f.year).filter(Boolean));
  const docBanner=$('#docSourceBanner');
  if(docBanner){
   const parkCount=new Set(C.files.map(f=>f.park).filter(Boolean)).size;
-  docBanner.innerHTML=`<b>Fuente conciliada:</b> ${fmt(C.files.length)} archivos indexados en ${fmt(parkCount)} parques con evidencia. <b>La tabla usa exactamente la misma fuente.</b> Mostrando ${fmt(Math.min(a.length,500))} de ${fmt(a.length)} coincidencias${(q||reg)?' con los filtros actuales':''}.`;
+  docBanner.innerHTML=`<b>Fuente conciliada:</b> ${fmt(C.files.length)} archivos indexados en ${fmt(parkCount)} parques con evidencia. <b>La tabla usa exactamente la misma fuente.</b> Mostrando ${fmt(a.length?docsPage.start+1:0)}–${fmt(Math.min(a.length,docsPage.start+docsPage.rows.length))} de ${fmt(a.length)} coincidencias${(q||reg)?' con los filtros actuales':''}.`;
  }
  const kpis=[
   ['all','Archivos indexados',C.files.length,'Repositorio nacional','good'],
@@ -4619,11 +4684,12 @@ function renderDocs(){
   ['pdf','PDF',C.files.filter(f=>String(f.extension||'').toLowerCase()==='pdf').length,'Formato predominante','good']
  ];
  $('#docKpis').innerHTML=kpis.map(x=>`<div class="card kpi ${x[4]}" onclick="openDocumentKpi('${x[0]}')"><small>${esc(x[1])}</small><strong>${fmt(x[2])}</strong><div class="sub">${esc(x[3])}</div><span class="kpi-action">Ver desglose →</span></div>`).join('');
- $('#docsBody').innerHTML=a.slice(0,500).map(f=>{
+ $('#docsBody').innerHTML=docsPage.rows.map(f=>{
   const ref=documentStorageRef(f),park=encodeURIComponent(f.park||''),name=encodeURIComponent(f.filename||'');
   const actions=`<div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn secondary" onclick="showDocumentDetail('${park}','${name}')">Ficha</button>${ref?`<button class="btn ghost" onclick="openDocument('${encodeURIComponent(ref)}')">Abrir</button>`:'<span class="meta" title="El registro existe, pero el archivo no está vinculado al bucket parks-documents">Sin archivo en Storage</span>'}</div>`;
   return `<tr><td><b>${esc(f.filename)}</b></td><td>${esc(f.park)}</td><td>${esc(f.document_type||f.folder||'Sin clasificar')}</td><td>${esc(f.year||'Sin año')}</td><td>${esc(f.region||'Sin región')}</td><td>${actions}</td></tr>`;
  }).join('')||'<tr><td colspan="6"><div class="empty">No se localizaron documentos con los filtros seleccionados.</div></td></tr>';
+ if($('#docsPager'))$('#docsPager').innerHTML=pagerHtml('docs',a.length);
 }
 function openDocumentKpi(type){
  const files=C.files||[];
@@ -5161,7 +5227,13 @@ function renderCalendar(){
    ${priorities.map(a=>`<button type="button" class="calendar-priority-item ${a.severity||'medium'}" onclick="go('alertas');setTimeout(()=>{const q=document.getElementById('alertSearch');if(q){q.value='${esc(a.park).replace(/'/g,'')}';renderAlerts()}},50)"><span class="calendar-dot"></span><div><b>${esc(a.park)} · ${esc(a.document)}</b><small>${esc(alertTypeLabel(a.type))} · ${esc(a.message||'')}</small></div><span>Ver →</span></button>`).join('')||'<div class="empty">No existen vigencias o actualizaciones prioritarias con la información disponible.</div>'}
   </div>`;
 }
-function initFilters(){const regs=[...new Set(C.parks.map(p=>p.region))].sort();['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});['parkSearch','regionFilter','riskFilter'].forEach(id=>$('#'+id).addEventListener('input',renderParks));['alertSearch','alertSeverity'].forEach(id=>$('#'+id).addEventListener('input',renderAlerts));['docSearch','docRegion'].forEach(id=>$('#'+id).addEventListener('input',renderDocs))}
+function initFilters(){
+ const regs=[...new Set(C.parks.map(p=>p.region))].sort();
+ ['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});
+ ['parkSearch','regionFilter','riskFilter','docSearch','docRegion'].forEach(id=>restoreFilterValue(id));
+ ['parkSearch','regionFilter','riskFilter'].forEach(id=>bindPersistentFilter(id,id==='parkSearch'?'input':'change',renderParks,['parks']));
+ ['docSearch','docRegion'].forEach(id=>bindPersistentFilter(id,id==='docSearch'?'input':'change',renderDocs,['docs']));
+}
 function globalSearch(){const q=$('#globalSearch').value.toLowerCase().trim(),el=$('#searchResults');if(q.length<2){el.classList.remove('show');return}const ps=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)).slice(0,7).map(p=>`<div class="sr" onclick="parkDetail('${encodeURIComponent(p.park)}');$('#searchResults').classList.remove('show')"><b>${esc(p.park)}</b><small>Parque · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`);const fs=C.files.filter(f=>(f.filename+' '+f.document_type+' '+f.park).toLowerCase().includes(q)).slice(0,8).map(f=>`<div class="sr" onclick="go('documentos');$('#docSearch').value='${esc(f.filename).replace(/'/g,'')}';renderDocs();$('#searchResults').classList.remove('show')"><b>${esc(f.filename)}</b><small>Archivo · ${esc(f.park)} · ${esc(f.document_type)}</small></div>`);el.innerHTML=[...ps,...fs].join('')||'<div class="sr">Sin coincidencias.</div>';el.classList.add('show')}
 $('#globalSearch').addEventListener('input',globalSearch);document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('#searchResults').classList.remove('show')});
 const labels={
@@ -5377,10 +5449,11 @@ async function boot(){
    const region=$('#top23Region');
    if(region){
     region.innerHTML='<option value="">Todas las regiones</option>'+[...new Set((C.parks||[]).map(p=>p.region).filter(Boolean))].sort().map(r=>`<option>${esc(r)}</option>`).join('');
-    region.addEventListener('change',renderTop23);
    }
-   $('#top23Search')?.addEventListener('input',renderTop23);
-   $('#top23Status')?.addEventListener('change',renderTop23);
+   ['top23Region','top23Search','top23Status'].forEach(id=>restoreFilterValue(id));
+   bindPersistentFilter('top23Region','change',renderTop23);
+   bindPersistentFilter('top23Search','input',renderTop23);
+   bindPersistentFilter('top23Status','change',renderTop23);
   });
   safeRender('Parques',renderParks);
   safeRender('Top 23',renderTop23);
@@ -5492,4 +5565,16 @@ boot();
 #flujo .kpi:after,
 #calendario .kpi:after,
 #agua .kpi:after{display:none !important;content:none !important}
+</style>
+
+
+<style>
+/* V7.3.4 · paginación y volumen de información */
+.list-pager{margin:14px 0 4px;min-height:24px}
+.list-pager-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.list-count{font-size:13px;color:var(--muted);font-weight:700}
+.list-pager-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.list-pager .btn{padding:7px 11px;min-height:34px}
+.list-pager .btn:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:720px){.list-pager-inner{align-items:stretch}.list-pager-actions{width:100%;justify-content:space-between}.list-pager-actions span{text-align:center;flex:1}}
 </style>
