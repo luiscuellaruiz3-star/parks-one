@@ -1369,8 +1369,8 @@ html,body{max-width:100%;overflow-x:hidden}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.1',
-  releasedAt:'2026-09-07',
+  version:'7.3.2',
+  releasedAt:'2026-09-08',
   environment:'production'
 });
 </script>
@@ -1397,7 +1397,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.1</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.2</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1749,7 +1749,7 @@ window.PARKS_RELEASE=Object.freeze({
     </div>
   </div>
 </section>
-<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div></section>
+<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div id="docSourceBanner" class="water-source-banner" style="margin-bottom:12px"></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div></section>
 <section id="agua" class="page">
   <div class="headline">
     <div>
@@ -3348,7 +3348,8 @@ function dashboardAlertsData(){
 }
 
 function dashboardWaterData(){
- const rows=typeof waterRows==='function'?waterRows():[];
+ const sourceRows=typeof waterRows==='function'?waterRows():[];
+ const rows=typeof waterCatalogReconciliation==='function'?waterCatalogReconciliation(sourceRows).linked:sourceRows;
  const yes=typeof waterYes==='function'?waterYes:(v=>{
    const t=String(v||'').trim().toUpperCase();
    return !!t&&!['NO','N/A','NA','POR CONFIRMAR','POR VALIDAR'].includes(t)&&/(^|\b)(SI|SÍ)(\b|$)|TIENE/.test(t);
@@ -3491,7 +3492,8 @@ function renderDashboard(){
 
  $('#heroParks').textContent=fmt(t23.parks.length);
  $('#heroFiles').textContent=fmt(C.files.length);
- $('#heroAdmins').textContent=fmt(top5.admins.length);
+ const operationalAdmins=new Set(t23.parks.map(p=>String(p.administrator||'').trim()).filter(v=>v&&!/^(VACANTE|POR ASIGNAR|SIN ASIGNAR)$/i.test(v)));
+ $('#heroAdmins').textContent=fmt(operationalAdmins.size);
  $('#heroRegions').textContent=fmt(C.regions.length);
 
  const audited=t23.parks.filter(p=>String(p.audit).toUpperCase()==='SI').length;
@@ -3502,14 +3504,14 @@ function renderDashboard(){
   ['pend','Pendientes documentales',fmt(t23.pending),'Obligaciones aplicables sin evidencia integrada','danger','!'],
   ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · cierre consolidado por Administrador`,'info','↗'],
   ['docs','Documentos cargados',fmt(C.files.length),`${fmt(new Set(C.files.map(f=>f.park).filter(Boolean)).size)} parques con evidencia`,'good','▤'],
-  ['alerts','Alertas críticas',fmt(alerts.critical),'Centro de alertas · atención prioritaria','warn','●'],
-  ['critical','Parques con rezago crítico',fmt(critical),'15+ pendientes documentales aplicables','danger','⚠']
+  ['alerts','Alertas críticas de vigencia',fmt(alerts.critical),'Vencidos o devueltos · distinto del rezago documental','warn','●'],
+  ['critical','Rezago documental crítico',fmt(critical),'Parques con 0% de cumplimiento en obligaciones aplicables','danger','⚠']
  ];
  $('#kpis').innerHTML=k.map(x=>`<div class="card kpi ${x[4]} editable" data-key="kpi-${x[0]}" onclick="kpiDetail('${x[0]}')"><span class="kpi-title">${x[1]}</span><span class="kpi-icon">${x[5]}</span><strong>${x[2]}</strong><div class="sub">${x[3]}</div><span class="kpi-action">Ver detalle →</span></div>`).join('');
 
  $('#summaryParks').textContent=`${fmt(t23.parks.length)} parques evaluados`;
  $('#summaryRegions').textContent=`${C.regions.length} regiones consolidadas`;
- $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
+ $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. El Centro de alertas registra ${fmt(alerts.critical)} alertas críticas de vigencia; este indicador mide vencimientos o devoluciones y no equivale al rezago documental. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
 
  const regional=[...new Set(t23.parks.map(p=>p.region))].map(region=>{
    const rp=t23.parks.filter(p=>p.region===region);
@@ -3813,7 +3815,7 @@ function recalculateAll(){
  const fresh=compute();C.regions.splice(0,C.regions.length,...fresh.regions);C.requirements.splice(0,C.requirements.length,...fresh.requirements);C.files.splice(0,C.files.length,...fresh.files);D.regions=C.regions;D.all_files=C.files;
 }
 
-const T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[]};
+let T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[]};
 
 function top5Class(v){return v>=.9?'top5-high':v>=.75?'top5-mid':'top5-low'}
 
@@ -4508,6 +4510,11 @@ function renderDocs(){
   return searchable.includes(q)&&(!reg||f.region===reg);
  });
  const years=new Set(C.files.map(f=>f.year).filter(Boolean));
+ const docBanner=$('#docSourceBanner');
+ if(docBanner){
+  const parkCount=new Set(C.files.map(f=>f.park).filter(Boolean)).size;
+  docBanner.innerHTML=`<b>Fuente conciliada:</b> ${fmt(C.files.length)} archivos indexados en ${fmt(parkCount)} parques con evidencia. <b>La tabla usa exactamente la misma fuente.</b> Mostrando ${fmt(Math.min(a.length,500))} de ${fmt(a.length)} coincidencias${(q||reg)?' con los filtros actuales':''}.`;
+ }
  const kpis=[
   ['all','Archivos indexados',C.files.length,'Repositorio nacional','good'],
   ['parks','Parques con archivos',new Set(C.files.map(f=>f.park).filter(Boolean)).size,'Cobertura física','info'],
@@ -4653,6 +4660,48 @@ function waterRows(){
  })).filter(x=>x.p.park);
 }
 
+function waterParkIdentity(value){
+ return String(value||'')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toUpperCase()
+  .replace(/\([^)]*\)/g,' ')
+  .replace(/\bPARQUE INDUSTRIAL\b/g,'PARK')
+  .replace(/[^A-Z0-9]+/g,' ')
+  .replace(/\s+/g,' ')
+  .trim();
+}
+
+function waterCatalogReconciliation(rows=waterRows()){
+ const catalog=new Map();
+ (C?.parks||[]).forEach(p=>{
+  [p.park,p.name,p.commercial_name,p.code].forEach(value=>{
+   const key=waterParkIdentity(value);
+   if(key&&!catalog.has(key))catalog.set(key,p);
+  });
+ });
+ const linked=[],unmatched=[];
+ (rows||[]).forEach(row=>{
+  const key=waterParkIdentity(row?.p?.park);
+  const match=key?catalog.get(key):null;
+  if(match)linked.push({...row,catalogPark:match});
+  else unmatched.push(row);
+ });
+ return {source:rows||[],linked,unmatched,catalogCount:(C?.parks||[]).length};
+}
+
+function waterEnvironmentalRiskReasons(h){
+ const reasons=[];
+ const text=waterRegulationText(h);
+ const ptarText=String(h.ptar||'').toUpperCase();
+ if(text.includes('NO CUENTA CON PERMISO')||text.includes('SIN PERMISO'))reasons.push('Descarga sin permiso explícitamente identificado');
+ if(text.includes('REGULARIZAR')||text.includes('REGULARICE')||text.includes('POR REGULARIZAR')||text.includes('SE TIENE QUE REGULAR'))reasons.push('Regularización de descarga o trámite pendiente');
+ if(text.includes('NO SE HAN PAGADO PORQUE NO SE DETERMINA')||text.includes('NO SE DETERMINA PORQUE NO SE SABE A QUE MUNICIPIO'))reasons.push('Autoridad o esquema de pago de descarga sin determinar');
+ if(waterYes(h.ptar)&&(ptarText.includes('NO FUNCIONA')||text.includes('PTAR NO ACTIVA')||text.includes('PTAR INACTIVA')))reasons.push('PTAR identificada pero fuera de operación');
+ if(text.includes('DESCARGA A LA CALLE'))reasons.push('Descarga a la calle reportada');
+ if(text.includes('CONEXIÓN DESCUBIERTA')||text.includes('CONEXION DESCUBIERTA'))reasons.push('Conexión de descarga descubierta reportada');
+ return [...new Set(reasons)];
+}
+
 function waterSnapshotStats(rows){
  return {
   total:rows.length,
@@ -4678,6 +4727,7 @@ function openWaterRecord(encodedName){
    <div><small>Pozo</small><b>${esc(h.pozo||'Por confirmar')}</b></div>
   </div>
   <div class="detail-list">
+   <div class="detail-row"><b>Riesgo ambiental</b><span>${esc(waterEnvironmentalRiskReasons(h).join('; ')||'Sin condición explícita de riesgo ambiental identificada en la fuente')}</span></div>
    <div class="detail-row"><b>Suministro</b><span>${esc(h.suministro||'Por confirmar')}</span></div>
    <div class="detail-row"><b>¿Parks paga agua?</b><span>${esc(h.parks_paga_agua||'Por confirmar')}</span></div>
    <div class="detail-row"><b>¿Parks suministra?</b><span>${esc(h.parks_suministra||'Por confirmar')}</span></div>
@@ -4691,7 +4741,8 @@ function openWaterRecord(encodedName){
 }
 
 function openWaterKpi(type){
- const rows=waterRows();
+ const reconciliation=waterCatalogReconciliation();
+ const rows=reconciliation.linked;
  const config={
   ptar:['Parques con PTAR',rows.filter(x=>waterYes(x.h.ptar||x.p.ptar))],
   discharge:['Parques con descarga',rows.filter(x=>waterHasDischarge(x.h.tipo_descarga||x.p.discharge))],
@@ -4707,7 +4758,7 @@ function openWaterKpi(type){
     <td>${esc(p.region||'')}</td>
     <td>${esc(h.ptar||p.ptar||'')}</td>
     <td>${esc(h.tipo_descarga||p.discharge||'')}</td>
-    <td>${esc(h.pendientes||h.observaciones||'')}</td>
+    <td>${esc(type==='risk'?(waterEnvironmentalRiskReasons(h).join('; ')||h.pendientes||h.observaciones||'Condición de riesgo identificada'):(h.pendientes||h.observaciones||''))}</td>
     <td><button class="btn ghost" onclick="closeModal();openWaterRecord('${encodeURIComponent(p.park)}')">Ver parque</button></td>
    </tr>`).join('')}
   </tbody></table></div>`:'<div class="empty">No hay parques en esta condición.</div>');
@@ -4722,7 +4773,8 @@ function waterPreviousStats(){
   p:{park:row.park,region:row.region,administrator:row.administrator},
   h:row.hydrica||{}
  }));
- return {stats:waterSnapshotStats(rows),snapshot:previous};
+ const linked=waterCatalogReconciliation(rows).linked;
+ return {stats:waterSnapshotStats(linked),snapshot:previous};
 }
 
 function renderWater(){
@@ -4742,9 +4794,11 @@ function renderWater(){
   return true;
  });
 
- const stats=waterSnapshotStats(all);
+ const reconciliation=waterCatalogReconciliation(all);
+ const operational=reconciliation.linked;
+ const stats=waterSnapshotStats(operational);
  if($('#waterSourceBanner')){
-   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra:</b> HIDRICA_FINAL_FUENTE · <b>${fmt(all.length)} registros hidráulicos cargados</b>. “Por confirmar” no se interpreta como Sí ni como No.`;
+   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra conciliada:</b> ${fmt(all.length)} registros hidráulicos fuente · <b>${fmt(operational.length)} enlazados al padrón visible de ${fmt(reconciliation.catalogCount)} parques</b> · ${fmt(reconciliation.unmatched.length)} históricos o por homologar. Los KPI operativos se calculan únicamente con registros enlazados. “Por confirmar” no se interpreta como Sí ni como No.`;
  }
  $('#waterKpis').innerHTML=[
   ['ptar','Parques con PTAR',fmt(stats.ptar),'PTAR identificada en la fuente maestra','good'],
@@ -4765,9 +4819,9 @@ function renderWater(){
  }
 
  const attention=[
-  ...all.filter(x=>waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Riesgo ambiental',priority:0,detail:waterRelevantPending(x.h)||x.h.ptar})),
-  ...all.filter(x=>waterNeedsPermit(x.h)&&!waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Permiso / trámite pendiente',priority:1,detail:waterRelevantPending(x.h)})),
-  ...all.filter(x=>waterNeedsValidation(x.h)).map(x=>{
+  ...operational.filter(x=>waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Riesgo ambiental',priority:0,detail:waterEnvironmentalRiskReasons(x.h).join('; ')||waterRelevantPending(x.h)||x.h.ptar})),
+  ...operational.filter(x=>waterNeedsPermit(x.h)&&!waterEnvironmentalRisk(x.h)).map(x=>({...x,label:'Permiso / trámite pendiente',priority:1,detail:waterRelevantPending(x.h)})),
+  ...operational.filter(x=>waterNeedsValidation(x.h)).map(x=>{
     const pendingFields=[
       ['Pago de agua',x.h.parks_paga_agua],['Pago clientes',x.h.clientes_pagan_agua],
       ['Suministro Parks',x.h.parks_suministra],['Suministro',x.h.suministro],
@@ -5178,6 +5232,8 @@ async function boot(){
   }
 
   D=window.SIGOP_DATA;
+  // TOP 5 se carga después de autenticar; sincroniza la fuente protegida real.
+  T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[],officialMonths:{},officialRegions:{}};
 
   if(!D){
    throw new Error('No se pudo cargar la información protegida de PARKS ONE');

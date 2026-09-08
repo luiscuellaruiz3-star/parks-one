@@ -1,4 +1,4 @@
-// PARKS ONE 7.3.1 - Bootstrap protegido.
+// PARKS ONE 7.3.2 - Bootstrap protegido.
 // Función serverless Vercel: la información operativa no se expone como archivo estático.
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://xmiushrjmlatrogfrsxu.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
@@ -258,7 +258,7 @@ export default async function handler(req, res) {
 
     const sigop = {
       generated: SIGOP_BASELINE.generated,
-      version: '7.3.1-protected-bootstrap',
+      version: '7.3.2-protected-bootstrap',
       metrics: computed.metrics,
       parks,
       documents: computed.documents,
@@ -293,7 +293,7 @@ export default async function handler(req, res) {
       hydrica,
       annual,
       meta: {
-        version: '7.3.1',
+        version: '7.3.2',
         environment: 'production',
         generated_at: new Date().toISOString(),
         role,
