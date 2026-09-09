@@ -1674,14 +1674,42 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:900px){.version-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.version-control-grid{grid-template-columns:1fr}}
 
+
+/* ============================================================
+   PARKS ONE V7.5.0 · Separación de ambientes
+   Alcance: identificación visible, checklist de liberación y
+   documentación de estrategia. No modifica datos, cálculos ni RLS.
+   ============================================================ */
+.environment-badge{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid #cfe4dc;
+  background:#f4fbf8;color:var(--gd);border-radius:999px;padding:6px 10px;
+  font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;
+}
+.environment-badge.preview{background:#fff9ec;border-color:#f4d69a;color:#895b00}
+.environment-badge.development{background:#eef5ff;border-color:#c8dcff;color:#1b4f9c}
+.environment-control-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--blue);background:#f7fbff;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.environment-control-note b{color:var(--gd)}
+.environment-flow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.environment-flow-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.environment-flow-card h4{margin:0 0 6px;color:var(--gd)}
+.environment-flow-card p{margin:0;color:var(--muted);line-height:1.4}
+.environment-checklist{display:grid;gap:8px;margin-top:10px}
+.environment-checklist div{border:1px solid var(--line);border-radius:11px;background:#fff;padding:9px 11px;color:var(--ink)}
+.environment-checklist b{color:var(--gd)}
+@media(max-width:900px){.environment-flow-grid{grid-template-columns:1fr}}
+
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.4.9.1',
+  version:'7.5.0',
   releasedAt:'2026-09-09',
   environment:'production',
-  title:'Versionado y control de cambios',
+  title:'Separación de ambientes',
   changelog:Object.freeze([
+    {version:'7.5.0',date:'2026-09-09',area:'Ambientes',summary:'Se instrumenta identificación visible de ambiente, checklist de liberación y estrategia desarrollo/preview/producción para evitar pruebas directas en producción.'},
     {version:'7.4.9.1',date:'2026-09-09',area:'Versionado',summary:'Se corrige leyenda residual de consola/importación para retirar Repositorio Documental 5.1.0 y alinear el identificador visible.'},
     {version:'7.4.9',date:'2026-09-09',area:'Versionado',summary:'Se alinea versión visible, bootstrap, ambiente, fecha de liberación y changelog interno.'},
     {version:'7.4.8',date:'2026-09-09',area:'Centro de Inteligencia',summary:'Documentación visible del alcance, fuentes, permisos, límites y ajuste visual Top 5.'},
@@ -1695,8 +1723,8 @@ window.PARKS_RELEASE=Object.freeze({
     {version:'7.4.1',date:'2026-09-09',area:'Documentos',summary:'Storage privado, enlaces temporales y auditoría de consulta documental.'},
     {version:'7.4.0B',date:'2026-09-09',area:'Datos',summary:'Datos operativos retirados del código público y servidos desde Supabase con sesión.'}
   ]),
-  touched:Object.freeze(['index.html','api/bootstrap.js','importacion.js']),
-  notTouched:Object.freeze(['Supabase SQL operativo','cloud.js','Top 5 fuente','Hídrica fuente','Biblioteca documental','Sesiones','Permisos','Seguridad web','Cálculos'])
+  touched:Object.freeze(['index.html','api/bootstrap.js']),
+  notTouched:Object.freeze(['Supabase SQL operativo','cloud.js','importacion.js','Top 5 fuente','Hídrica fuente','Biblioteca documental','Sesiones','Permisos','Seguridad web','Cálculos'])
 });
 </script>
 </head>
@@ -1722,8 +1750,8 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.9.1</div></aside>
-<main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.5.0<br><b>Ambiente:</b> <span id="environmentSideLabel">production</span></div></aside>
+<main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><span class="environment-badge" data-environment-badge id="environmentBadge">Ambiente: production</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
 <option value="regional">Regional</option>
@@ -2236,7 +2264,7 @@ window.PARKS_RELEASE=Object.freeze({
 
 <section id="flujo" class="page"><div class="headline"><div><h1>Flujos y aprobaciones</h1><p>Seguimiento de cargas documentales antes de impactar los indicadores oficiales.</p></div></div><div id="workflowKpis" class="kpis"></div><div class="card section"><h3>Bandeja de revisión</h3><div id="workflowList"></div></div></section>
 <section id="calendario" class="page"><div class="headline"><div><h1>Calendario de vigencias</h1><p>Señales temporales detectadas en nombre, carpeta o año del archivo. No se inventan fechas.</p></div></div><div id="calendarKpis" class="kpis"></div><div class="card section" id="calendarList"></div></section>
-<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div></div></section>
+<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div><div class="card doccard" data-environment-control="separation"><h4>Separación de ambientes</h4><p>Desarrollo, pruebas/preview y producción con reglas de liberación controlada.</p><button class="btn primary" onclick="openEnvironmentControl()">Ver ambientes</button></div></div></section>
 
 
 
@@ -3352,7 +3380,7 @@ window.__PARKS_INLINE_ENGINE_DIAG__ = {
   nationalEngine: !!window.ParksNationalDataEngine
 };
 </script>
-<script src="importacion.js?v=7.4.9.1"></script>
+<script src="importacion.js?v=7.5.0"></script>
 <script src="alerts_engine.js?v=12.1.0"></script>
 <script>
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -3453,7 +3481,7 @@ function dataTraceabilitySnapshot(){
  return {
   release:window.PARKS_RELEASE?.version||'No registrado',
   bootstrap_version:meta.version||'No registrado',
-  environment:window.PARKS_RELEASE?.environment||meta.environment||'production',
+  environment:meta.environment||window.PARKS_RELEASE?.environment||'production',
   generated_at:meta.generated_at||window.SIGOP_DATA?.generated||'',
   visible_parks:meta.visible_parks||C?.parks?.length||0,
   source_model:meta.source_model||'supabase-operational-records',
@@ -3495,7 +3523,7 @@ function parksVersionManifest(){
   app_version:rel.version||'No registrado',
   bootstrap_version:meta.version||'No registrado',
   released_at:rel.releasedAt||'No registrado',
-  environment:rel.environment||meta.environment||'production',
+  environment:meta.environment||rel.environment||'production',
   generated_at:meta.generated_at||new Date().toISOString(),
   changelog_entries:changelog.length,
   changelog,
@@ -3510,7 +3538,7 @@ function openVersionControl(){
  const changes=m.changelog.map(x=>`<div class="version-change-item"><h4>${esc(x.version)} · ${esc(x.area)} · ${esc(x.date)}</h4><p>${esc(x.summary)}</p></div>`).join('');
  const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
  const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
- openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.4.9.1:</b> se corrige la leyenda residual de consola/importación que todavía mostraba Repositorio Documental 5.1.0. Se mantiene el versionado alineado y no cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+ openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.5.0:</b> se agrega control visible de ambientes y checklist de liberación para trabajar en desarrollo/preview antes de producción. No cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
 }
 function downloadVersionChangelogCsv(){
  const m=parksVersionManifest();
@@ -3526,7 +3554,7 @@ window.ParksVersionControl=Object.freeze({
  snapshot(){
   const m=parksVersionManifest();
   return {
-   release:'7.4.9.1',
+   release:'7.5.0',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3541,6 +3569,82 @@ window.ParksVersionControl=Object.freeze({
  },
  open:openVersionControl
 });
+
+
+function environmentLabel(value){
+ const v=String(value||'production').toLowerCase();
+ if(v==='production')return 'Producción';
+ if(v==='preview'||v==='staging')return 'Pruebas / Preview';
+ if(v==='development'||v==='local')return 'Desarrollo';
+ return value||'Producción';
+}
+function environmentClass(value){
+ const v=String(value||'production').toLowerCase();
+ if(v==='preview'||v==='staging')return 'preview';
+ if(v==='development'||v==='local')return 'development';
+ return 'production';
+}
+function parksEnvironmentManifest(){
+ const rel=window.PARKS_RELEASE||{};
+ const meta=traceMeta();
+ const env=String(meta.environment||rel.environment||'production').toLowerCase();
+ return {
+  release:rel.version||'7.5.0',
+  app_version:rel.version||'7.5.0',
+  bootstrap_version:meta.version||'No registrado',
+  environment:env,
+  environment_label:environmentLabel(env),
+  strategy:[
+   {name:'Desarrollo',rule:'Cambios locales y ramas de trabajo. No se valida con usuarios finales ni datos productivos fuera de alcance.'},
+   {name:'Pruebas / Preview',rule:'Vercel Preview o rama controlada para validar visual, navegación, permisos y regresiones antes de liberar.'},
+   {name:'Producción',rule:'Solo recibe cambios con checklist validado, commit identificado, Vercel Ready y evidencia de snapshots.'}
+  ],
+  required_variables:['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','VERCEL_ENV'],
+  release_checklist:['Commit específico y sin archivos basura','Vercel Ready antes de validar','Ctrl+F5 y pruebas visuales','Snapshots de módulo ejecutados','Git status limpio después del cierre'],
+  production_guard:true,
+  branch_strategy:'desarrollo/local → preview/staging → producción',
+  protected_logic:'sin cambios funcionales: datos, cálculos, Hídrica, Top 5, sesiones, permisos, seguridad y RLS permanecen intactos'
+ };
+}
+function updateEnvironmentBadges(){
+ const m=parksEnvironmentManifest();
+ document.querySelectorAll('[data-environment-badge]').forEach(el=>{
+  el.textContent=`Ambiente: ${m.environment_label}`;
+  el.classList.remove('preview','development','production');
+  el.classList.add(environmentClass(m.environment));
+ });
+ const side=document.getElementById('environmentSideLabel');
+ if(side)side.textContent=m.environment_label;
+}
+function openEnvironmentControl(){
+ const m=parksEnvironmentManifest();
+ const flow=m.strategy.map(x=>`<div class="environment-flow-card"><h4>${esc(x.name)}</h4><p>${esc(x.rule)}</p></div>`).join('');
+ const vars=m.required_variables.map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
+ const checklist=m.release_checklist.map(x=>`<div><b>✓</b> ${esc(x)}</div>`).join('');
+ openModal('Separación de ambientes',`<div class="environment-control-note"><b>Actualización V7.5.0:</b> queda visible el ambiente actual (${esc(m.environment_label)}) y la regla de trabajo: desarrollo/local → pruebas/preview → producción. Producción no debe usarse como laboratorio; solo recibe cambios validados.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment_label)}</b><small>Ambiente actual</small></div><div class="version-control-card"><b>${m.production_guard?'Activo':'No activo'}</b><small>Guardia de producción</small></div></div><h3>Estrategia por ambientes</h3><div class="environment-flow-grid">${flow}</div><div class="environment-control-note"><b>Variables separadas esperadas:</b><br>${vars}<br><br><b>Ruta de ramas:</b> ${esc(m.branch_strategy)}</div><h3>Checklist antes de liberar</h3><div class="environment-checklist">${checklist}</div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+}
+window.ParksEnvironmentControl=Object.freeze({
+ snapshot(){
+  const m=parksEnvironmentManifest();
+  updateEnvironmentBadges();
+  return {
+   release:'7.5.0',
+   app_version:m.app_version,
+   bootstrap_version:m.bootstrap_version,
+   environment:m.environment,
+   environment_label:m.environment_label,
+   current_environment_visible:!!document.querySelector('[data-environment-badge]'),
+   release_checklist_visible:!!document.querySelector('[data-environment-control="separation"]'),
+   production_guard:m.production_guard,
+   branch_strategy_visible:!!m.branch_strategy,
+   variables_separation_policy_visible:m.required_variables.length>=3,
+   environments:m.strategy.map(x=>x.name),
+   protected_logic:m.protected_logic
+  };
+ },
+ open:openEnvironmentControl
+});
+updateEnvironmentBadges();
 
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 
@@ -6307,8 +6411,8 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.4.9.1',
-      scope:'visual-css-documentation-and-version-control-only',
+      release:'7.5.0',
+      scope:'visual-css-documentation-version-control-and-environment-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
       horizontal_overflow:overflowX,
@@ -6319,6 +6423,7 @@ window.ParksResponsiveVisual=Object.freeze({
       top5_admin_table_fix:!!document.querySelector('#top5DetailView table.top5-admin-table'),
       intelligence_documentation:true,
       version_control:!!window.ParksVersionControl,
+      environment_control:!!window.ParksEnvironmentControl,
       protected_logic:'sin cambios en Supabase, Top 5, Hídrica, sesiones, permisos ni cálculos'
     };
   }
@@ -6331,7 +6436,7 @@ window.ParksResponsiveVisual=Object.freeze({
 window.ParksIntelligenceDocumentation=Object.freeze({
   snapshot(){
     return {
-      release:'7.4.9.1',
+      release:'7.5.0',
       documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
       covers_questions:true,
       covers_sources:true,
@@ -6342,6 +6447,7 @@ window.ParksIntelligenceDocumentation=Object.freeze({
       top5_visual_note:!!document.querySelector('#top5DetailView .top5-visual-note'),
       top5_table_not_compressed:!!document.querySelector('#top5DetailView table.top5-admin-table'),
       version_control:!!window.ParksVersionControl,
+      environment_control:!!window.ParksEnvironmentControl,
       protected_logic:'sin cambios funcionales: Supabase, cálculos, Top 5 fuente, Hídrica, sesiones, permisos y seguridad permanecen intactos'
     };
   }

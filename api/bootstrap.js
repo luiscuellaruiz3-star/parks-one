@@ -1,9 +1,11 @@
-// PARKS ONE 7.4.0 · Bootstrap institucional protegido.
+// PARKS ONE 7.5.0 · Bootstrap institucional protegido con identificación de ambiente.
 // No contiene parques, administradores, Top 23, hidráulica ni Top 5 incrustados.
 // Toda información operativa se consulta en Supabase DESPUÉS de validar JWT y RLS.
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xmiushrjmlatrogfrsxu.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY =
   process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_fMFhhpXsDy4R723oWPBcbw_uTMIHivS';
+const PARKS_ENVIRONMENT = process.env.PARKS_ONE_ENVIRONMENT || process.env.VERCEL_ENV || 'production';
+const PARKS_RELEASE_CHANNEL = process.env.PARKS_RELEASE_CHANNEL || PARKS_ENVIRONMENT;
 
 function norm(value) {
   return String(value || '')
@@ -295,7 +297,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       sigop: {
         generated: sigopUpdated,
-        version: '7.4.9.1-version-control',
+        version: '7.5.0-environment-control',
         metrics: computed.metrics,
         parks,
         documents: computed.documents,
@@ -327,10 +329,16 @@ export default async function handler(req, res) {
         rows: annualRows
       },
       meta: {
-        version: '7.4.9.1',
-        environment: process.env.VERCEL_ENV || 'production',
+        version: '7.5.0',
+        environment: PARKS_ENVIRONMENT,
         released_at: '2026-09-09',
-        changelog_version: '7.4.9.1',
+        changelog_version: '7.5.0',
+        release_channel: PARKS_RELEASE_CHANNEL,
+        environment_strategy: {
+          development: 'Rama/local para construir sin afectar producción',
+          preview: 'Vercel Preview para validar antes de liberar',
+          production: 'Solo cambios validados con commit, checklist y evidencia'
+        },
         generated_at: new Date().toISOString(),
         role: String(profile.role || 'consulta').toLowerCase(),
         scoped: !['arquitecto','divisional','direccion','director','ceo','consulta'].includes(String(profile.role || '').toLowerCase()),
