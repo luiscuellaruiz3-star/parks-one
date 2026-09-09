@@ -1447,7 +1447,7 @@ body:not(.architect) #inteligencia{
 }
 
 /* ============================================================
-   PARKS ONE V7.5.1 · Validación por perfiles de usuario
+   PARKS ONE V7.5.2 · Liberaciones controladas
    Alcance: matriz visible y evidencia para pruebas multiusuario.
    No modifica RLS, datos, cálculos ni permisos efectivos.
    ============================================================ */
@@ -1470,6 +1470,30 @@ body:not(.architect) #inteligencia{
 @media(max-width:1180px){.profile-validation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.profile-validation-grid{grid-template-columns:1fr}.profile-validation-table{min-width:920px}}
 
+
+/* ============================================================
+   PARKS ONE V7.5.2 · Liberaciones controladas
+   Alcance: proceso de release, checklist, responsable, rollback y evidencia.
+   No modifica datos, cálculos, RLS ni flujos operativos.
+   ============================================================ */
+.release-control-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--green);background:#f7fcfa;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.release-control-note b{color:var(--gd)}
+.release-flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.release-flow-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.release-flow-card h4{margin:0 0 6px;color:var(--gd);font-size:14px}
+.release-flow-card p{margin:0;color:var(--muted);line-height:1.4;font-size:12.5px}
+.release-check-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+.release-check-table{width:100%;min-width:980px;border-collapse:collapse}
+.release-check-table th,.release-check-table td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12.5px;line-height:1.35}
+.release-check-table th{background:#f8fbfa;color:var(--gd);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.release-check-table tr:last-child td{border-bottom:0}
+.release-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f0faf5;border:1px solid #cfe4dc;color:var(--gd);font-weight:800;font-size:11px}
+@media(max-width:1100px){.release-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.release-flow-grid{grid-template-columns:1fr}.release-check-table{min-width:880px}}
+
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -1484,6 +1508,30 @@ body:not(.architect) #inteligencia{
 #agua .kpi::before,#agua .kpi::after{display:none!important;content:none!important}
 .architect .kpi.editable:hover{outline:none!important;outline-offset:0!important}
 .kpi:hover,.top5-kpi-click:hover,.top23-kpi-btn:hover,.alerts-kpi-btn:hover,.water-kpi-btn:hover,.workflow-kpi-btn:hover,.calendar-kpi-btn:hover{transform:translateY(-3px)!important}
+
+/* ============================================================
+   PARKS ONE V7.5.2 · Liberaciones controladas
+   Alcance: proceso de release, checklist, responsable, rollback y evidencia.
+   No modifica datos, cálculos, RLS ni flujos operativos.
+   ============================================================ */
+.release-control-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--green);background:#f7fcfa;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.release-control-note b{color:var(--gd)}
+.release-flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.release-flow-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.release-flow-card h4{margin:0 0 6px;color:var(--gd);font-size:14px}
+.release-flow-card p{margin:0;color:var(--muted);line-height:1.4;font-size:12.5px}
+.release-check-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+.release-check-table{width:100%;min-width:980px;border-collapse:collapse}
+.release-check-table th,.release-check-table td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12.5px;line-height:1.35}
+.release-check-table th{background:#f8fbfa;color:var(--gd);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.release-check-table tr:last-child td{border-bottom:0}
+.release-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f0faf5;border:1px solid #cfe4dc;color:var(--gd);font-weight:800;font-size:11px}
+@media(max-width:1100px){.release-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.release-flow-grid{grid-template-columns:1fr}.release-check-table{min-width:880px}}
+
 </style>
 <link rel="stylesheet" href="components/configuracion-maestra.css?v=7.2.0">
 <style id="parks-v731-hardening">
@@ -1726,14 +1774,39 @@ html,body{max-width:100%;overflow-x:hidden}
 .environment-checklist b{color:var(--gd)}
 @media(max-width:900px){.environment-flow-grid{grid-template-columns:1fr}}
 
+
+/* ============================================================
+   PARKS ONE V7.5.2 · Liberaciones controladas
+   Alcance: proceso de release, checklist, responsable, rollback y evidencia.
+   No modifica datos, cálculos, RLS ni flujos operativos.
+   ============================================================ */
+.release-control-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--green);background:#f7fcfa;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.release-control-note b{color:var(--gd)}
+.release-flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.release-flow-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.release-flow-card h4{margin:0 0 6px;color:var(--gd);font-size:14px}
+.release-flow-card p{margin:0;color:var(--muted);line-height:1.4;font-size:12.5px}
+.release-check-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+.release-check-table{width:100%;min-width:980px;border-collapse:collapse}
+.release-check-table th,.release-check-table td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12.5px;line-height:1.35}
+.release-check-table th{background:#f8fbfa;color:var(--gd);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.release-check-table tr:last-child td{border-bottom:0}
+.release-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f0faf5;border:1px solid #cfe4dc;color:var(--gd);font-weight:800;font-size:11px}
+@media(max-width:1100px){.release-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.release-flow-grid{grid-template-columns:1fr}.release-check-table{min-width:880px}}
+
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.5.1',
+  version:'7.5.2',
   releasedAt:'2026-09-09',
   environment:'production',
-  title:'Validación por perfiles de usuario',
+  title:'Liberaciones controladas',
   changelog:Object.freeze([
+    {version:'7.5.2',date:'2026-09-09',area:'Release controlado',summary:'Se agrega proceso visible de liberaciones controladas: preview antes de producción, checklist, responsable, aprobación, rollback y evidencia para Emilio.'},
     {version:'7.5.1',date:'2026-09-09',area:'Perfiles',summary:'Se agrega matriz visible de validación por rol, alcances esperados, permisos permitidos/bloqueados y evidencia para pruebas multiusuario.'},
     {version:'7.5.0',date:'2026-09-09',area:'Ambientes',summary:'Se instrumenta identificación visible de ambiente, checklist de liberación y estrategia desarrollo/preview/producción para evitar pruebas directas en producción.'},
     {version:'7.4.9.1',date:'2026-09-09',area:'Versionado',summary:'Se corrige leyenda residual de consola/importación para retirar Repositorio Documental 5.1.0 y alinear el identificador visible.'},
@@ -1776,7 +1849,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.5.1<br><b>Ambiente:</b> <span id="environmentSideLabel">production</span></div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.5.2<br><b>Ambiente:</b> <span id="environmentSideLabel">production</span></div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><span class="environment-badge" data-environment-badge id="environmentBadge">Ambiente: production</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -2290,7 +2363,7 @@ window.PARKS_RELEASE=Object.freeze({
 
 <section id="flujo" class="page"><div class="headline"><div><h1>Flujos y aprobaciones</h1><p>Seguimiento de cargas documentales antes de impactar los indicadores oficiales.</p></div></div><div id="workflowKpis" class="kpis"></div><div class="card section"><h3>Bandeja de revisión</h3><div id="workflowList"></div></div></section>
 <section id="calendario" class="page"><div class="headline"><div><h1>Calendario de vigencias</h1><p>Señales temporales detectadas en nombre, carpeta o año del archivo. No se inventan fechas.</p></div></div><div id="calendarKpis" class="kpis"></div><div class="card section" id="calendarList"></div></section>
-<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div><div class="card doccard" data-environment-control="separation"><h4>Separación de ambientes</h4><p>Desarrollo, pruebas/preview y producción con reglas de liberación controlada.</p><button class="btn primary" onclick="openEnvironmentControl()">Ver ambientes</button></div><div class="card doccard" data-profile-validation="matrix"><h4>Validación por perfiles</h4><p>Matriz de alcance esperado, accesos permitidos, bloqueos y evidencia para Emilio.</p><button class="btn primary" onclick="openUserProfileValidation()">Ver matriz</button></div></div></section>
+<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div><div class="card doccard" data-environment-control="separation"><h4>Separación de ambientes</h4><p>Desarrollo, pruebas/preview y producción con reglas de liberación controlada.</p><button class="btn primary" onclick="openEnvironmentControl()">Ver ambientes</button></div><div class="card doccard" data-profile-validation="matrix"><h4>Validación por perfiles</h4><p>Matriz de alcance esperado, accesos permitidos, bloqueos y evidencia para Emilio.</p><button class="btn primary" onclick="openUserProfileValidation()">Ver matriz</button></div><div class="card doccard" data-controlled-release="process"><h4>Liberaciones controladas</h4><p>Checklist de release, aprobación, publicación, rollback y evidencia antes de mover a producción.</p><button class="btn primary" onclick="openControlledRelease()">Ver proceso</button></div></div></section>
 
 
 
@@ -3564,7 +3637,7 @@ function openVersionControl(){
  const changes=m.changelog.map(x=>`<div class="version-change-item"><h4>${esc(x.version)} · ${esc(x.area)} · ${esc(x.date)}</h4><p>${esc(x.summary)}</p></div>`).join('');
  const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
  const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
- openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.5.1:</b> se agrega matriz de validación por perfiles para probar alcances reales antes de cerrar con Emilio. No cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+ openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.5.2:</b> se agrega proceso de liberaciones controladas para que ningún cambio pase a producción sin preview, checklist, evidencia y opción de rollback. No cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
 }
 function downloadVersionChangelogCsv(){
  const m=parksVersionManifest();
@@ -3580,7 +3653,7 @@ window.ParksVersionControl=Object.freeze({
  snapshot(){
   const m=parksVersionManifest();
   return {
-   release:'7.5.1',
+   release:'7.5.2',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3615,8 +3688,8 @@ function parksEnvironmentManifest(){
  const meta=traceMeta();
  const env=String(meta.environment||rel.environment||'production').toLowerCase();
  return {
-  release:rel.version||'7.5.1',
-  app_version:rel.version||'7.5.1',
+  release:rel.version||'7.5.2',
+  app_version:rel.version||'7.5.2',
   bootstrap_version:meta.version||'No registrado',
   environment:env,
   environment_label:environmentLabel(env),
@@ -3654,7 +3727,7 @@ window.ParksEnvironmentControl=Object.freeze({
   const m=parksEnvironmentManifest();
   updateEnvironmentBadges();
   return {
-   release:'7.5.1',
+   release:'7.5.2',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3685,8 +3758,8 @@ function parksProfileValidationManifest(){
  const meta=traceMeta();
  const rows=parksProfileValidationRows();
  return {
-  release:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.1',
-  app_version:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.1',
+  release:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.2',
+  app_version:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.2',
   bootstrap_version:meta.version||'No registrado',
   environment:meta.environment||'production',
   profile_matrix_visible:!!document.querySelector('[data-profile-validation="matrix"]'),
@@ -3710,7 +3783,7 @@ window.ParksUserProfileValidation=Object.freeze({
  snapshot(){
   const m=parksProfileValidationManifest();
   return {
-   release:'7.5.1',
+   release:'7.5.2',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3732,6 +3805,73 @@ window.ParksUserProfileValidation=Object.freeze({
  },
  open:openUserProfileValidation
 });
+
+
+function parksControlledReleaseSteps(){
+ return [
+  {stage:'1. Desarrollo local',owner:'Luis / Arquitecto',rule:'Cambios acotados por archivo, sin git add . y sin mezclar archivos basura.',evidence:'git status + lista de archivos tocados'},
+  {stage:'2. Commit específico',owner:'Luis / Arquitecto',rule:'Commit con mensaje de versión y alcance. El cambio debe explicar qué toca y qué no toca.',evidence:'hash de commit + mensaje'},
+  {stage:'3. Preview / pruebas',owner:'Luis + validación interna',rule:'Vercel Preview debe quedar Ready antes de validar. Se ejecuta Ctrl+F5 y snapshots del módulo.',evidence:'captura o JSON de snapshot'},
+  {stage:'4. Producción',owner:'Aprobador definido',rule:'Solo se libera si preview pasó sin regresiones y con checklist completo.',evidence:'versión visible + bootstrap + changelog'},
+  {stage:'5. Rollback',owner:'Arquitecto / Sistemas',rule:'Si hay falla, volver al commit anterior estable o redeploy anterior de Vercel.',evidence:'commit anterior / deployment anterior'},
+  {stage:'6. Cierre',owner:'Luis + Emilio',rule:'Cerrar punto únicamente con evidencia guardada y estado Git limpio.',evidence:'git status limpio + evidencia para Emilio'}
+ ];
+}
+function parksControlledReleaseManifest(){
+ const rel=window.PARKS_RELEASE||{};
+ const meta=traceMeta();
+ const steps=parksControlledReleaseSteps();
+ return {
+  release:rel.version||'7.5.2',
+  app_version:rel.version||'7.5.2',
+  bootstrap_version:meta.version||'No registrado',
+  environment:meta.environment||rel.environment||'production',
+  controlled_release_visible:!!document.querySelector('[data-controlled-release="process"]'),
+  release_steps_total:steps.length,
+  requires_preview_before_production:true,
+  checklist_required:true,
+  approval_responsible_documented:true,
+  rollback_documented:true,
+  evidence_for_emilio:true,
+  git_clean_rule:true,
+  no_direct_production_testing:true,
+  touched:rel.touched||[],
+  not_touched:rel.notTouched||[],
+  protected_logic:'sin cambios funcionales: no modifica Supabase, RLS, cálculos, Top 5, Hídrica, Biblioteca, sesiones, permisos ni seguridad'
+ };
+}
+function openControlledRelease(){
+ const m=parksControlledReleaseManifest();
+ const steps=parksControlledReleaseSteps();
+ const flow=steps.slice(0,4).map(x=>`<div class="release-flow-card"><h4>${esc(x.stage)}</h4><p><b>Responsable:</b> ${esc(x.owner)}<br>${esc(x.rule)}</p></div>`).join('');
+ const rows=steps.map(x=>`<tr><td><b>${esc(x.stage)}</b></td><td>${esc(x.owner)}</td><td>${esc(x.rule)}</td><td>${esc(x.evidence)}</td><td><span class="release-status-badge">Documentado</span></td></tr>`).join('');
+ const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
+ const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
+ openModal('Liberaciones controladas',`<div class="release-control-note"><b>Actualización V7.5.2:</b> se documenta el proceso formal de release: desarrollo/local → preview/staging → producción, con checklist, responsable, evidencia y rollback. Esta actualización no cambia datos ni cálculos.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${m.requires_preview_before_production?'Sí':'No'}</b><small>Preview obligatorio</small></div></div><h3>Flujo de liberación</h3><div class="release-flow-grid">${flow}</div><h3>Checklist y evidencia</h3><div class="release-check-table-wrap"><table class="release-check-table"><thead><tr><th>Etapa</th><th>Responsable</th><th>Regla</th><th>Evidencia</th><th>Estado</th></tr></thead><tbody>${rows}</tbody></table></div><div class="release-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}<br><br><b>Regla de producción:</b> no se prueba directamente en producción; producción solo recibe versión validada y con rollback identificado.</div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+}
+window.ParksControlledRelease=Object.freeze({
+ snapshot(){
+  const m=parksControlledReleaseManifest();
+  return {
+   release:m.release,
+   app_version:m.app_version,
+   bootstrap_version:m.bootstrap_version,
+   environment:m.environment,
+   controlled_release_visible:m.controlled_release_visible,
+   release_steps_total:m.release_steps_total,
+   requires_preview_before_production:m.requires_preview_before_production,
+   checklist_required:m.checklist_required,
+   approval_responsible_documented:m.approval_responsible_documented,
+   rollback_documented:m.rollback_documented,
+   evidence_for_emilio:m.evidence_for_emilio,
+   git_clean_rule:m.git_clean_rule,
+   no_direct_production_testing:m.no_direct_production_testing,
+   protected_logic:m.protected_logic
+  };
+ },
+ open:openControlledRelease
+});
+window.ParksReleaseControl=window.ParksControlledRelease;
 
 
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
@@ -6499,7 +6639,7 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.5.1',
+      release:'7.5.2',
       scope:'visual-css-documentation-version-control-and-environment-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
@@ -6525,7 +6665,7 @@ window.ParksResponsiveVisual=Object.freeze({
 window.ParksIntelligenceDocumentation=Object.freeze({
   snapshot(){
     return {
-      release:'7.5.1',
+      release:'7.5.2',
       documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
       covers_questions:true,
       covers_sources:true,
@@ -6564,4 +6704,28 @@ window.ParksIntelligenceDocumentation=Object.freeze({
 #flujo .kpi:after,
 #calendario .kpi:after,
 #agua .kpi:after{display:none !important;content:none !important}
+
+/* ============================================================
+   PARKS ONE V7.5.2 · Liberaciones controladas
+   Alcance: proceso de release, checklist, responsable, rollback y evidencia.
+   No modifica datos, cálculos, RLS ni flujos operativos.
+   ============================================================ */
+.release-control-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--green);background:#f7fcfa;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.release-control-note b{color:var(--gd)}
+.release-flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.release-flow-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.release-flow-card h4{margin:0 0 6px;color:var(--gd);font-size:14px}
+.release-flow-card p{margin:0;color:var(--muted);line-height:1.4;font-size:12.5px}
+.release-check-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+.release-check-table{width:100%;min-width:980px;border-collapse:collapse}
+.release-check-table th,.release-check-table td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12.5px;line-height:1.35}
+.release-check-table th{background:#f8fbfa;color:var(--gd);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.release-check-table tr:last-child td{border-bottom:0}
+.release-status-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#f0faf5;border:1px solid #cfe4dc;color:var(--gd);font-weight:800;font-size:11px}
+@media(max-width:1100px){.release-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.release-flow-grid{grid-template-columns:1fr}.release-check-table{min-width:880px}}
+
 </style>

@@ -1,4 +1,4 @@
-// PARKS ONE 7.5.1 · Bootstrap institucional protegido con validación de perfiles.
+// PARKS ONE 7.5.2 · Bootstrap institucional protegido con liberaciones controladas.
 // No contiene parques, administradores, Top 23, hidráulica ni Top 5 incrustados.
 // Toda información operativa se consulta en Supabase DESPUÉS de validar JWT y RLS.
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xmiushrjmlatrogfrsxu.supabase.co';
@@ -297,7 +297,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       sigop: {
         generated: sigopUpdated,
-        version: '7.5.1-profile-validation',
+        version: '7.5.2-controlled-release',
         metrics: computed.metrics,
         parks,
         documents: computed.documents,
@@ -329,10 +329,10 @@ export default async function handler(req, res) {
         rows: annualRows
       },
       meta: {
-        version: '7.5.1',
+        version: '7.5.2',
         environment: PARKS_ENVIRONMENT,
         released_at: '2026-09-09',
-        changelog_version: '7.5.1',
+        changelog_version: '7.5.2',
         release_channel: PARKS_RELEASE_CHANNEL,
         environment_strategy: {
           development: 'Rama/local para construir sin afectar producción',
@@ -346,6 +346,14 @@ export default async function handler(req, res) {
           direccion_ceo: 'national_read',
           arquitecto: 'national_full_control',
           requires_real_users: true
+        },
+        release_control: {
+          requires_preview_before_production: true,
+          checklist_required: true,
+          approval_responsible_documented: true,
+          rollback_documented: true,
+          git_clean_rule: true,
+          no_direct_production_testing: true
         },
         generated_at: new Date().toISOString(),
         role: String(profile.role || 'consulta').toLowerCase(),
