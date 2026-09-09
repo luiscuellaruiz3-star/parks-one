@@ -1,0 +1,14 @@
+PARKS ONE V7.4.3 · SEGURIDAD WEB
+
+Archivos a reemplazar/agregar:
+- vercel.json
+- package.json
+- scripts/security_check_v743.mjs
+- SECURITY_DEPENDENCIES.md
+
+No modifica index.html, cloud.js, Top 5, Biblioteca, Hídrica, permisos, sesiones ni datos.
+
+Antes de publicar:
+  npm run security:check
+
+El control valida versiones exactas, scripts externos autorizados, CSP y encabezados principales.
