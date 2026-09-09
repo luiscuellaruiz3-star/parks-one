@@ -17,7 +17,7 @@
           title:`${r.actor_name||'Usuario'} · ${r.action||'Acción'}`,
           subtitle:`${new Date(r.created_at).toLocaleString('es-MX')} · ${r.park_name||r.document_name||r.message||''}`,
           value:r.result||''
-        })),actions:[{label:'Abrir Bitácora',page:'auditoria'}]});
+        })),actions:[{label:'Abrir Panel ejecutivo',page:'inicio'}]});
     }
   });
 })(window);

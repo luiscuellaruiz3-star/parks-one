@@ -1550,7 +1550,7 @@ window.PARKS_RELEASE=Object.freeze({
   <div id="dashboardTop5Comparison"></div>
 </div>
 </section>
-<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, riesgo y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div></section>
+<section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, rezago documental y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div></section>
 <section id="top23" class="page">
   <div class="headline">
     <div>
@@ -2113,7 +2113,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 (function(global){
   'use strict';
 
-  const state={selection:null,history:[],waterHistory:[],waterRows:[]};
+  const state={selection:null,history:[],waterHistory:[],waterRows:[],waterUnmatched:[],waterSourceRows:0,waterDuplicates:0};
   const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -2384,36 +2384,67 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return matches.length===1?matches[0]:null;
   }
 
+  function mergeHydricaValues(base,next){
+    const out={...(base||{})};
+    Object.entries(next||{}).forEach(([key,value])=>{
+      if(value===null||value===undefined)return;
+      if(typeof value==='string'&&!value.trim())return;
+      out[key]=value;
+    });
+    return out;
+  }
+
   function applyWaterSnapshot(snapshot){
-    if(!snapshot?.rows)return {matched:0,unmatched:0};
+    if(!Array.isArray(snapshot?.rows))return {source:0,matched:0,unmatched:0,duplicates:0};
 
-    // Esta colección es la fuente maestra del módulo y conserva TODOS
-    // los parques del Excel, aunque alguno aún no exista en el padrón general.
-    state.waterRows=snapshot.rows.map(row=>({
-      region:row.region||'',
-      administrator:row.administrator||'',
-      park:row.park||'',
-      hydrica:{...(row.hydrica||{})},
-      sourceFilename:snapshot.sourceFilename||'',
-      updatedAt:snapshot.updatedAt||''
-    }));
+    // V7.4.4 · Los KPIs hídricos usan el mismo padrón canónico que PARKS ONE.
+    // Filas duplicadas se consolidan por parque y las no conciliadas se conservan
+    // para diagnóstico, pero nunca inflan el total operativo del módulo.
+    const byPark=new Map();
+    const unmatched=[];
+    let duplicates=0;
+    const updatedAt=String(snapshot.updatedAt||new Date().toISOString());
 
-    let matched=0,unmatched=0;
     snapshot.rows.forEach(row=>{
       const park=findPark(row.park);
-      if(!park){unmatched++;return;}
-      park.hydrica={...(park.hydrica||{}),...row.hydrica};
-      park.hydrica_updated=row.hydrica.ultima_actualizacion || snapshot.updatedAt.slice(0,10);
-      park.hydrica_source=snapshot.sourceFilename;
-      if(row.region&&!park.region)park.region=row.region;
-      if(row.administrator)park.administrator=row.administrator;
-      if(row.hydrica.suministro)park.supply=row.hydrica.suministro;
-      if(row.hydrica.ptar)park.ptar=row.hydrica.ptar;
-      if(row.hydrica.tipo_descarga)park.discharge=row.hydrica.tipo_descarga;
-      matched++;
+      if(!park){unmatched.push(row);return;}
+      const key=canonicalParkName(park.park);
+      const previous=byPark.get(key);
+      if(previous)duplicates++;
+      byPark.set(key,{
+        region:park.region||row.region||previous?.region||'',
+        administrator:row.administrator||previous?.administrator||park.administrator||'',
+        park:park.park,
+        hydrica:mergeHydricaValues(previous?.hydrica,row.hydrica),
+        sourceFilename:snapshot.sourceFilename||previous?.sourceFilename||'',
+        updatedAt
+      });
     });
-    global.SIGOP_DATA.generated=snapshot.updatedAt.slice(0,10);
-    return {matched,unmatched};
+
+    state.waterRows=[...byPark.values()];
+    state.waterUnmatched=unmatched;
+    state.waterSourceRows=snapshot.rows.length;
+    state.waterDuplicates=duplicates;
+
+    state.waterRows.forEach(row=>{
+      const park=findPark(row.park);
+      if(!park)return;
+      park.hydrica={...(park.hydrica||{}),...row.hydrica};
+      park.hydrica_updated=row.hydrica?.ultima_actualizacion || updatedAt.slice(0,10);
+      park.hydrica_source=snapshot.sourceFilename||'';
+      if(row.administrator)park.administrator=row.administrator;
+      if(row.hydrica?.suministro)park.supply=row.hydrica.suministro;
+      if(row.hydrica?.ptar)park.ptar=row.hydrica.ptar;
+      if(row.hydrica?.tipo_descarga)park.discharge=row.hydrica.tipo_descarga;
+    });
+
+    if(global.SIGOP_DATA)global.SIGOP_DATA.generated=updatedAt.slice(0,10);
+    return {
+      source:snapshot.rows.length,
+      matched:state.waterRows.length,
+      unmatched:unmatched.length,
+      duplicates
+    };
   }
 
   async function saveDataset(name,payload,fileName){
@@ -2536,7 +2567,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
       return {
         title:'Matriz Hídrica actualizada',
-        message:`Se guardaron ${selection.snapshot.records} registros hidráulicos. ${result.matched} quedaron enlazados al padrón general y ${result.unmatched} continúan visibles dentro del módulo Agua/PTAR.`
+        message:`Se procesaron ${selection.snapshot.records} filas hidráulicas. ${result.matched} parques quedaron homologados al padrón general, ${result.unmatched} filas quedaron sin conciliar${result.duplicates?` y ${result.duplicates} duplicadas se consolidaron por parque`:''}. Los KPIs usan únicamente parques conciliados.`
       };
     }
 
@@ -2825,17 +2856,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const current=(data||[]).find(row=>row.name==='hydrica:current');
     const currentRows=current?.payload?.rows;
 
-    // Protección de integridad:
-    // una carga histórica/incompleta no puede borrar la línea base de 91 registros.
-    // Sólo un snapshot suficientemente completo sustituye a la fuente maestra incluida.
-    if(Array.isArray(currentRows) && currentRows.length>=80){
-      applyWaterSnapshot(current.payload);
+    // Protección de integridad V7.4.4:
+    // la suficiencia se compara contra el padrón hídrico canónico actual, nunca
+    // contra un número histórico fijo. Así una fuente antigua de 91 filas no
+    // vuelve a inflar el indicador cuando representa menos parques reales.
+    const masterRows=global.PARKS_HYDRICA_MASTER_SEED?.rows||[];
+    const masterMatched=new Set(masterRows.map(row=>findPark(row.park)?.park).filter(Boolean)).size;
+    if(Array.isArray(currentRows)){
+      const currentMatched=new Set(currentRows.map(row=>findPark(row.park)?.park).filter(Boolean)).size;
+      const minimum=Math.max(1,Math.ceil(masterMatched*0.95));
+      if(currentMatched>=minimum){
+        applyWaterSnapshot(current.payload);
+      }else{
+        console.warn(
+          'Matriz Hídrica guardada ignorada por cobertura insuficiente:',
+          currentRows.length,'filas /',currentMatched,'parques conciliados.',
+          'Se conserva la fuente maestra homologada de',masterMatched,'parques.'
+        );
+      }
     }else if(current?.payload){
-      console.warn(
-        'Matriz Hídrica guardada ignorada por estar incompleta:',
-        Array.isArray(currentRows)?currentRows.length:0,
-        'registros. Se conserva la fuente maestra de 91 registros.'
-      );
+      console.warn('Matriz Hídrica guardada ignorada: el payload no contiene filas válidas.');
     }
 
     await loadWaterHistory();
@@ -3397,6 +3437,16 @@ function reconcileTop23WithDocuments(){
  }
 }
 
+function classifyDocumentaryRisk(compliance,applicable){
+ const c=Number(compliance)||0;
+ const total=Number(applicable)||0;
+ if(total<=0)return 'POR VALIDAR';
+ if(c>=0.90)return 'BAJO';
+ if(c>=0.70)return 'MEDIO';
+ if(c>0)return 'ALTO';
+ return 'CRÍTICO';
+}
+
 function recalculateParkIndicators(){
  reconcileTop23WithDocuments();
  const rows=(D.parks||[]);
@@ -3418,11 +3468,7 @@ function recalculateParkIndicators(){
    p.compliance=compliance;
    p.file_count=(p.files||[]).length;
 
-   if(compliance>=0.90)p.risk='BAJO';
-   else if(compliance>=0.70)p.risk='MEDIO';
-   else if(compliance>0)p.risk='ALTO';
-   else if(statusValues.length)p.risk='CRÍTICO';
-   else p.risk='POR VALIDAR';
+   p.risk=classifyDocumentaryRisk(compliance,applicable);
  }
 }
 
@@ -3541,11 +3587,56 @@ function openDashboardAnnual(type){
    <div class="exec-modal-actions"><button class="btn primary" onclick="closeModal();go('top23')">Abrir Top 23</button></div></div>`);
 }
 
+let dashboardAuditVisibleCount=null;
+function auditActionLabel(action){
+ const labels={
+  LOGIN:'Inicio de sesión',LOGOUT:'Cierre de sesión',INTELLIGENCE_QUERY:'Consulta de Inteligencia',
+  DOCUMENT_VIEWED:'Documento consultado',DOCUMENT_DOWNLOADED:'Documento descargado',
+  DOCUMENT_UPLOADED:'Documento cargado',DOCUMENT_UPDATED:'Documento modificado',
+  DOCUMENT_APPROVED:'Documento aprobado',DOCUMENT_RETURNED:'Documento devuelto'
+ };
+ return labels[String(action||'').toUpperCase()]||String(action||'Movimiento');
+}
+async function refreshDashboardAuditSummary(){
+ const host=$('#dashboardAuditCount');
+ if(!host)return;
+ const client=window.ParksCloud?.client?.();
+ if(!client){host.textContent='0';return;}
+ try{
+  const {count,error}=await client.from('audit_events').select('id',{count:'exact',head:true});
+  if(error)throw error;
+  dashboardAuditVisibleCount=Number(count)||0;
+  host.textContent=fmt(dashboardAuditVisibleCount);
+ }catch(error){
+  console.warn('Bitácora: no fue posible contar eventos visibles.',error);
+  host.textContent='—';
+ }
+}
+async function openDashboardAudit(){
+ openModal('Bitácora del sistema',`<div class="empty">Consultando movimientos autorizados…</div>`);
+ const client=window.ParksCloud?.client?.();
+ if(!client)return openModal('Bitácora del sistema','<div class="empty">Supabase no está disponible.</div>');
+ try{
+  const {data,error,count}=await client.from('audit_events').select('*',{count:'exact'}).order('created_at',{ascending:false}).limit(50);
+  if(error)throw error;
+  const rows=data||[];
+  dashboardAuditVisibleCount=Number(count)||rows.length;
+  openModal('Bitácora del sistema',`
+   <p><b>${fmt(dashboardAuditVisibleCount)}</b> eventos visibles dentro de tu alcance. Se muestran los 50 más recientes.</p>
+   <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Parque / Documento</th><th>Resultado</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.created_at?new Date(r.created_at).toLocaleString('es-MX'):'')}</td><td><b>${esc(r.actor_name||r.actor_email||'Usuario')}</b><br><small>${esc(r.actor_role||'')}</small></td><td>${esc(auditActionLabel(r.action))}</td><td>${esc(r.park_name||r.document_name||r.file_name||r.message||'')}</td><td>${esc(r.result||'')}</td></tr>`).join('')||'<tr><td colspan="5">No hay eventos visibles.</td></tr>'}
+   </tbody></table></div>`);
+  refreshDashboardAuditSummary();
+ }catch(error){
+  openModal('Bitácora del sistema',`<div class="empty">No fue posible consultar la bitácora.<br><small>${esc(error?.message||String(error))}</small></div>`);
+ }
+}
+
 function openDashboardCoverage(type){
  const t23=dashboardTop23Data();
  const water=dashboardWaterData();
  let title='', rows=[];
- if(type==='audit'){title='Parques auditados';rows=t23.parks.filter(p=>String(p.audit).toUpperCase()==='SI').map(p=>({park:p.park,region:p.region,administrator:p.administrator||'',detail:'Auditoría registrada'}));}
+ if(type==='audit'){title='Parques con Auditoría SIGOP';rows=t23.parks.filter(p=>String(p.audit).toUpperCase()==='SI').map(p=>({park:p.park,region:p.region,administrator:p.administrator||'',detail:'Auditoría SIGOP registrada'}));}
  else if(type==='files'){title='Parques con archivos';rows=t23.parks.filter(p=>(Number(p.file_count)||0)>0).map(p=>({park:p.park,region:p.region,administrator:p.administrator||'',detail:`${fmt(p.file_count)} archivos`,value:Number(p.file_count)||0}));}
  else if(type==='ptar'){title='Parques con PTAR';rows=water.ptar.map(x=>({park:x.p?.park||'',region:x.p?.region||'',administrator:x.p?.administrator||'',detail:x.h?.ptar||x.p?.ptar||'Sí'}));}
  const byRegion={};rows.forEach(r=>byRegion[r.region]=(byRegion[r.region]||0)+1);
@@ -3560,13 +3651,13 @@ function openDashboardCoverage(type){
 
 function openDashboardRisk(level){
  const t23=dashboardTop23Data();
- const rows=level==='CONTROLADO'?t23.parks.filter(p=>!['CRÍTICO','ALTO'].includes(p.risk)):t23.parks.filter(p=>p.risk===level);
+ const rows=level==='CONTROLADO'?t23.parks.filter(p=>['MEDIO','BAJO','POR VALIDAR'].includes(p.risk)):t23.parks.filter(p=>p.risk===level);
  const all=t23.parks.length;
  const avg=rows.length?rows.reduce((s,p)=>s+(Number(p.compliance)||0),0)/rows.length:0;
  const pending=rows.reduce((s,p)=>s+(Number(p.pending)||0),0);
  const reg={};rows.forEach(p=>reg[p.region]=(reg[p.region]||0)+1);
  const bars=Object.entries(reg).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,7);
- openModal(level==='CRÍTICO'?'Rezago documental crítico':`Riesgo ${level}`,`<div class="exec-modal-dashboard">
+ openModal(level==='CRÍTICO'?'Rezago documental crítico':level==='ALTO'?'Rezago documental alto':'Rezago documental medio / bajo',`<div class="exec-modal-dashboard">
    <div class="exec-metric-grid">${execMetric('Parques',fmt(rows.length),'En esta condición')}${execMetric('Participación',pct(rows.length/Math.max(1,all),1),'Sobre padrón')}${execMetric('Cumplimiento medio',pct(avg,1),'Promedio del grupo')}${execMetric('Pendientes',fmt(pending),'Obligaciones acumuladas')}</div>
    <div class="exec-visual-grid"><div class="exec-chart-card"><h4>Peso en el padrón</h4><p>Proporción de parques en esta condición.</p>${execDonut(rows.length/Math.max(1,all),'del padrón')}</div><div class="exec-chart-card"><h4>Distribución regional</h4><p>Dónde se concentra esta condición.</p>${execBars(bars)}</div></div>
    <div class="exec-compact-list">${[...rows].sort((a,b)=>a.compliance-b.compliance).slice(0,8).map(p=>`<div class="exec-compact-item"><b>${esc(p.park)}</b><span>${esc(p.region)} · ${fmt(p.pending||0)} pendientes · ${pct(p.compliance,1)}</span></div>`).join('')||'<div class="empty">Sin parques en esta condición.</div>'}</div>
@@ -3603,6 +3694,25 @@ function kpiDetail(type){
  }
  if(type==='critical')return openDashboardRisk('CRÍTICO');
 }
+function indicatorConsistencySnapshot(){
+ const t23=dashboardTop23Data();
+ const alerts=dashboardAlertsData();
+ const water=dashboardWaterData();
+ const top5=dashboardTop5Data();
+ return {
+  parks:t23.parks.length,
+  documents:(C.files||[]).length,
+  parks_with_documents:new Set((C.files||[]).map(f=>f.park).filter(Boolean)).size,
+  hydrica_parks:water.rows.length,
+  top5_month:top5.month,
+  top5_administrators:top5.admins.length,
+  alerts_critical:alerts.critical,
+  documentary_critical:t23.parks.filter(p=>p.risk==='CRÍTICO').length,
+  note:'alerts_critical y documentary_critical son indicadores distintos por definición'
+ };
+}
+window.ParksIndicatorConsistency=Object.freeze({snapshot:indicatorConsistencySnapshot});
+
 function renderDashboard(){
  const t23=dashboardTop23Data();
  const alerts=dashboardAlertsData();
@@ -3624,13 +3734,13 @@ function renderDashboard(){
   ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · cierre consolidado por Administrador`,'info','↗'],
   ['docs','Documentos cargados',fmt(C.files.length),`${fmt(new Set(C.files.map(f=>f.park).filter(Boolean)).size)} parques con evidencia`,'good','▤'],
   ['alerts','Alertas críticas',fmt(alerts.critical),'Centro de alertas · atención prioritaria','warn','●'],
-  ['critical','Parques con rezago crítico',fmt(critical),'15+ pendientes documentales aplicables','danger','⚠']
+  ['critical','Parques con rezago crítico',fmt(critical),'0% de cumplimiento en obligaciones aplicables','danger','⚠']
  ];
  $('#kpis').innerHTML=k.map(x=>`<div class="card kpi ${x[4]} editable" data-key="kpi-${x[0]}" onclick="kpiDetail('${x[0]}')"><span class="kpi-title">${x[1]}</span><span class="kpi-icon">${x[5]}</span><strong>${x[2]}</strong><div class="sub">${x[3]}</div><span class="kpi-action">Ver detalle →</span></div>`).join('');
 
  $('#summaryParks').textContent=`${fmt(t23.parks.length)} parques evaluados`;
  $('#summaryRegions').textContent=`${C.regions.length} regiones consolidadas`;
- $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
+ $('#executiveSummaryText').textContent=`El cumplimiento documental nacional es ${pct(t23.compliance,2)}. Permanecen ${fmt(t23.pending)} obligaciones aplicables pendientes y ${fmt(critical)} parques presentan rezago documental crítico. Este indicador es distinto de las alertas críticas de vigencia. El Top 5 operativo se encuentra en ${pct(top5.compliance,2)} para ${top5.month}.`;
 
  const regional=[...new Set(t23.parks.map(p=>p.region))].map(region=>{
    const rp=t23.parks.filter(p=>p.region===region);
@@ -3655,17 +3765,23 @@ function renderDashboard(){
 
  const withFiles=t23.parks.filter(p=>(Number(p.file_count)||0)>0).length;
  $('#coverage').innerHTML=[
-  ['Auditorías registradas',audited,'audit'],
+  ['Auditorías SIGOP',audited,'audit'],
   ['Parques con archivos',withFiles,'files'],
   ['PTAR identificada',water.ptar.length,'ptar']
- ].map(x=>`<button type="button" class="mini dashboard-detail-row" onclick="openDashboardCoverage('${x[2]}')"><span>${x[0]} <small>Ver detalle →</small></span><div class="bar"><i style="width:${Math.min(100,x[1]/Math.max(1,t23.parks.length)*100)}%"></i></div><b>${fmt(x[1])}</b></button>`).join('');
+ ].map(x=>`<button type="button" class="mini dashboard-detail-row" onclick="openDashboardCoverage('${x[2]}')"><span>${x[0]} <small>Ver detalle →</small></span><div class="bar"><i style="width:${Math.min(100,x[1]/Math.max(1,t23.parks.length)*100)}%"></i></div><b>${fmt(x[1])}</b></button>`).join('')+`
+ <button type="button" class="alert medium dashboard-risk-row" onclick="openDashboardAudit()" style="width:100%;text-align:left;cursor:pointer">
+  <b>Bitácora del sistema: <span id="dashboardAuditCount">…</span> eventos visibles</b>
+  <small>Inicios de sesión, consultas, documentos y cambios · según tu alcance →</small>
+ </button>`;
+ refreshDashboardAuditSummary();
 
  const high=t23.parks.filter(p=>p.risk==='ALTO').length;
- const controlled=t23.parks.filter(p=>!['CRÍTICO','ALTO'].includes(p.risk)).length;
+ const controlled=t23.parks.filter(p=>['MEDIO','BAJO','POR VALIDAR'].includes(p.risk)).length;
  $('#risk').innerHTML=`
-  <button type="button" class="alert critical dashboard-risk-row" onclick="openDashboardRisk('CRÍTICO')"><b>${critical} parques en riesgo crítico</b><small>Ver parques y pendientes →</small></button>
-  <button type="button" class="alert dashboard-risk-row" onclick="openDashboardRisk('ALTO')"><b>${high} parques en riesgo alto</b><small>Ver parques y pendientes →</small></button>
-  <button type="button" class="alert medium dashboard-risk-row" onclick="openDashboardRisk('CONTROLADO')"><b>${controlled} parques en riesgo medio o controlado</b><small>Ver parques →</small></button>`;
+  <button type="button" class="alert critical dashboard-risk-row" onclick="openDashboardRisk('CRÍTICO')"><b>${critical} parques con rezago documental crítico</b><small>0% de cumplimiento aplicable · ver parques →</small></button>
+  <button type="button" class="alert dashboard-risk-row" onclick="openDashboardRisk('ALTO')"><b>${high} parques con rezago documental alto</b><small>Cumplimiento mayor a 0% y menor a 70% · ver parques →</small></button>
+  <button type="button" class="alert medium dashboard-risk-row" onclick="openDashboardRisk('CONTROLADO')"><b>${controlled} parques con rezago medio, bajo o por validar</b><small>Cumplimiento documental ≥ 70% o sin obligación aplicable · ver parques →</small></button>
+  <div class="footnote"><b>Nota:</b> rezago documental y alerta crítica no son el mismo indicador. Una alerta crítica requiere una condición objetiva vencida o devuelta; el rezago mide cumplimiento del expediente.</div>`;
 
  const report=window.ParksTop5Importer?.getExecutiveSummary?.(top5.month);
  $('#dashboardTop5Summary').innerHTML=report?.cardsHtml||`<div class="alert"><b>${top5.month}: ${pct(top5.compliance,2)}</b><small>${fmt(top5.records)} registros consolidados de ${fmt(top5.expected)} esperados.</small></div>`;
@@ -3810,12 +3926,12 @@ function parkDetail(name){recalculateParkIndicators();
  const top23Rows=buildTop23Rows(p,sts);
  const physicalCount=new Set(top23Rows.flatMap(r=>r.matched).map(f=>String(f.cloud_id||f.storage_path||f.path||f.filename))).size;
  p.file_count=physicalCount;
- const facts=[['División',p.division],['Región',p.region],['Administrador',p.administrator],['Riesgo',p.risk],['Requisitos integrados',p.integrated],['Archivos físicos',p.file_count],['N/A confirmados',p.na],['Auditoría SIGOP',p.audit||'Por validar']];
+ const facts=[['División',p.division],['Región',p.region],['Administrador',p.administrator],['Rezago documental',p.risk],['Requisitos integrados',p.integrated],['Archivos físicos',p.file_count],['N/A confirmados',p.na],['Auditoría SIGOP',p.audit||'Por validar']];
  const top23=`<div class="tablewrap card park-top-table"><table><thead><tr><th>#</th><th>Requisito documental</th><th>Estado checklist</th><th>Archivos físicos</th><th>Acción</th></tr></thead><tbody>${top23Rows.map(({req:k,status:v,index:i,matched})=>{const n=matched.length;const review=(typeof getRequests==='function'?getRequests():[]).some(r=>r.park===p.park&&r.document===k&&r.status==='En revisión');const cls=review?'val':v==='✅'?'ok':v==='❌'?'no':v==='N/A'?'na':'val';const label=review?'En revisión':v==='✅'?'Integrado':v==='❌'?'Pendiente':v==='N/A'?'N/A':'Por definir';return`<tr><td>${i+1}</td><td>${esc(k)}</td><td><span class="park-status ${cls}"><i></i>${label}</span></td><td><b>${n}</b></td><td>${n?`<button class="park-action-link" onclick="showRequirementFiles('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Ver / descargar</button>`:(canUpload?`<button class="park-action-link" onclick="openUpload('${encodeURIComponent(p.park)}','${encodeURIComponent(k)}')">Cargar documento</button>`:'<b style="color:#145aad">Sin soporte</b>')}</td></tr>`}).join('')}</tbody></table></div>`;
  const baseFiles=[...(p.files||[])];const knownCloudIds=new Set(baseFiles.map(f=>String(f.cloud_id||'')));const files=[...baseFiles,...getRequests().filter(x=>x.park===p.park&&x.status!=='Devuelto'&&!knownCloudIds.has(String(x.id||''))).map(x=>({cloud_id:x.id,filename:x.filename,document_type:x.document,year:x.year||'',extension:x.extension||'pdf',local_url:x.dataUrl,status:x.status,requestId:x.id,park:x.park}))];
  const fileHtml=files.length?`<div class="doc-gallery">${files.map(f=>`<div class="card doc-tile"><div class="doc-icon">📄</div><h4>${esc(f.filename)}</h4><p>${esc(f.park||p.park)} · ${esc(f.document_type||f.folder||'Documento')}</p><p>Año: ${esc(f.year||'No identificado')} · ${esc(String(f.extension||'').toUpperCase())}</p>${f.status?`<span class="badge ${f.status==='Aprobado'?'bgreen':'bamber'} doc-state">${esc(f.status)}</span>`:''}<div class="doc-actions">${f.local_url?`<button class="btn secondary" onclick="previewDocument('${encodeURIComponent(f.local_url)}','${encodeURIComponent(f.filename)}')">Vista previa</button><button class="btn ghost" onclick="downloadDocument('${encodeURIComponent(f.local_url)}','${encodeURIComponent(f.filename)}')">Descargar</button>`:'<span class="meta">Archivo sin ruta disponible</span>'}</div></div>`).join('')}</div>`:'<div class="card empty">No se localizaron archivos físicos para este parque.</div>';
- const findings=`<div class="finding-grid"><div class="finding-box critical"><h4>¿Por qué se encuentra en ${esc(p.risk)}?</h4><p><b>${p.pending} obligaciones aplicables pendientes</b> y ${p.integrated} requisitos integrados.</p><p style="white-space:pre-line">${esc(p.critical||'La clasificación se deriva del cumplimiento documental y de los requisitos aplicables pendientes.')}</p></div><div class="finding-box action"><h4>Acción operativa recomendada</h4><p>Priorizar evidencia de requisitos críticos, validar vigencias y someter cada carga al flujo de aprobación.</p><p><b>Fuente:</b> Top 23, matriz hidráulica, archivos indexados y auditoría disponible.</p></div></div><div class="card section" style="margin-top:14px"><h3>Hallazgo consolidado del parque</h3><p style="white-space:pre-line">${esc(p.findings||'El parque requiere seguimiento documental conforme a sus requisitos aplicables.')}</p></div>`;
- const summary=`<div class="park-summary-grid"><div class="card"><h3>Estado documental</h3><p><b>${p.integrated}</b> requisitos integrados</p><p><b>${p.pending}</b> pendientes aplicables</p><p><b>${p.na}</b> N/A confirmados</p></div><div class="card"><h3>Expediente físico</h3><p><b>${p.file_count}</b> archivos disponibles</p><p>Consulta, vista previa y descarga desde la pestaña Documentos.</p></div><div class="card"><h3>Seguimiento</h3><p>Riesgo actual: <b>${esc(p.risk)}</b></p><p>Auditoría SIGOP: <b>${esc(p.audit||'Por validar')}</b></p></div></div>`;
+ const findings=`<div class="finding-grid"><div class="finding-box critical"><h4>¿Por qué presenta rezago ${esc(p.risk)}?</h4><p><b>${p.pending} obligaciones aplicables pendientes</b> y ${p.integrated} requisitos integrados.</p><p style="white-space:pre-line">${esc(p.critical||'La clasificación se deriva del cumplimiento documental y de los requisitos aplicables pendientes.')}</p></div><div class="finding-box action"><h4>Acción operativa recomendada</h4><p>Priorizar evidencia de requisitos críticos, validar vigencias y someter cada carga al flujo de aprobación.</p><p><b>Fuente:</b> Top 23, matriz hidráulica, archivos indexados y auditoría disponible.</p></div></div><div class="card section" style="margin-top:14px"><h3>Hallazgo consolidado del parque</h3><p style="white-space:pre-line">${esc(p.findings||'El parque requiere seguimiento documental conforme a sus requisitos aplicables.')}</p></div>`;
+ const summary=`<div class="park-summary-grid"><div class="card"><h3>Estado documental</h3><p><b>${p.integrated}</b> requisitos integrados</p><p><b>${p.pending}</b> pendientes aplicables</p><p><b>${p.na}</b> N/A confirmados</p></div><div class="card"><h3>Expediente físico</h3><p><b>${p.file_count}</b> archivos disponibles</p><p>Consulta, vista previa y descarga desde la pestaña Documentos.</p></div><div class="card"><h3>Seguimiento</h3><p>Rezago documental: <b>${esc(p.risk)}</b></p><p>Auditoría SIGOP: <b>${esc(p.audit||'Por validar')}</b></p></div></div>`;
  const h=p.hydrica||{};const water=`<div class="grid2"><div class="card section"><h3>Configuración hidráulica actualizada</h3><p><b>¿Parks paga el agua?</b> ${esc(h.parks_paga_agua||'Por confirmar')}</p><p><b>¿Clientes pagan directo?</b> ${esc(h.clientes_pagan_directo||'Por confirmar')}</p><p><b>¿Parks suministra a clientes?</b> ${esc(h.parks_suministra_clientes||'Por confirmar')}</p><p><b>Suministro:</b> ${esc(h.suministro||p.supply||'Por validar')}</p><p><b>Pozo:</b> ${esc(h.pozo||'Por confirmar')}</p><p><b>PTAR:</b> ${esc(h.ptar||p.ptar||'Por validar')}</p></div><div class="card section"><h3>Descargas y seguimiento</h3><p><b>Quién paga descargas:</b> ${esc(h.quien_paga_descargas||'Por confirmar')}</p><p><b>Tipo de descarga:</b> ${esc(h.tipo_descarga||p.discharge||'Por validar')}</p><p><b>Trámites pendientes:</b> ${esc(h.pendientes||'Sin dato registrado')}</p><p><b>Observaciones:</b> ${esc(h.observaciones||'Sin observaciones')}</p><p><b>Seguimiento:</b> ${esc([h.seguimiento_1,h.seguimiento_2].filter(Boolean).join(' · ')||'Sin seguimiento registrado')}</p><p><b>Fuente:</b> ${esc(h.fuente||'Matriz hidráulica')}</p></div></div>`;
  const body=`<div class="park-breadcrumb"><button onclick="returnToParks()">Parques</button> / ${esc(p.park)}</div><div class="park-page-actions"><button class="btn secondary" onclick="setAdministratorMode()">🔒 Modo administrador</button><button class="btn secondary" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.park+' Parks Industrial')}','_blank')">Abrir en Google Maps</button><button class="btn primary" onclick="window.print()">Imprimir ficha</button></div><div class="park-executive-card"><div class="park-executive-photo"></div><div><div class="park-executive-title"><h1>${esc(p.park)}</h1></div><div class="park-executive-facts">${facts.map(x=>`<div class="park-executive-fact"><b>${x[0]}</b><span>${esc(x[1])}</span></div>`).join('')}</div></div><div class="park-executive-ring" style="background:conic-gradient(var(--g) 0 ${deg}deg,#e5ece9 ${deg}deg)"><span>${pct(p.compliance,1)}</span></div></div><div class="park-tabs"><button onclick="parkTab(this,'psummary')">Resumen</button><button class="active" onclick="parkTab(this,'pstatus')">Top 23</button><button onclick="parkTab(this,'pfiles')">Documentos</button><button onclick="parkTab(this,'pwater')">Agua / PTAR</button><button onclick="parkTab(this,'pfind')">Hallazgos</button><button onclick="parkTab(this,'pmap')">Mapa</button></div><div id="psummary" class="park-panel">${summary}</div><div id="pstatus" class="park-panel active">${canUpload?`<div class="park-upload-inline"><button class="btn primary" onclick="openUpload('${encodeURIComponent(p.park)}')">＋ Cargar documento</button>${canApprove&&pending.length?`<button class="btn secondary" style="margin-left:8px" onclick="openWorkflowForPark('${encodeURIComponent(p.park)}')">${pending.length} pendiente(s) de aprobación</button>`:''}</div>`:''}${top23}</div><div id="pfiles" class="park-panel">${fileHtml}</div><div id="pwater" class="park-panel">${water}</div><div id="pfind" class="park-panel">${findings}</div><div id="pmap" class="park-panel"><div class="card park-map-card"><h3>${esc(p.park)}</h3><p>Abre la ubicación del parque en Google Maps.</p><button class="btn primary" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.park+' Parks Industrial')}','_blank')">Abrir mapa</button></div></div>`;
  $('#parkPageBody').innerHTML=body;go('parkdetail');window.scrollTo({top:0,behavior:'smooth'});
@@ -3981,7 +4097,7 @@ async function returnRequest(id){
  }
 }
 function recalculateAll(){
- C.parks.forEach(p=>{const vals=Object.values(p.statuses||{});p.integrated=vals.filter(v=>v==='✅').length;p.pending=vals.filter(v=>v==='❌').length;p.na=vals.filter(v=>v==='N/A').length;p.validating=vals.filter(v=>!['✅','❌','N/A'].includes(v)).length;const app=vals.length-p.na;p.compliance=app?p.integrated/app:0;p.file_count=(p.files||[]).length;p.risk=p.pending>=15?'CRÍTICO':p.pending>=9?'ALTO':p.pending>=4?'MEDIO':'BAJO'});
+ C.parks.forEach(p=>{const vals=Object.values(p.statuses||{});p.integrated=vals.filter(v=>v==='✅').length;p.pending=vals.filter(v=>v==='❌').length;p.na=vals.filter(v=>v==='N/A').length;p.validating=vals.filter(v=>!['✅','❌','N/A'].includes(v)).length;const app=vals.length-p.na;p.compliance=app?p.integrated/app:0;p.file_count=(p.files||[]).length;p.risk=classifyDocumentaryRisk(p.compliance,app)});
  const m=D.metrics;m.integrated=C.parks.reduce((s,p)=>s+p.integrated,0);m.pending=C.parks.reduce((s,p)=>s+p.pending,0);m.na_confirmed=C.parks.reduce((s,p)=>s+p.na,0);m.evaluated=C.parks.reduce((s,p)=>s+Object.keys(p.statuses||{}).length,0);m.files=C.parks.reduce((s,p)=>s+(p.files||[]).length,0);m.physical_parks=C.parks.filter(p=>(p.files||[]).length).length;m.critical_parks=C.parks.filter(p=>p.risk==='CRÍTICO').length;m.high_parks=C.parks.filter(p=>p.risk==='ALTO').length;m.compliance=m.integrated/Math.max(1,m.evaluated-m.na_confirmed);
  const fresh=compute();C.regions.splice(0,C.regions.length,...fresh.regions);C.requirements.splice(0,C.requirements.length,...fresh.requirements);C.files.splice(0,C.files.length,...fresh.files);D.regions=C.regions;D.all_files=C.files;
 }
@@ -4960,7 +5076,7 @@ function renderWater(){
 
  const stats=waterSnapshotStats(all);
  if($('#waterSourceBanner')){
-   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra:</b> HIDRICA_FINAL_FUENTE · <b>${fmt(all.length)} registros hidráulicos cargados</b>. “Por confirmar” no se interpreta como Sí ni como No.`;
+   $('#waterSourceBanner').innerHTML=`<b>Fuente maestra:</b> HIDRICA_FINAL_FUENTE · <b>${fmt(all.length)} parques hidráulicos homologados al padrón</b>. Filas duplicadas o sin conciliar no inflan los KPIs. “Por confirmar” no se interpreta como Sí ni como No.`;
  }
  $('#waterKpis').innerHTML=[
   ['ptar','Parques con PTAR',fmt(stats.ptar),'PTAR identificada en la fuente maestra','good'],
@@ -5510,7 +5626,7 @@ boot();
 <script src="scripts/intelligence/skills/water.skill.js?v=11.1.0"></script>
 <script src="scripts/intelligence/skills/users.skill.js?v=11.0.1"></script>
 <script src="scripts/intelligence/skills/workflow.skill.js?v=11.3.0"></script>
-<script src="scripts/intelligence/skills/audit.skill.js?v=11.0.1"></script>
+<script src="scripts/intelligence/skills/audit.skill.js?v=11.0.2"></script>
 <script src="scripts/intelligence/skills/executive.skill.js?v=11.0.0"></script>
 <script src="scripts/intelligence/engine.js?v=11.2.0"></script>
 <script src="scripts/inteligencia.js?v=11.2.2"></script>
