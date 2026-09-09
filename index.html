@@ -2601,28 +2601,65 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     return [...state.waterHistory];
   }
 
+  function waterCanonicalKey(value){
+    return String(value||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toUpperCase().replace(/[^A-Z0-9]+/g,' ')
+      .replace(/\bPARKS?\b/g,'PARK')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function canonicalWaterRows(rows){
+    const source=Array.isArray(rows)?rows:[];
+    const byKey=new Map();
+    for(const row of source){
+      const key=waterCanonicalKey(row?.park||row?.name||row?.commercial_name);
+      if(key&&!byKey.has(key))byKey.set(key,row);
+    }
+
+    const parks=global.SIGOP_DATA?.parks||[];
+    if(!parks.length){
+      return source.map(row=>({
+        region:row.region||'',
+        administrator:row.administrator||'',
+        park:row.park||'',
+        hydrica:{...(row.hydrica||{})}
+      })).filter(row=>row.park);
+    }
+
+    return parks.map(park=>{
+      const parkName=park.park||park.commercial_name||park.name||'';
+      const candidates=[parkName,park.name,park.commercial_name,park.code]
+        .map(waterCanonicalKey).filter(Boolean);
+      const src=candidates.map(key=>byKey.get(key)).find(Boolean);
+      return {
+        region:src?.region||park.region||'',
+        administrator:src?.administrator||park.administrator||'Por asignar',
+        park:parkName,
+        hydrica:{...(park.hydrica||{}),...(src?.hydrica||{})}
+      };
+    }).filter(row=>row.park);
+  }
+
   function currentWaterSnapshot(){
     if(state.waterRows?.length){
+      const rows=canonicalWaterRows(state.waterRows);
       return {
         updatedAt:state.waterRows.map(r=>r.updatedAt).filter(Boolean).sort().at(-1)||global.SIGOP_DATA?.generated||'',
-        rows:state.waterRows.map(r=>({
-          region:r.region||'',
-          administrator:r.administrator||'',
-          park:r.park||'',
-          hydrica:{...(r.hydrica||{})}
-        }))
+        rows
       };
     }
 
     const parks=global.SIGOP_DATA?.parks||[];
     return {
       updatedAt:parks.map(p=>p.hydrica_updated).filter(Boolean).sort().at(-1)||global.SIGOP_DATA?.generated||'',
-      rows:parks.filter(p=>p.hydrica&&Object.keys(p.hydrica).length).map(p=>({
+      rows:canonicalWaterRows(parks.map(p=>({
         region:p.region||'',
         administrator:p.administrator||'',
-        park:p.park||'',
+        park:p.park||p.commercial_name||p.name||'',
         hydrica:{...(p.hydrica||{})}
-      }))
+      })))
     };
   }
 
@@ -2631,14 +2668,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if(rows?.length)return rows;
 
     const seed=global.PARKS_HYDRICA_MASTER_SEED;
-    return seed?.rows?.length
-      ? seed.rows.map(row=>({
-          region:row.region||'',
-          administrator:row.administrator||'',
-          park:row.park||'',
-          hydrica:{...(row.hydrica||{})}
-        }))
-      : [];
+    return seed?.rows?.length ? canonicalWaterRows(seed.rows) : [];
   }
 
   function waterTruthy(value){
@@ -5008,20 +5038,37 @@ function waterNeedsValidation(h){
 }
 
 function waterRows(){
+ const normalize=typeof normalizeParkKey==='function'
+  ? normalizeParkKey
+  : (v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim());
  const engineRows=window.ParksNationalDataEngine?.getWaterRows?.()||[];
  const seedRows=window.PARKS_HYDRICA_MASTER_SEED?.rows||[];
  const source=engineRows.length?engineRows:seedRows;
+ const byKey=new Map();
+ source.forEach(row=>{
+  const key=normalize(row?.park||row?.name||row?.commercial_name);
+  if(key&&!byKey.has(key))byKey.set(key,row);
+ });
 
- return source.map(row=>({
-   p:{
-     park:row.park||'',
-     region:(row.region||'').replace(/^Región\s*/i,'R').replace(/\s*[–-].*$/,''),
-     region_full:row.region||'',
-     administrator:row.administrator||'',
-     hydrica_updated:row.hydrica?.ultima_actualizacion||''
-   },
-   h:row.hydrica||{}
- })).filter(x=>x.p.park);
+ const parks=(C?.parks||D?.parks||[]).filter(p=>p&&(p.park||p.name||p.commercial_name));
+ const base=parks.length?parks:source;
+
+ return base.map(item=>{
+   const parkName=item.park||item.commercial_name||item.name||'';
+   const src=[parkName,item.name,item.commercial_name,item.code]
+    .map(normalize).filter(Boolean).map(key=>byKey.get(key)).find(Boolean);
+   const h={...(item.hydrica||{}),...(src?.hydrica||{})};
+   return {
+     p:{
+       park:parkName,
+       region:(src?.region||item.region||'').replace(/^Región\s*/i,'R').replace(/\s*[–-].*$/,''),
+       region_full:src?.region||item.region||'',
+       administrator:src?.administrator||item.administrator||'',
+       hydrica_updated:h.ultima_actualizacion||item.hydrica_updated||''
+     },
+     h
+   };
+ }).filter(x=>x.p.park);
 }
 
 function waterSnapshotStats(rows){
