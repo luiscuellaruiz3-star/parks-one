@@ -13,6 +13,10 @@
   let scope = {};
   const signedUrlCache = new Map();
   let inactivityTimer = null;
+  let absoluteSessionTimer = null;
+  let sessionWatchInstalled = false;
+  const SESSION_STARTED_KEY = 'parksOneSessionStartedAt';
+  const AUTH_NOTICE_KEY = 'parksOneAuthNotice';
 
   // V7.4.0A3 · referencia estable desde el primer milisegundo.
   // El index toma una referencia a TOP5_DATA antes de ejecutar boot(); si el
@@ -25,8 +29,102 @@
   };
 
   function rememberPreference() {
-    try { return localStorage.getItem('parksOneRememberSession') !== '0'; }
-    catch (_) { return true; }
+    // Seguridad por defecto: una cuenta nueva NO conserva la sesión al cerrar la pestaña.
+    try { return localStorage.getItem('parksOneRememberSession') === '1'; }
+    catch (_) { return false; }
+  }
+
+  function authStoragePrefix() {
+    try {
+      const projectRef = new URL(cfg.supabaseUrl).hostname.split('.')[0];
+      return projectRef ? `sb-${projectRef}-auth-token` : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function clearProjectAuthStorage(storage) {
+    if (!storage) return;
+    const prefix = authStoragePrefix();
+    if (!prefix) return;
+    try {
+      const keys = [];
+      for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
+        if (key && (key === prefix || key.startsWith(prefix + '-'))) keys.push(key);
+      }
+      keys.forEach(key => storage.removeItem(key));
+    } catch (_) {}
+  }
+
+  function clearAlternateAuthStorage(remember) {
+    clearProjectAuthStorage(remember ? window.sessionStorage : window.localStorage);
+  }
+
+  function sessionPersistenceStorage(remember = rememberPreference()) {
+    return remember ? window.localStorage : window.sessionStorage;
+  }
+
+  function setSessionStartedAt(value = Date.now(), remember = rememberPreference()) {
+    try { sessionPersistenceStorage(remember).setItem(SESSION_STARTED_KEY, String(value)); } catch (_) {}
+  }
+
+  function getSessionStartedAt() {
+    const storage = sessionPersistenceStorage();
+    try {
+      const stored = Number(storage.getItem(SESSION_STARTED_KEY));
+      if (Number.isFinite(stored) && stored > 0) return stored;
+    } catch (_) {}
+
+    const fromSupabase = Date.parse(session?.user?.last_sign_in_at || '');
+    const fallback = Number.isFinite(fromSupabase) ? fromSupabase : Date.now();
+    setSessionStartedAt(fallback);
+    return fallback;
+  }
+
+  function clearSessionMetadata() {
+    try { localStorage.removeItem(SESSION_STARTED_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(SESSION_STARTED_KEY); } catch (_) {}
+  }
+
+  function maxSessionMilliseconds() {
+    const hours = Math.max(1, Number(cfg.maxSessionHours || 12));
+    return hours * 60 * 60 * 1000;
+  }
+
+  function isAbsoluteSessionExpired() {
+    if (!session) return false;
+    return Date.now() - getSessionStartedAt() >= maxSessionMilliseconds();
+  }
+
+  async function terminateSession(reason = 'expired') {
+    if (!session && !sb) return;
+
+    const inactivity = reason === 'inactivity';
+    const action = inactivity ? 'SESSION_INACTIVITY_TIMEOUT' : 'SESSION_EXPIRED';
+    const message = inactivity
+      ? 'Sesión cerrada automáticamente por inactividad.'
+      : 'Sesión cerrada automáticamente por tiempo máximo de vigencia.';
+
+    try {
+      await window.ParksAudit?.log?.(action, {
+        category: 'security',
+        message
+      });
+    } catch (_) {}
+
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (absoluteSessionTimer) clearTimeout(absoluteSessionTimer);
+    inactivityTimer = null;
+    absoluteSessionTimer = null;
+
+    try { await sb?.auth?.signOut(); } catch (_) {}
+    clearProjectAuthStorage(window.localStorage);
+    clearProjectAuthStorage(window.sessionStorage);
+    clearSessionMetadata();
+    session = null;
+    try { sessionStorage.setItem(AUTH_NOTICE_KEY, message); } catch (_) {}
+    location.reload();
   }
 
   function createSupabaseClient(remember = rememberPreference()) {
@@ -41,22 +139,40 @@
     });
   }
 
+  function scheduleAbsoluteSessionExpiry() {
+    if (!session) return;
+    if (absoluteSessionTimer) clearTimeout(absoluteSessionTimer);
+    const remaining = maxSessionMilliseconds() - (Date.now() - getSessionStartedAt());
+    if (remaining <= 0) {
+      void terminateSession('expired');
+      return;
+    }
+    absoluteSessionTimer = setTimeout(() => void terminateSession('expired'), remaining);
+  }
+
   function resetInactivityTimer() {
     if (!session) return;
+    if (isAbsoluteSessionExpired()) {
+      void terminateSession('expired');
+      return;
+    }
     if (inactivityTimer) clearTimeout(inactivityTimer);
     const minutes = Math.max(5, Number(cfg.inactivityMinutes || 30));
-    inactivityTimer = setTimeout(async () => {
-      try { await sb?.auth?.signOut(); } catch (_) {}
-      session = null;
-      location.reload();
-    }, minutes * 60 * 1000);
+    inactivityTimer = setTimeout(() => void terminateSession('inactivity'), minutes * 60 * 1000);
   }
 
   function installInactivityWatch() {
-    ['pointerdown','keydown','touchstart','scroll'].forEach(type => {
-      window.addEventListener(type, resetInactivityTimer, { passive: true });
-    });
+    if (!sessionWatchInstalled) {
+      ['pointerdown','keydown','touchstart','scroll'].forEach(type => {
+        window.addEventListener(type, resetInactivityTimer, { passive: true });
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) resetInactivityTimer();
+      });
+      sessionWatchInstalled = true;
+    }
     resetInactivityTimer();
+    scheduleAbsoluteSessionExpiry();
   }
 
   const roleMap = {
@@ -178,7 +294,9 @@
       return { configured: false, authenticated: false };
     }
 
-    sb = createSupabaseClient();
+    const remember = rememberPreference();
+    clearAlternateAuthStorage(remember);
+    sb = createSupabaseClient(remember);
 
     const { data, error } = await sb.auth.getSession();
     if (error) console.error('No fue posible recuperar la sesión:', error);
@@ -186,6 +304,11 @@
 
     if (!session) {
       showLogin();
+      return { configured: true, authenticated: false };
+    }
+
+    if (isAbsoluteSessionExpired()) {
+      await terminateSession('expired');
       return { configured: true, authenticated: false };
     }
 
@@ -341,10 +464,13 @@
             </div>
           </label>
 
-          <label style="display:flex;align-items:center;gap:8px;color:#49645d;margin:-4px 0 16px">
+          <label style="display:flex;align-items:center;gap:8px;color:#49645d;margin:-4px 0 5px">
             <input id="cloudRemember" type="checkbox">
             Mantener la sesión iniciada
           </label>
+          <small style="display:block;color:#6b7e78;line-height:1.4;margin:0 0 16px">
+            Sin marcar, la sesión se conserva sólo en esta pestaña. Por seguridad se cerrará tras ${Math.max(5, Number(cfg.inactivityMinutes || 30))} min de inactividad y, como máximo, después de ${Math.max(1, Number(cfg.maxSessionHours || 12))} h.
+          </small>
 
           <button id="cloudLoginButton" type="submit"
             style="width:100%;padding:13px;border:0;border-radius:9px;background:#07845f;color:white;font-weight:800;cursor:pointer">
@@ -474,6 +600,13 @@
     setView(recoveryMode ? 'update-password' : initialView);
     const rememberBox = overlay.querySelector('#cloudRemember');
     if (rememberBox) rememberBox.checked = rememberPreference();
+    try {
+      const notice = sessionStorage.getItem(AUTH_NOTICE_KEY);
+      if (notice) {
+        errorNode.textContent = notice;
+        sessionStorage.removeItem(AUTH_NOTICE_KEY);
+      }
+    } catch (_) {}
 
     overlay.querySelector('#cloudShowRegister').addEventListener('click', () => setView('register'));
     overlay.querySelector('#cloudShowReset').addEventListener('click', () => setView('reset'));
@@ -496,6 +629,7 @@
 
       const remember = Boolean(overlay.querySelector('#cloudRemember')?.checked);
       try { localStorage.setItem('parksOneRememberSession', remember ? '1' : '0'); } catch (_) {}
+      clearAlternateAuthStorage(remember);
       sb = createSupabaseClient(remember);
 
       const { data, error } = await sb.auth.signInWithPassword({
@@ -512,6 +646,7 @@
 
       try {
         session = data.session;
+        setSessionStartedAt(Date.now(), remember);
         await loadProfile();
         await loadAccessScope();
 
@@ -524,6 +659,9 @@
       } catch (loadError) {
         errorNode.textContent = loadError.message;
         await sb.auth.signOut();
+        clearProjectAuthStorage(window.localStorage);
+        clearProjectAuthStorage(window.sessionStorage);
+        clearSessionMetadata();
         button.disabled = false;
         button.textContent = 'Ingresar';
       }
@@ -1631,7 +1769,13 @@
       message: 'Cierre de sesión solicitado.'
     });
 
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (absoluteSessionTimer) clearTimeout(absoluteSessionTimer);
     if (sb) await sb.auth.signOut();
+    clearProjectAuthStorage(window.localStorage);
+    clearProjectAuthStorage(window.sessionStorage);
+    clearSessionMetadata();
+    session = null;
     location.reload();
   }
 
