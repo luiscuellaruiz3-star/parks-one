@@ -16,6 +16,8 @@
   let absoluteSessionTimer = null;
   let sessionWatchInstalled = false;
   const SESSION_STARTED_KEY = 'parksOneSessionStartedAt';
+  const LAST_ACTIVITY_KEY = 'parksOneLastActivityAt';
+  const EPHEMERAL_SESSION_KEY = 'parksOneEphemeralSession';
   const AUTH_NOTICE_KEY = 'parksOneAuthNotice';
 
   // V7.4.0A3 · referencia estable desde el primer milisegundo.
@@ -32,6 +34,26 @@
     // Seguridad por defecto: una cuenta nueva NO conserva la sesión al cerrar la pestaña.
     try { return localStorage.getItem('parksOneRememberSession') === '1'; }
     catch (_) { return false; }
+  }
+
+  function navigationType() {
+    try {
+      return performance.getEntriesByType?.('navigation')?.[0]?.type || 'navigate';
+    } catch (_) {
+      return 'navigate';
+    }
+  }
+
+  function hasEphemeralSessionMarker() {
+    try { return sessionStorage.getItem(EPHEMERAL_SESSION_KEY) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function setEphemeralSessionMarker(active) {
+    try {
+      if (active) sessionStorage.setItem(EPHEMERAL_SESSION_KEY, '1');
+      else sessionStorage.removeItem(EPHEMERAL_SESSION_KEY);
+    } catch (_) {}
   }
 
   function authStoragePrefix() {
@@ -61,12 +83,50 @@
     clearProjectAuthStorage(remember ? window.sessionStorage : window.localStorage);
   }
 
+  function enforceSessionPersistenceBoundary() {
+    const remember = rememberPreference();
+
+    if (remember) {
+      setEphemeralSessionMarker(false);
+      clearProjectAuthStorage(window.sessionStorage);
+      return;
+    }
+
+    // sessionStorage puede ser restaurado por algunos navegadores al reabrir una pestaña.
+    // Sólo aceptamos una sesión efímera cuando la navegación actual es una RECARGA
+    // de la misma pestaña donde se autenticó el usuario.
+    const canResumeThisTab =
+      hasEphemeralSessionMarker() &&
+      navigationType() === 'reload';
+
+    clearProjectAuthStorage(window.localStorage);
+
+    if (!canResumeThisTab) {
+      clearProjectAuthStorage(window.sessionStorage);
+      clearSessionMetadata();
+      setEphemeralSessionMarker(false);
+    }
+  }
+
   function sessionPersistenceStorage(remember = rememberPreference()) {
     return remember ? window.localStorage : window.sessionStorage;
   }
 
   function setSessionStartedAt(value = Date.now(), remember = rememberPreference()) {
     try { sessionPersistenceStorage(remember).setItem(SESSION_STARTED_KEY, String(value)); } catch (_) {}
+  }
+
+  function setLastActivityAt(value = Date.now(), remember = rememberPreference()) {
+    try { sessionPersistenceStorage(remember).setItem(LAST_ACTIVITY_KEY, String(value)); } catch (_) {}
+  }
+
+  function getLastActivityAt() {
+    const storage = sessionPersistenceStorage();
+    try {
+      const stored = Number(storage.getItem(LAST_ACTIVITY_KEY));
+      if (Number.isFinite(stored) && stored > 0) return stored;
+    } catch (_) {}
+    return getSessionStartedAt();
   }
 
   function getSessionStartedAt() {
@@ -83,13 +143,30 @@
   }
 
   function clearSessionMetadata() {
-    try { localStorage.removeItem(SESSION_STARTED_KEY); } catch (_) {}
-    try { sessionStorage.removeItem(SESSION_STARTED_KEY); } catch (_) {}
+    try {
+      localStorage.removeItem(SESSION_STARTED_KEY);
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+    } catch (_) {}
+    try {
+      sessionStorage.removeItem(SESSION_STARTED_KEY);
+      sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+      sessionStorage.removeItem(EPHEMERAL_SESSION_KEY);
+    } catch (_) {}
   }
 
   function maxSessionMilliseconds() {
     const hours = Math.max(1, Number(cfg.maxSessionHours || 12));
     return hours * 60 * 60 * 1000;
+  }
+
+  function inactivityMilliseconds() {
+    const minutes = Math.max(5, Number(cfg.inactivityMinutes || 30));
+    return minutes * 60 * 1000;
+  }
+
+  function isInactivityExpired() {
+    if (!session) return false;
+    return Date.now() - getLastActivityAt() >= inactivityMilliseconds();
   }
 
   function isAbsoluteSessionExpired() {
@@ -122,6 +199,7 @@
     clearProjectAuthStorage(window.localStorage);
     clearProjectAuthStorage(window.sessionStorage);
     clearSessionMetadata();
+    setEphemeralSessionMarker(false);
     session = null;
     try { sessionStorage.setItem(AUTH_NOTICE_KEY, message); } catch (_) {}
     location.reload();
@@ -150,28 +228,64 @@
     absoluteSessionTimer = setTimeout(() => void terminateSession('expired'), remaining);
   }
 
-  function resetInactivityTimer() {
+  function scheduleInactivityExpiry({ touch = false } = {}) {
     if (!session) return;
+
     if (isAbsoluteSessionExpired()) {
       void terminateSession('expired');
       return;
     }
+
+    if (touch) setLastActivityAt(Date.now());
+
+    const elapsed = Date.now() - getLastActivityAt();
+    const remaining = inactivityMilliseconds() - elapsed;
+
+    if (remaining <= 0) {
+      void terminateSession('inactivity');
+      return;
+    }
+
     if (inactivityTimer) clearTimeout(inactivityTimer);
-    const minutes = Math.max(5, Number(cfg.inactivityMinutes || 30));
-    inactivityTimer = setTimeout(() => void terminateSession('inactivity'), minutes * 60 * 1000);
+    inactivityTimer = setTimeout(() => void terminateSession('inactivity'), remaining);
+  }
+
+  function registerUserActivity() {
+    scheduleInactivityExpiry({ touch: true });
   }
 
   function installInactivityWatch() {
     if (!sessionWatchInstalled) {
       ['pointerdown','keydown','touchstart','scroll'].forEach(type => {
-        window.addEventListener(type, resetInactivityTimer, { passive: true });
+        window.addEventListener(type, registerUserActivity, { passive: true });
       });
+
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) resetInactivityTimer();
+        if (document.hidden) return;
+
+        // Si la pestaña estuvo oculta más allá del límite, expira ANTES
+        // de considerar el regreso del usuario como nueva actividad.
+        if (isInactivityExpired()) {
+          void terminateSession('inactivity');
+          return;
+        }
+
+        registerUserActivity();
       });
+
+      window.addEventListener('focus', () => {
+        if (!session) return;
+        if (isInactivityExpired()) {
+          void terminateSession('inactivity');
+          return;
+        }
+        registerUserActivity();
+      });
+
       sessionWatchInstalled = true;
     }
-    resetInactivityTimer();
+
+    scheduleInactivityExpiry({ touch: false });
     scheduleAbsoluteSessionExpiry();
   }
 
@@ -294,6 +408,7 @@
       return { configured: false, authenticated: false };
     }
 
+    enforceSessionPersistenceBoundary();
     const remember = rememberPreference();
     clearAlternateAuthStorage(remember);
     sb = createSupabaseClient(remember);
@@ -309,6 +424,11 @@
 
     if (isAbsoluteSessionExpired()) {
       await terminateSession('expired');
+      return { configured: true, authenticated: false };
+    }
+
+    if (isInactivityExpired()) {
+      await terminateSession('inactivity');
       return { configured: true, authenticated: false };
     }
 
@@ -629,6 +749,7 @@
 
       const remember = Boolean(overlay.querySelector('#cloudRemember')?.checked);
       try { localStorage.setItem('parksOneRememberSession', remember ? '1' : '0'); } catch (_) {}
+      setEphemeralSessionMarker(!remember);
       clearAlternateAuthStorage(remember);
       sb = createSupabaseClient(remember);
 
@@ -647,6 +768,8 @@
       try {
         session = data.session;
         setSessionStartedAt(Date.now(), remember);
+        setLastActivityAt(Date.now(), remember);
+        setEphemeralSessionMarker(!remember);
         await loadProfile();
         await loadAccessScope();
 
@@ -662,6 +785,7 @@
         clearProjectAuthStorage(window.localStorage);
         clearProjectAuthStorage(window.sessionStorage);
         clearSessionMetadata();
+        setEphemeralSessionMarker(false);
         button.disabled = false;
         button.textContent = 'Ingresar';
       }

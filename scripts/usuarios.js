@@ -25,30 +25,20 @@
     function getClient() {
         if (state.client) return state.client;
 
-        const cfg = window.PARKS_CONFIG || {};
+        const cloudClient =
+            typeof window.ParksCloud?.client === 'function'
+                ? window.ParksCloud.client()
+                : null;
 
-        if (
-        !cfg.supabaseUrl ||
-        !cfg.supabaseAnonKey ||
-        !window.supabase?.createClient
-        ) {
+        if (!cloudClient) {
         throw new Error(
-            'Supabase no está configurado o todavía no está disponible.'
+            'La sesión segura de PARKS ONE todavía no está disponible.'
         );
         }
 
-        state.client = window.supabase.createClient(
-        cfg.supabaseUrl,
-        cfg.supabaseAnonKey,
-        {
-            auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-            }
-        }
-        );
-
+        // Reutiliza el cliente central. No crear otro GoTrueClient evita que
+        // una sesión no persistente termine escribiéndose en localStorage.
+        state.client = cloudClient;
         return state.client;
     }
 

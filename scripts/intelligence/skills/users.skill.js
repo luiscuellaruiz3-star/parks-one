@@ -61,15 +61,10 @@
         );
       }
 
-      const cfg = global.PARKS_CONFIG || {};
-      if (!global.supabase?.createClient) {
+      const sb = global.ParksCloud?.client?.();
+      if (!sb) {
         return C.result('Usuarios', 'No fue posible consultar el directorio.');
       }
-
-      const sb = global.supabase.createClient(
-        cfg.supabaseUrl,
-        cfg.supabaseAnonKey
-      );
 
       let request = sb
         .from('profiles')
