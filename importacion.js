@@ -67,7 +67,8 @@ log(`Finalizado: ${result.uploaded} cargados, ${result.skipped} omitidos, ${resu
     document.getElementById('stopNationalImport')?.addEventListener('click',stop);
     document.getElementById('downloadImportReport')?.addEventListener('click',downloadReport);
     const role=refreshVisibility();
-    console.info('PARKS ONE Repositorio Documental 5.1.0 · rol:',role||'sin perfil');
+    const release=window.PARKS_RELEASE?.version||window.__PARKS_BOOTSTRAP_META__?.version||'7.4.9.1';
+    console.info(`PARKS ONE ${release} · Importación nacional · rol:`,role||'sin perfil');
     setTimeout(refreshVisibility,500);
   }
   window.initNationalImporter=init;

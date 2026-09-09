@@ -1637,7 +1637,7 @@ html,body{max-width:100%;overflow-x:hidden}
 #top5DetailView table.top5-admin-table td:nth-child(8){min-width:125px}
 @media(max-width:760px){.intel-help .intel-doc-grid{grid-template-columns:1fr}#top5DetailView table.top5-admin-table{min-width:980px}}
 
-/* PARKS ONE V7.4.9 · Versionado y control de cambios */
+/* PARKS ONE V7.4.9.1 · Versionado y control de cambios */
 .version-control-note{
   border:1px solid #d9e7e2;
   border-left:4px solid var(--g);
@@ -1677,11 +1677,12 @@ html,body{max-width:100%;overflow-x:hidden}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.4.9',
+  version:'7.4.9.1',
   releasedAt:'2026-09-09',
   environment:'production',
   title:'Versionado y control de cambios',
   changelog:Object.freeze([
+    {version:'7.4.9.1',date:'2026-09-09',area:'Versionado',summary:'Se corrige leyenda residual de consola/importación para retirar Repositorio Documental 5.1.0 y alinear el identificador visible.'},
     {version:'7.4.9',date:'2026-09-09',area:'Versionado',summary:'Se alinea versión visible, bootstrap, ambiente, fecha de liberación y changelog interno.'},
     {version:'7.4.8',date:'2026-09-09',area:'Centro de Inteligencia',summary:'Documentación visible del alcance, fuentes, permisos, límites y ajuste visual Top 5.'},
     {version:'7.4.7',date:'2026-09-09',area:'Responsiveness',summary:'Ajustes visuales sin cambio funcional para evitar cortes o desbordamientos.'},
@@ -1694,8 +1695,8 @@ window.PARKS_RELEASE=Object.freeze({
     {version:'7.4.1',date:'2026-09-09',area:'Documentos',summary:'Storage privado, enlaces temporales y auditoría de consulta documental.'},
     {version:'7.4.0B',date:'2026-09-09',area:'Datos',summary:'Datos operativos retirados del código público y servidos desde Supabase con sesión.'}
   ]),
-  touched:Object.freeze(['index.html','api/bootstrap.js']),
-  notTouched:Object.freeze(['Supabase SQL operativo','cloud.js','importacion.js','Top 5 fuente','Hídrica fuente','Biblioteca documental','Sesiones','Permisos','Seguridad web','Cálculos'])
+  touched:Object.freeze(['index.html','api/bootstrap.js','importacion.js']),
+  notTouched:Object.freeze(['Supabase SQL operativo','cloud.js','Top 5 fuente','Hídrica fuente','Biblioteca documental','Sesiones','Permisos','Seguridad web','Cálculos'])
 });
 </script>
 </head>
@@ -1721,7 +1722,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.9</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.9.1</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -3351,7 +3352,7 @@ window.__PARKS_INLINE_ENGINE_DIAG__ = {
   nationalEngine: !!window.ParksNationalDataEngine
 };
 </script>
-<script src="importacion.js?v=6.0.2"></script>
+<script src="importacion.js?v=7.4.9.1"></script>
 <script src="alerts_engine.js?v=12.1.0"></script>
 <script>
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -3509,7 +3510,7 @@ function openVersionControl(){
  const changes=m.changelog.map(x=>`<div class="version-change-item"><h4>${esc(x.version)} · ${esc(x.area)} · ${esc(x.date)}</h4><p>${esc(x.summary)}</p></div>`).join('');
  const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
  const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
- openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.4.9:</b> se alinea la versión visible de PARKS ONE con el bootstrap protegido, fecha de liberación, ambiente productivo y changelog interno. Es una actualización de control y evidencia; no cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+ openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.4.9.1:</b> se corrige la leyenda residual de consola/importación que todavía mostraba Repositorio Documental 5.1.0. Se mantiene el versionado alineado y no cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
 }
 function downloadVersionChangelogCsv(){
  const m=parksVersionManifest();
@@ -3525,7 +3526,7 @@ window.ParksVersionControl=Object.freeze({
  snapshot(){
   const m=parksVersionManifest();
   return {
-   release:'7.4.9',
+   release:'7.4.9.1',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -6306,7 +6307,7 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.4.9',
+      release:'7.4.9.1',
       scope:'visual-css-documentation-and-version-control-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
@@ -6330,7 +6331,7 @@ window.ParksResponsiveVisual=Object.freeze({
 window.ParksIntelligenceDocumentation=Object.freeze({
   snapshot(){
     return {
-      release:'7.4.9',
+      release:'7.4.9.1',
       documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
       covers_questions:true,
       covers_sources:true,
