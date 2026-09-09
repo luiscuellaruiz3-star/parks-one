@@ -1210,7 +1210,7 @@
 
   async function resolveUrl(path, download = false) {
     if (!path) return '';
-    if (/^data:|^blob:|^https?:/i.test(path)) return path;
+    if (/^data:|^blob:/i.test(path)) return path;
     if (!configured) throw new Error('Supabase no está configurado.');
     if (!session) {
       const { data } = await sb.auth.getSession();
@@ -1221,29 +1221,40 @@
       }
     }
 
+    // V7.4.1 · todo acceso documental real pasa por el endpoint del servidor.
+    // El servidor vuelve a validar la sesión, consulta documents bajo RLS,
+    // registra DOCUMENT_VIEWED / DOCUMENT_DOWNLOADED con document_id y recién
+    // después entrega una URL firmada de 15 minutos. No existe fallback abierto.
+    if (/^https?:/i.test(path) && !/\/storage\/v1\/object\/(?:sign|public|authenticated)\//i.test(path)) {
+      throw new Error('La referencia documental no pertenece al repositorio protegido.');
+    }
+
     const storagePath = normalizePath(path);
-    const cacheKey = `${download ? 'download' : 'preview'}:${storagePath}`;
-    if (signedUrlCache.has(cacheKey)) return signedUrlCache.get(cacheKey);
+    if (!storagePath) throw new Error('La ruta documental no es válida.');
 
-    const { data, error } = await sb.storage
-      .from(cfg.bucket)
-      .createSignedUrl(storagePath, 900, { download: download ? storagePath.split('/').pop() : false });
-    if (error) throw error;
+    const response = await fetch('/api/document-access', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        storage_path: storagePath,
+        action: download ? 'download' : 'view'
+      })
+    });
 
-    signedUrlCache.set(cacheKey, data.signedUrl);
-    setTimeout(() => signedUrlCache.delete(cacheKey), 12 * 60 * 1000);
-
-    window.ParksAudit?.log?.(
-      download ? 'DOCUMENT_DOWNLOADED' : 'DOCUMENT_VIEWED',
-      {
-        category: 'document',
-        file_name: storagePath.split('/').pop() || '',
-        result: 'success',
-        metadata: { storage_path: storagePath }
+    let payload = {};
+    try { payload = await response.json(); } catch (_) {}
+    if (!response.ok || !payload?.url) {
+      if (response.status === 401) {
+        session = null;
+        showLogin();
       }
-    );
+      throw new Error(payload?.error || 'No fue posible generar el acceso seguro al documento.');
+    }
 
-    return data.signedUrl;
+    return payload.url;
   }
 
   function permissionRole() {
@@ -1277,30 +1288,74 @@
     });
   }
 
-  function validateUploadFile(file) {
+  async function validateUploadFile(file) {
     if (!file || typeof file.size !== 'number') throw new Error('Selecciona un archivo válido.');
     if (file.size <= 0) throw new Error('El archivo está vacío.');
 
-    const allowedExt = new Set((cfg.allowedUploadExtensions || ['pdf','png','jpg','jpeg','docx','xlsx']).map(x => String(x).toLowerCase()));
-    const allowedMime = new Set((cfg.allowedUploadMimeTypes || [
-      'application/pdf','image/png','image/jpeg',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ]).map(x => String(x).toLowerCase()));
+    const mimeByExt = {
+      pdf: 'application/pdf',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+    const allowedExt = new Set((cfg.allowedUploadExtensions || Object.keys(mimeByExt)).map(x => String(x).toLowerCase()));
+    const allowedMime = new Set((cfg.allowedUploadMimeTypes || Object.values(mimeByExt)).map(x => String(x).toLowerCase()));
     const maxBytes = Math.max(1, Number(cfg.maxUploadMB || 50)) * 1024 * 1024;
     const ext = String(file.name || '').split('.').pop().toLowerCase();
-    const mime = String(file.type || '').toLowerCase();
+    const browserMime = String(file.type || '').toLowerCase();
+    const expectedMime = mimeByExt[ext] || browserMime;
 
     if (!allowedExt.has(ext)) throw new Error(`Extensión .${ext || '?'} no permitida.`);
-    if (mime && !allowedMime.has(mime)) throw new Error(`Tipo de archivo no permitido (${mime}).`);
+    if (!expectedMime || !allowedMime.has(expectedMime)) throw new Error(`Tipo de archivo no permitido (${expectedMime || 'desconocido'}).`);
+    const genericBrowserMime = !browserMime || ['application/octet-stream','application/zip','application/x-zip-compressed'].includes(browserMime);
+    if (!genericBrowserMime && browserMime !== expectedMime && !(expectedMime === 'image/jpeg' && browserMime === 'image/jpg')) {
+      throw new Error(`El tipo declarado por el archivo (${browserMime}) no coincide con la extensión .${ext}.`);
+    }
     if (file.size > maxBytes) throw new Error(`El archivo excede el límite de ${Number(cfg.maxUploadMB || 50)} MB.`);
-    return true;
+
+    // Validación de CONTENIDO, no solo nombre/MIME. Se inspecciona la firma real
+    // y, para Office Open XML, la estructura interna del ZIP.
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const starts = sig => sig.every((value, index) => bytes[index] === value);
+    const ascii = (start, end) => new TextDecoder('latin1').decode(bytes.slice(start, end));
+
+    if (ext === 'pdf') {
+      if (bytes.length < 8 || ascii(0, 5) !== '%PDF-') throw new Error('El contenido no corresponde a un PDF válido.');
+      const tail = ascii(Math.max(0, bytes.length - 4096), bytes.length);
+      if (!tail.includes('%%EOF')) throw new Error('El PDF está incompleto o no contiene un cierre válido.');
+    } else if (ext === 'png') {
+      if (!starts([0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A])) throw new Error('El contenido no corresponde a una imagen PNG válida.');
+    } else if (ext === 'jpg' || ext === 'jpeg') {
+      if (!starts([0xFF,0xD8,0xFF]) || bytes.at(-2) !== 0xFF || bytes.at(-1) !== 0xD9) {
+        throw new Error('El contenido no corresponde a una imagen JPEG válida.');
+      }
+    } else if (ext === 'docx' || ext === 'xlsx') {
+      if (!starts([0x50,0x4B,0x03,0x04])) throw new Error(`El contenido no corresponde a un archivo ${ext.toUpperCase()} válido.`);
+      if (!window.JSZip?.loadAsync) throw new Error('No fue posible validar la estructura interna del archivo Office.');
+      let zip;
+      try { zip = await window.JSZip.loadAsync(buffer); }
+      catch (_) { throw new Error(`El archivo ${ext.toUpperCase()} está dañado o no es un contenedor Office válido.`); }
+      if (!zip.file('[Content_Types].xml')) throw new Error(`El archivo ${ext.toUpperCase()} no contiene la estructura Office requerida.`);
+      if (ext === 'docx' && !zip.file('word/document.xml')) throw new Error('El archivo no contiene un documento Word válido.');
+      if (ext === 'xlsx' && !zip.file('xl/workbook.xml')) throw new Error('El archivo no contiene un libro Excel válido.');
+    }
+
+    let checksum = '';
+    if (globalThis.crypto?.subtle?.digest) {
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', buffer));
+      checksum = [...digest].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    return { ext, mime: expectedMime, checksum };
   }
 
   async function upload(file, meta) {
     if (!configured || !session) throw new Error('Se requiere una sesión activa.');
     if (!meta?.parkId) throw new Error('La carga requiere el UUID del parque.');
-    validateUploadFile(file);
+    const validatedFile = await validateUploadFile(file);
 
     if (!can('upload', { meta })) {
       throw new Error('Tu rol no tiene permiso para cargar documentos.');
@@ -1323,7 +1378,7 @@
 
     const { error: uploadError } = await sb.storage
       .from(cfg.bucket)
-      .upload(storagePath, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+      .upload(storagePath, file, { contentType: validatedFile.mime, upsert: false });
     if (uploadError) throw uploadError;
 
     const row = {
@@ -1339,8 +1394,9 @@
       storage_bucket: cfg.bucket,
       storage_path: storagePath,
       original_filename: file.name,
-      mime_type: file.type || 'application/octet-stream',
+      mime_type: validatedFile.mime,
       file_size: file.size,
+      checksum: validatedFile.checksum || null,
       notes: [
         meta.notes || '',
         `PARKS_PERMISSION_ROLE=${permissionRole()}`,
@@ -1361,7 +1417,13 @@
         park_name: meta.parkName || '',
         region_code: meta.regionCode || meta.region || '',
         division_code: meta.divisionCode || meta.division || '',
-        document_year: meta.documentYear || null
+        document_year: meta.documentYear || null,
+        content_validation: {
+          extension: validatedFile.ext,
+          mime_type: validatedFile.mime,
+          signature_verified: true,
+          sha256: validatedFile.checksum || null
+        }
       }
     };
 
