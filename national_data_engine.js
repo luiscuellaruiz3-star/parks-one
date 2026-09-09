@@ -413,6 +413,12 @@
       const key='hydrica:current';
       await saveDataset(key,selection.snapshot,selection.file.name);
       const result=applyWaterSnapshot(selection.snapshot);
+      if(global.ParksOperationalSync?.syncHydrica){
+        const syncResult=await global.ParksOperationalSync.syncHydrica();
+        if(syncResult.unmatched){
+          throw new Error(`La sincronización hídrica dejó ${syncResult.unmatched} registro(s) sin conciliar.`);
+        }
+      }
       global.refreshComputedDataFromSources?.();
       await loadWaterHistory();
       await refreshHistory();

@@ -33,14 +33,6 @@
   const fmt=n=>new Intl.NumberFormat('es-MX').format(Number(n)||0);
   const pct=(n,d=2)=>`${((Number(n)||0)*100).toFixed(d)}%`;
 
-  function sanitizeExecutiveNoteText(value){
-    const raw=String(value||'').trim();
-    if(!raw)return '';
-    const simple=norm(raw);
-    if(['HOLA','PRUEBA','TEST','OK','ASDF'].includes(simple))return '';
-    return raw;
-  }
-
   function excelDate(serial){
     if(serial instanceof Date)return serial;
     if(typeof serial!=='number')return null;
@@ -310,6 +302,9 @@
     },{onConflict:'name'});
     if(error)throw error;
     mergeSnapshot(snapshot);
+    if(global.ParksOperationalSync?.syncTop5){
+      await global.ParksOperationalSync.syncTop5();
+    }
   }
 
   function previousMonth(snapshot){
@@ -494,7 +489,7 @@
     }
 
     const note={
-      text:sanitizeExecutiveNoteText(data?.payload?.text||''),
+      text:String(data?.payload?.text||''),
       updated_at:data?.updated_at||data?.payload?.updated_at||'',
       updated_by_name:String(data?.payload?.updated_by_name||'')
     };
@@ -510,11 +505,8 @@
     const key=noteKey(month);
     const profile=global.ParksCloud?.profile?.()||{};
     const userId=global.ParksCloud?.session?.()?.user?.id||null;
-    const rawText=String(text||'').trim();
-    const cleanedText=sanitizeExecutiveNoteText(rawText);
-    if(rawText&&!cleanedText)throw new Error('La nota ejecutiva debe contener información relevante; no se permiten textos de prueba.');
     const payload={
-      text:cleanedText,
+      text:String(text||'').trim(),
       updated_at:new Date().toISOString(),
       updated_by_name:profile.full_name||profile.email||'Arquitecto'
     };
@@ -595,20 +587,21 @@
     relevant.push('✅ El cálculo se realiza con base en el <b>promedio consolidado por Administrador</b>, evitando duplicar a los Administradores con varios parques.');
 
     const cachedNote=executiveNotesCache.get(noteKey(month));
-    const manualText=sanitizeExecutiveNoteText(cachedNote?.text);
-    const manualNote=manualText
-      ? `<p><b>Comentarios del cierre</b></p><div style="white-space:pre-wrap">${esc(manualText)}</div>`
+    const manualNote=cachedNote?.text
+      ? `<p><b>Comentarios del cierre</b></p><div style="white-space:pre-wrap">${esc(cachedNote.text)}</div>`
       : '';
 
     return `
       <div class="top5-report-box" id="top5ExecutiveReport">
-        <p><b>Resumen ejecutivo TOP 5 · ${esc(month)} ${s.year}</b></p>
-        <p>El cumplimiento se calcula con base en el <b>promedio consolidado por Administrador</b>, considerando el desempeño global de los parques bajo su responsabilidad y evitando duplicidad por esquemas multiparque.</p>
+        <p>Hola Dani, buenas tardes.</p>
+        <p>Comparto el <b>resumen ejecutivo del cumplimiento del TOP 5 correspondiente al mes de ${esc(month.toLowerCase())} de ${s.year}</b>, calculado con base en el <b>promedio consolidado por Administrador</b>, considerando el desempeño global de todos los parques bajo su responsabilidad.</p>
         <p><b>Cumplimiento por región</b></p>
         <table><thead><tr><th>Región</th><th>${esc(s.prev?.month||'Anterior')}</th><th>${esc(month)}</th><th>Tendencia</th></tr></thead><tbody>${rows}</tbody></table>
         <p><b>Aspectos relevantes</b></p>
         <ul>${relevant.map(x=>`<li>${x}</li>`).join('')}</ul>
         ${manualNote}
+        <p>Quedo atento a cualquier comentario o ajuste que consideres necesario.</p>
+        <p>Saludos.</p>
       </div>`;
   }
 
