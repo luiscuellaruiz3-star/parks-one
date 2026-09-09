@@ -1637,12 +1637,65 @@ html,body{max-width:100%;overflow-x:hidden}
 #top5DetailView table.top5-admin-table td:nth-child(8){min-width:125px}
 @media(max-width:760px){.intel-help .intel-doc-grid{grid-template-columns:1fr}#top5DetailView table.top5-admin-table{min-width:980px}}
 
+/* PARKS ONE V7.4.9 · Versionado y control de cambios */
+.version-control-note{
+  border:1px solid #d9e7e2;
+  border-left:4px solid var(--g);
+  background:#f6fbf8;
+  border-radius:14px;
+  padding:12px 14px;
+  margin:14px 0;
+  color:var(--ink);
+  line-height:1.45;
+}
+.version-control-note b{color:var(--gd)}
+.version-control-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(150px,1fr));
+  gap:12px;
+  margin:12px 0 16px;
+}
+.version-control-card{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:14px;
+  padding:12px;
+}
+.version-control-card small{display:block;color:var(--muted);margin-top:4px}
+.version-change-list{display:grid;gap:10px;margin-top:10px}
+.version-change-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px 12px;
+  background:#fff;
+}
+.version-change-item h4{margin:0 0 5px;font-size:14px;color:var(--gd)}
+.version-change-item p{margin:0;color:var(--muted);line-height:1.4}
+@media(max-width:900px){.version-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.version-control-grid{grid-template-columns:1fr}}
+
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.4.8',
+  version:'7.4.9',
   releasedAt:'2026-09-09',
-  environment:'production'
+  environment:'production',
+  title:'Versionado y control de cambios',
+  changelog:Object.freeze([
+    {version:'7.4.9',date:'2026-09-09',area:'Versionado',summary:'Se alinea versión visible, bootstrap, ambiente, fecha de liberación y changelog interno.'},
+    {version:'7.4.8',date:'2026-09-09',area:'Centro de Inteligencia',summary:'Documentación visible del alcance, fuentes, permisos, límites y ajuste visual Top 5.'},
+    {version:'7.4.7',date:'2026-09-09',area:'Responsiveness',summary:'Ajustes visuales sin cambio funcional para evitar cortes o desbordamientos.'},
+    {version:'7.4.6',date:'2026-09-09',area:'Navegación',summary:'Filtros persistentes, rutas directas, paginación y control de volumen.'},
+    {version:'7.4.5',date:'2026-09-09',area:'Trazabilidad',summary:'Fuentes, responsables, reglas de cálculo y pendientes/rechazados por módulo.'},
+    {version:'7.4.4.3',date:'2026-09-09',area:'Hídrica',summary:'Cálculo hídrico alineado al padrón canónico operativo.'},
+    {version:'7.4.4.2',date:'2026-09-09',area:'Documentos',summary:'Conciliación documental sin forzar registros históricos no canónicos.'},
+    {version:'7.4.3',date:'2026-09-09',area:'Seguridad web',summary:'Headers, CSP, control de dependencias y protección contra iframe.'},
+    {version:'7.4.2.1',date:'2026-09-09',area:'Sesiones',summary:'Sesión persistente solo cuando el usuario activa Mantener sesión.'},
+    {version:'7.4.1',date:'2026-09-09',area:'Documentos',summary:'Storage privado, enlaces temporales y auditoría de consulta documental.'},
+    {version:'7.4.0B',date:'2026-09-09',area:'Datos',summary:'Datos operativos retirados del código público y servidos desde Supabase con sesión.'}
+  ]),
+  touched:Object.freeze(['index.html','api/bootstrap.js']),
+  notTouched:Object.freeze(['Supabase SQL operativo','cloud.js','importacion.js','Top 5 fuente','Hídrica fuente','Biblioteca documental','Sesiones','Permisos','Seguridad web','Cálculos'])
 });
 </script>
 </head>
@@ -1668,7 +1721,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.8</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.9</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -2182,7 +2235,7 @@ window.PARKS_RELEASE=Object.freeze({
 
 <section id="flujo" class="page"><div class="headline"><div><h1>Flujos y aprobaciones</h1><p>Seguimiento de cargas documentales antes de impactar los indicadores oficiales.</p></div></div><div id="workflowKpis" class="kpis"></div><div class="card section"><h3>Bandeja de revisión</h3><div id="workflowList"></div></div></section>
 <section id="calendario" class="page"><div class="headline"><div><h1>Calendario de vigencias</h1><p>Señales temporales detectadas en nombre, carpeta o año del archivo. No se inventan fechas.</p></div></div><div id="calendarKpis" class="kpis"></div><div class="card section" id="calendarList"></div></section>
-<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div></div></section>
+<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div></div></section>
 
 
 
@@ -3431,6 +3484,62 @@ function downloadTraceabilityCsv(){
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
 }
 window.ParksDataTraceability=Object.freeze({snapshot:dataTraceabilitySnapshot,open:openDataTraceability});
+
+function parksVersionManifest(){
+ const rel=window.PARKS_RELEASE||{};
+ const meta=traceMeta();
+ const changelog=Array.isArray(rel.changelog)?rel.changelog:[];
+ return {
+  release:rel.version||'No registrado',
+  app_version:rel.version||'No registrado',
+  bootstrap_version:meta.version||'No registrado',
+  released_at:rel.releasedAt||'No registrado',
+  environment:rel.environment||meta.environment||'production',
+  generated_at:meta.generated_at||new Date().toISOString(),
+  changelog_entries:changelog.length,
+  changelog,
+  touched:rel.touched||[],
+  not_touched:rel.notTouched||[],
+  control_rule:'Cada liberación debe mostrar versión visible, versión bootstrap, fecha, ambiente, historial y alcance del cambio.',
+  protected_logic:'sin cambios funcionales: datos, cálculos, Hídrica, Top 5, sesiones, permisos y seguridad permanecen intactos'
+ };
+}
+function openVersionControl(){
+ const m=parksVersionManifest();
+ const changes=m.changelog.map(x=>`<div class="version-change-item"><h4>${esc(x.version)} · ${esc(x.area)} · ${esc(x.date)}</h4><p>${esc(x.summary)}</p></div>`).join('');
+ const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
+ const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
+ openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.4.9:</b> se alinea la versión visible de PARKS ONE con el bootstrap protegido, fecha de liberación, ambiente productivo y changelog interno. Es una actualización de control y evidencia; no cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+}
+function downloadVersionChangelogCsv(){
+ const m=parksVersionManifest();
+ const header=['Version','Fecha','Area','Resumen'];
+ const rows=(m.changelog||[]).map(x=>[x.version,x.date,x.area,x.summary]);
+ const csv=[header,...rows].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');
+ a.href=url;a.download=`PARKS_ONE_CHANGELOG_${new Date().toISOString().slice(0,10)}.csv`;
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+window.ParksVersionControl=Object.freeze({
+ snapshot(){
+  const m=parksVersionManifest();
+  return {
+   release:'7.4.9',
+   app_version:m.app_version,
+   bootstrap_version:m.bootstrap_version,
+   environment:m.environment,
+   released_at:m.released_at,
+   changelog_visible:!!document.querySelector('[data-version-control="changelog"]'),
+   changelog_entries:m.changelog_entries,
+   touched:m.touched,
+   not_touched:m.not_touched,
+   control_rule:true,
+   protected_logic:m.protected_logic
+  };
+ },
+ open:openVersionControl
+});
 
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 
@@ -6197,8 +6306,8 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.4.8',
-      scope:'visual-css-and-documentation-only',
+      release:'7.4.9',
+      scope:'visual-css-documentation-and-version-control-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
       horizontal_overflow:overflowX,
@@ -6208,6 +6317,7 @@ window.ParksResponsiveVisual=Object.freeze({
       alerts_layout:!!alerts,
       top5_admin_table_fix:!!document.querySelector('#top5DetailView table.top5-admin-table'),
       intelligence_documentation:true,
+      version_control:!!window.ParksVersionControl,
       protected_logic:'sin cambios en Supabase, Top 5, Hídrica, sesiones, permisos ni cálculos'
     };
   }
@@ -6220,7 +6330,7 @@ window.ParksResponsiveVisual=Object.freeze({
 window.ParksIntelligenceDocumentation=Object.freeze({
   snapshot(){
     return {
-      release:'7.4.8',
+      release:'7.4.9',
       documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
       covers_questions:true,
       covers_sources:true,
@@ -6230,6 +6340,7 @@ window.ParksIntelligenceDocumentation=Object.freeze({
       insufficient_information_rule:true,
       top5_visual_note:!!document.querySelector('#top5DetailView .top5-visual-note'),
       top5_table_not_compressed:!!document.querySelector('#top5DetailView table.top5-admin-table'),
+      version_control:!!window.ParksVersionControl,
       protected_logic:'sin cambios funcionales: Supabase, cálculos, Top 5 fuente, Hídrica, sesiones, permisos y seguridad permanecen intactos'
     };
   }

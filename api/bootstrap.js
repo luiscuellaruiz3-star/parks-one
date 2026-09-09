@@ -295,7 +295,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       sigop: {
         generated: sigopUpdated,
-        version: '7.4.0-supabase-only',
+        version: '7.4.9-version-control',
         metrics: computed.metrics,
         parks,
         documents: computed.documents,
@@ -327,8 +327,10 @@ export default async function handler(req, res) {
         rows: annualRows
       },
       meta: {
-        version: '7.4.0',
-        environment: process.env.VERCEL_ENV || 'unknown',
+        version: '7.4.9',
+        environment: process.env.VERCEL_ENV || 'production',
+        released_at: '2026-09-09',
+        changelog_version: '7.4.9',
         generated_at: new Date().toISOString(),
         role: String(profile.role || 'consulta').toLowerCase(),
         scoped: !['arquitecto','divisional','direccion','director','ceo','consulta'].includes(String(profile.role || '').toLowerCase()),
