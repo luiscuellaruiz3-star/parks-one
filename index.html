@@ -1430,6 +1430,21 @@ body:not(.architect) #inteligencia{
   .side{display:none !important;}
   .main{margin-left:0 !important;}
 }
+
+/* V7.4.0A3 · Biblioteca paginada: evita una página de 500+ renglones y
+   recupera navegación Anterior / Siguiente debajo de la tabla. */
+.docs-pager{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;margin-top:10px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow);
+}
+.docs-pager .docs-page-info{font-size:12px;color:var(--mut);font-weight:700}
+.docs-pager .docs-page-actions{display:flex;align-items:center;gap:8px}
+.docs-pager button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){
+  .docs-pager{align-items:flex-start;flex-direction:column}
+  .docs-pager .docs-page-actions{width:100%;justify-content:space-between}
+}
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -1843,7 +1858,7 @@ window.PARKS_RELEASE=Object.freeze({
     </div>
   </div>
 </section>
-<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div></section>
+<section id="documentos" class="page"><div class="headline"><div><h1>Biblioteca documental</h1><p>Índice físico de archivos reales encontrados en el repositorio nacional.</p></div></div><div id="docKpis" class="kpis"></div><div class="toolbar"><input id="docSearch" placeholder="Buscar archivo, parque o carpeta"><select id="docRegion"><option value="">Todas las regiones</option></select></div><div class="tablewrap card"><table><thead><tr><th>Archivo</th><th>Parque</th><th>Documento</th><th>Año</th><th>Región</th><th>Acción</th></tr></thead><tbody id="docsBody"></tbody></table></div><div id="docsPager" class="docs-pager" aria-live="polite"></div></section>
 <section id="agua" class="page">
   <div class="headline">
     <div>
@@ -2069,7 +2084,7 @@ window.PARKS_RELEASE=Object.freeze({
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="config.js"></script>
 <script src="scripts/permisos.js?v=8.3.0"></script>
-<script src="cloud.js?v=7.4.0a2"></script>
+<script src="cloud.js?v=7.4.0a3"></script>
 <script src="scripts/migration_v740.js?v=7.4.0a1"></script>
 
 
@@ -3971,7 +3986,7 @@ function recalculateAll(){
  const fresh=compute();C.regions.splice(0,C.regions.length,...fresh.regions);C.requirements.splice(0,C.requirements.length,...fresh.requirements);C.files.splice(0,C.files.length,...fresh.files);D.regions=C.regions;D.all_files=C.files;
 }
 
-const T5=window.TOP5_DATA||{months:[],admins:[],regions:[],records:[]};
+const T5=window.TOP5_DATA||(window.TOP5_DATA={months:[],admins:[],regions:[],records:[],executiveClose:{},officialMonths:{},officialRegions:{}});
 
 function top5Class(v){return v>=.9?'top5-high':v>=.75?'top5-mid':'top5-low'}
 
@@ -4664,8 +4679,27 @@ function documentStorageRef(file){
  return f.storage_path||f.path||f.local_url||f.url||'';
 }
 
-function renderDocs(){
+const DOCS_PAGE_SIZE=25;
+let docsPage=1;
+let docsFilterSignature='';
+
+function changeDocsPage(nextPage){
+ const page=Math.max(1,Number(nextPage)||1);
+ docsPage=page;
+ renderDocs(false);
+ const table=document.querySelector('#documentos .tablewrap');
+ if(table){
+  const top=table.getBoundingClientRect().top+window.scrollY-92;
+  window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+ }
+}
+
+function renderDocs(resetOnFilter=true){
  const q=($('#docSearch')?.value||'').toLowerCase().trim(),reg=$('#docRegion')?.value||'';
+ const signature=`${q}|${reg}`;
+ if(resetOnFilter && signature!==docsFilterSignature)docsPage=1;
+ docsFilterSignature=signature;
+
  const a=C.files.filter(f=>{
   const searchable=[f.filename,f.park,f.folder,f.document_type,f.year,f.region].join(' ').toLowerCase();
   return searchable.includes(q)&&(!reg||f.region===reg);
@@ -4678,11 +4712,29 @@ function renderDocs(){
   ['pdf','PDF',C.files.filter(f=>String(f.extension||'').toLowerCase()==='pdf').length,'Formato predominante','good']
  ];
  $('#docKpis').innerHTML=kpis.map(x=>`<div class="card kpi ${x[4]}" onclick="openDocumentKpi('${x[0]}')"><small>${esc(x[1])}</small><strong>${fmt(x[2])}</strong><div class="sub">${esc(x[3])}</div><span class="kpi-action">Ver desglose →</span></div>`).join('');
- $('#docsBody').innerHTML=a.slice(0,500).map(f=>{
+
+ const totalPages=Math.max(1,Math.ceil(a.length/DOCS_PAGE_SIZE));
+ docsPage=Math.min(Math.max(1,docsPage),totalPages);
+ const startIndex=(docsPage-1)*DOCS_PAGE_SIZE;
+ const visible=a.slice(startIndex,startIndex+DOCS_PAGE_SIZE);
+
+ $('#docsBody').innerHTML=visible.map(f=>{
   const ref=documentStorageRef(f),park=encodeURIComponent(f.park||''),name=encodeURIComponent(f.filename||'');
   const actions=`<div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn secondary" onclick="showDocumentDetail('${park}','${name}')">Ficha</button>${ref?`<button class="btn ghost" onclick="openDocument('${encodeURIComponent(ref)}')">Abrir</button>`:'<span class="meta" title="El registro existe, pero el archivo no está vinculado al bucket parks-documents">Sin archivo en Storage</span>'}</div>`;
   return `<tr><td><b>${esc(f.filename)}</b></td><td>${esc(f.park)}</td><td>${esc(f.document_type||f.folder||'Sin clasificar')}</td><td>${esc(f.year||'Sin año')}</td><td>${esc(f.region||'Sin región')}</td><td>${actions}</td></tr>`;
  }).join('')||'<tr><td colspan="6"><div class="empty">No se localizaron documentos con los filtros seleccionados.</div></td></tr>';
+
+ const pager=$('#docsPager');
+ if(pager){
+  const from=a.length?startIndex+1:0;
+  const to=Math.min(startIndex+DOCS_PAGE_SIZE,a.length);
+  pager.innerHTML=`
+   <div class="docs-page-info">Mostrando ${fmt(from)}–${fmt(to)} de ${fmt(a.length)} archivos · Página ${fmt(docsPage)} de ${fmt(totalPages)}</div>
+   <div class="docs-page-actions">
+    <button class="btn secondary" ${docsPage<=1?'disabled':''} onclick="changeDocsPage(${docsPage-1})">← Anterior</button>
+    <button class="btn primary" ${docsPage>=totalPages?'disabled':''} onclick="changeDocsPage(${docsPage+1})">Siguiente →</button>
+   </div>`;
+ }
 }
 function openDocumentKpi(type){
  const files=C.files||[];
@@ -4712,7 +4764,8 @@ function filterDocumentLibrary(value){
  const decoded=decodeURIComponent(value||'');
  if($('#docSearch'))$('#docSearch').value=decoded;
  if($('#docRegion'))$('#docRegion').value='';
- renderDocs();
+ docsPage=1;
+ renderDocs(true);
  setTimeout(()=>$('#docSearch')?.focus(),60);
 }
 function showDocumentDetail(parkEncoded,filenameEncoded){
@@ -5179,8 +5232,8 @@ function renderCalendar(){
    ${priorities.map(a=>`<button type="button" class="calendar-priority-item ${a.severity||'medium'}" onclick="go('alertas');setTimeout(()=>{const q=document.getElementById('alertSearch');if(q){q.value='${esc(a.park).replace(/'/g,'')}';renderAlerts()}},50)"><span class="calendar-dot"></span><div><b>${esc(a.park)} · ${esc(a.document)}</b><small>${esc(alertTypeLabel(a.type))} · ${esc(a.message||'')}</small></div><span>Ver →</span></button>`).join('')||'<div class="empty">No existen vigencias o actualizaciones prioritarias con la información disponible.</div>'}
   </div>`;
 }
-function initFilters(){const regs=[...new Set(C.parks.map(p=>p.region))].sort();['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});['parkSearch','regionFilter','riskFilter'].forEach(id=>$('#'+id).addEventListener('input',renderParks));['alertSearch','alertSeverity'].forEach(id=>$('#'+id).addEventListener('input',renderAlerts));['docSearch','docRegion'].forEach(id=>$('#'+id).addEventListener('input',renderDocs))}
-function globalSearch(){const q=$('#globalSearch').value.toLowerCase().trim(),el=$('#searchResults');if(q.length<2){el.classList.remove('show');return}const ps=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)).slice(0,7).map(p=>`<div class="sr" onclick="parkDetail('${encodeURIComponent(p.park)}');$('#searchResults').classList.remove('show')"><b>${esc(p.park)}</b><small>Parque · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`);const fs=C.files.filter(f=>(f.filename+' '+f.document_type+' '+f.park).toLowerCase().includes(q)).slice(0,8).map(f=>`<div class="sr" onclick="go('documentos');$('#docSearch').value='${esc(f.filename).replace(/'/g,'')}';renderDocs();$('#searchResults').classList.remove('show')"><b>${esc(f.filename)}</b><small>Archivo · ${esc(f.park)} · ${esc(f.document_type)}</small></div>`);el.innerHTML=[...ps,...fs].join('')||'<div class="sr">Sin coincidencias.</div>';el.classList.add('show')}
+function initFilters(){const regs=[...new Set(C.parks.map(p=>p.region))].sort();['regionFilter','docRegion'].forEach(id=>{const el=$('#'+id);regs.forEach(r=>el.insertAdjacentHTML('beforeend',`<option>${r}</option>`))});['parkSearch','regionFilter','riskFilter'].forEach(id=>$('#'+id).addEventListener('input',renderParks));['alertSearch','alertSeverity'].forEach(id=>$('#'+id).addEventListener('input',renderAlerts));['docSearch','docRegion'].forEach(id=>$('#'+id).addEventListener('input',()=>{docsPage=1;renderDocs(true)}))}
+function globalSearch(){const q=$('#globalSearch').value.toLowerCase().trim(),el=$('#searchResults');if(q.length<2){el.classList.remove('show');return}const ps=C.parks.filter(p=>(p.park+' '+p.administrator).toLowerCase().includes(q)).slice(0,7).map(p=>`<div class="sr" onclick="parkDetail('${encodeURIComponent(p.park)}');$('#searchResults').classList.remove('show')"><b>${esc(p.park)}</b><small>Parque · ${esc(p.region)} · ${esc(p.administrator)}</small></div>`);const fs=C.files.filter(f=>(f.filename+' '+f.document_type+' '+f.park).toLowerCase().includes(q)).slice(0,8).map(f=>`<div class="sr" onclick="go('documentos');$('#docSearch').value='${esc(f.filename).replace(/'/g,'')}';docsPage=1;renderDocs(true);$('#searchResults').classList.remove('show')"><b>${esc(f.filename)}</b><small>Archivo · ${esc(f.park)} · ${esc(f.document_type)}</small></div>`);el.innerHTML=[...ps,...fs].join('')||'<div class="sr">Sin coincidencias.</div>';el.classList.add('show')}
 $('#globalSearch').addEventListener('input',globalSearch);document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('#searchResults').classList.remove('show')});
 const labels={
  regional:'Regional',

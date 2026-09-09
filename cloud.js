@@ -14,6 +14,16 @@
   const signedUrlCache = new Map();
   let inactivityTimer = null;
 
+  // V7.4.0A3 · referencia estable desde el primer milisegundo.
+  // El index toma una referencia a TOP5_DATA antes de ejecutar boot(); si el
+  // objeto no existe todavía, la UI termina leyendo un objeto vacío distinto.
+  // Inicializarlo aquí garantiza que bootstrap + datasets dinámicos + UI
+  // trabajen sobre EL MISMO objeto.
+  window.TOP5_DATA = window.TOP5_DATA || {
+    months: [], admins: [], regions: [], records: [],
+    executiveClose: {}, officialMonths: {}, officialRegions: {}
+  };
+
   function rememberPreference() {
     try { return localStorage.getItem('parksOneRememberSession') !== '0'; }
     catch (_) { return true; }
