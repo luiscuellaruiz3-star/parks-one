@@ -1475,11 +1475,29 @@ html,body{max-width:100%;overflow-x:hidden}
 .intel-help p{margin:6px 0}
 @media(max-width:980px){.alerts-change-grid-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.alerts-change-grid-four{grid-template-columns:1fr}.intel-suggestion{width:100%}}
+/* V7.4.5 · Fuente y trazabilidad de datos */
+.traceability-card{border-top:4px solid var(--blue)}
+.traceability-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.traceability-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;margin-top:12px}
+.traceability-mini{border:1px solid var(--line);border-radius:13px;background:#fbfdfc;padding:13px;min-width:0;text-align:left;cursor:pointer;color:var(--ink)}
+.traceability-mini:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.traceability-mini small{display:block;color:var(--mut);font-weight:700;margin-bottom:4px}
+.traceability-mini b{display:block;color:var(--gd);font-size:16px;overflow-wrap:anywhere}
+.traceability-mini span{display:block;color:var(--mut);font-size:11px;margin-top:5px;overflow-wrap:anywhere}
+.traceability-table small{display:block;color:var(--mut);line-height:1.35;margin-top:4px}
+.traceability-rule{border-left:4px solid var(--g);background:#f4fbf8;border-radius:10px;padding:11px 13px;margin:9px 0}
+.traceability-warn{border-left-color:var(--amber);background:#fff9ec}
+.traceability-danger{border-left-color:var(--red);background:#fff1f1}
+.traceability-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.traceability-doc-grid .card{box-shadow:none}
+@media(max-width:980px){.traceability-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.traceability-doc-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.traceability-grid{grid-template-columns:1fr}}
+
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.3.1',
-  releasedAt:'2026-09-07',
+  version:'7.4.5',
+  releasedAt:'2026-09-09',
   environment:'production'
 });
 </script>
@@ -1506,7 +1524,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.3.1</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.5</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1548,6 +1566,17 @@ window.PARKS_RELEASE=Object.freeze({
   </div>
   <div id="dashboardTop5Summary" class="dashboard-top5-summary"></div>
   <div id="dashboardTop5Comparison"></div>
+</div>
+
+<div class="card section traceability-card" style="margin-top:16px">
+  <div class="traceability-head">
+    <div>
+      <h3>Fuente y trazabilidad de datos</h3>
+      <p class="meta">Origen, corte, responsable, regla de cálculo y pendientes de conciliación por módulo.</p>
+    </div>
+    <button type="button" class="btn secondary" onclick="openDataTraceability()">Abrir trazabilidad completa</button>
+  </div>
+  <div id="dashboardTraceability" class="traceability-grid"></div>
 </div>
 </section>
 <section id="parques" class="page"><div class="headline"><div><h1>Parques industriales</h1><p>Expediente, cumplimiento, rezago documental y evidencia física por parque.</p></div></div><div class="toolbar"><input id="parkSearch" placeholder="Buscar parque o administrador"><select id="regionFilter"><option value="">Todas las regiones</option></select><select id="riskFilter"><option value="">Todos los riesgos</option><option>CRÍTICO</option><option>ALTO</option><option>MEDIO</option></select></div><div id="parksGrid" class="parks"></div></section>
@@ -1997,7 +2026,7 @@ window.PARKS_RELEASE=Object.freeze({
 
 <section id="flujo" class="page"><div class="headline"><div><h1>Flujos y aprobaciones</h1><p>Seguimiento de cargas documentales antes de impactar los indicadores oficiales.</p></div></div><div id="workflowKpis" class="kpis"></div><div class="card section"><h3>Bandeja de revisión</h3><div id="workflowList"></div></div></section>
 <section id="calendario" class="page"><div class="headline"><div><h1>Calendario de vigencias</h1><p>Señales temporales detectadas en nombre, carpeta o año del archivo. No se inventan fechas.</p></div></div><div id="calendarKpis" class="kpis"></div><div class="card section" id="calendarList"></div></section>
-<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div></div></section>
+<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div></div></section>
 
 
 
@@ -3134,6 +3163,119 @@ function documentConsistencyStats(){
  return {total:files.length,current:current.length,legacy:legacy.length,parksWithDocs};
 }
 
+function objectValue(value){
+ if(!value)return {};
+ if(typeof value==='object')return value;
+ try{return JSON.parse(value)}catch(_){return {raw:String(value)}}
+}
+function formatTraceDate(value){
+ if(!value)return 'No registrado';
+ const date=new Date(value);
+ if(Number.isNaN(date.getTime()))return String(value);
+ return date.toLocaleString('es-MX');
+}
+function traceMeta(){return window.PARKS_BOOTSTRAP_META||{};}
+function traceBlock(key){return (traceMeta().traceability||{})[key]||{};}
+function traceUpdated(key,fallback=''){return traceBlock(key).updated_at||fallback||traceMeta().generated_at||'';}
+function traceResponsible(key){return traceBlock(key).responsible||'No registrado';}
+function traceSourceFile(key,fallback=''){return traceBlock(key).source_file||fallback||'Supabase operational_records';}
+function traceRejectedCount(key){const rejected=traceMeta().rejected_records||{};return Number(rejected[key]||0)||0;}
+function dataTraceabilityRows(){
+ const t23=typeof dashboardTop23Data==='function'?dashboardTop23Data():{parks:C?.parks||[],integrated:0,pending:0,defining:0,evaluated:0,compliance:0};
+ const docs=documentConsistencyStats();
+ const water=typeof dashboardWaterData==='function'?dashboardWaterData():{rows:[]};
+ const top5=typeof dashboardTop5Data==='function'?dashboardTop5Data():{month:'',admins:[],records:0,expected:0,compliance:0};
+ const alerts=typeof dashboardAlertsData==='function'?dashboardAlertsData():{items:[],critical:0};
+ const pendingReviews=typeof top23PendingReviews==='function'?top23PendingReviews().length:0;
+ return [
+  {
+   key:'sigop',module:'Top 23 / Padrón',records:`${fmt(t23.parks.length)} parques · ${fmt(t23.evaluated)} aplicables`,
+   source:traceBlock('sigop').source||'Supabase public.operational_records · sigop_park',
+   file:traceSourceFile('sigop','Carga protegida Top 23'),updated:traceUpdated('sigop'),responsible:traceResponsible('sigop'),
+   process:traceBlock('sigop').process||'JWT → RLS → park_id/region_id/division_id → cálculo de indicadores',
+   rule:'Cumplimiento = integrados / (integrados + pendientes + por validar). Los N/A justificados no afectan el porcentaje.',
+   pending:`${fmt(t23.pending)} pendientes aplicables · ${fmt(t23.defining||0)} por validar.`
+  },
+  {
+   key:'documents',module:'Biblioteca documental',records:`${fmt(docs.total)} documentos · ${fmt(docs.current)} actuales`,
+   source:traceBlock('documents').source||'Supabase public.documents + Storage privado',
+   file:traceSourceFile('documents','Carga documental autenticada'),updated:traceUpdated('documents'),responsible:traceResponsible('documents'),
+   process:traceBlock('documents').process||'Carga autenticada → validación de archivo → Storage privado → RLS → Biblioteca',
+   rule:'Solo documentos vinculados a parque canónico alimentan cobertura actual. Los históricos se conservan pero no se fuerzan.',
+   pending:`${fmt(docs.legacy)} documentos históricos por conciliar · ${fmt(pendingReviews)} documentos en revisión.`
+  },
+  {
+   key:'hydrica',module:'Agua / PTAR',records:`${fmt(water.rows.length)} parques hídricos`,
+   source:traceBlock('hydrica').source||'Supabase public.operational_records · hydrica',
+   file:traceSourceFile('hydrica',window.PARKS_HYDRICA_MASTER_SEED?.source||'Matriz Hídrica protegida'),updated:traceUpdated('hydrica',window.SIGOP_DATA?.hydrica_updated),responsible:traceResponsible('hydrica'),
+   process:traceBlock('hydrica').process||'Matriz hídrica → homologación por parque → RLS → KPI visible',
+   rule:'El total hídrico usa únicamente el padrón canónico; “Por confirmar” no se interpreta como Sí ni como No.',
+   pending:`${fmt(traceRejectedCount('hydrica_unmatched'))} filas hídricas sin conciliar.`
+  },
+  {
+   key:'top5',module:'Top 5 operativo',records:`${fmt(top5.records)} registros · ${fmt(top5.admins.length)} administradores`,
+   source:traceBlock('top5').source||'Supabase public.operational_records · top5_*',
+   file:traceSourceFile('top5','Carga mensual Top 5'),updated:traceUpdated('top5'),responsible:traceResponsible('top5'),
+   process:traceBlock('top5').process||'Excel mensual → homologación administrador/parque → consolidado oficial',
+   rule:'Cumplimiento oficial del mes; multiparque se consolida una sola vez por administrador.',
+   pending:`Mes visible: ${top5.month||'Sin cierre'} · meta ${fmt(top5.expected)}.`
+  },
+  {
+   key:'alerts',module:'Centro de alertas',records:`${fmt(alerts.items.length)} alertas · ${fmt(alerts.critical)} críticas`,
+   source:traceBlock('alerts').source||'Supabase operational_records + motor interno de alertas',
+   file:traceSourceFile('alerts','Reglas internas PARKS ONE'),updated:traceUpdated('alerts'),responsible:traceResponsible('alerts'),
+   process:traceBlock('alerts').process||'Reglas automáticas sobre datos autorizados por RLS',
+   rule:'Alertas críticas y rezago documental crítico son indicadores distintos; no se mezclan.',
+   pending:'Se recalcula con cada actualización de fuente autorizada.'
+  },
+  {
+   key:'annual',module:'Documentos anuales 2026',records:`${fmt(window.PARKS_ANNUAL_DOCS_2026?.rows?.length||0)} filas`,
+   source:traceBlock('annual').source||'Supabase public.operational_records · annual',
+   file:traceSourceFile('annual',window.PARKS_ANNUAL_DOCS_2026?.source||'Carga anual protegida'),updated:traceUpdated('annual'),responsible:traceResponsible('annual'),
+   process:traceBlock('annual').process||'Carga anual → homologación con parque canónico → indicador visible',
+   rule:'Predial, Uso de Suelo y Protección Civil 2026 se cuentan solo cuando el estado fuente marca actualización confirmada.',
+   pending:`${fmt(traceRejectedCount('annual_unmatched'))} filas anuales sin conciliar.`
+  }
+ ];
+}
+function dataTraceabilitySnapshot(){
+ const meta=traceMeta();
+ return {
+  release:window.PARKS_RELEASE?.version||'No registrado',
+  bootstrap_version:meta.version||'No registrado',
+  environment:window.PARKS_RELEASE?.environment||meta.environment||'production',
+  generated_at:meta.generated_at||window.SIGOP_DATA?.generated||'',
+  visible_parks:meta.visible_parks||C?.parks?.length||0,
+  source_model:meta.source_model||'supabase-operational-records',
+  rejected_records:{...(meta.rejected_records||{}),documents_legacy_unreconciled:documentConsistencyStats().legacy,workflow_pending:(typeof top23PendingReviews==='function'?top23PendingReviews().length:0)},
+  modules:dataTraceabilityRows().map(row=>({module:row.module,records:row.records,source:row.source,updated_at:row.updated,responsible:row.responsible,pending_or_rejected:row.pending,rule:row.rule}))
+ };
+}
+function renderDashboardTraceability(){
+ const host=$('#dashboardTraceability');
+ if(!host)return;
+ const compact=dataTraceabilityRows().filter(r=>['sigop','documents','hydrica','top5'].includes(r.key));
+ host.innerHTML=compact.map(row=>`<button type="button" class="traceability-mini" onclick="openDataTraceability('${row.key}')"><small>${esc(row.module)}</small><b>${esc(row.records)}</b><span>Actualizado: ${esc(formatTraceDate(row.updated))}</span><span>${esc(row.pending)}</span></button>`).join('');
+}
+function openDataTraceability(focusKey=''){
+ const rows=dataTraceabilityRows();
+ const focus=String(focusKey||'');
+ const meta=dataTraceabilitySnapshot();
+ const bodyRows=rows.map(row=>`<tr ${focus&&row.key===focus?'style="background:#f4fbf8"':''}><td><b>${esc(row.module)}</b><small>${esc(row.records)}</small></td><td>${esc(row.source)}<small>${esc(row.file)}</small></td><td>${esc(formatTraceDate(row.updated))}<small>Responsable: ${esc(row.responsible)}</small></td><td>${esc(row.process)}<small>${esc(row.rule)}</small></td><td>${esc(row.pending)}</td></tr>`).join('');
+ openModal('Fuente y trazabilidad de datos',`<div class="exec-modal-dashboard"><div class="exec-metric-grid">${execMetric('Versión visible',esc(meta.release),'PARKS_RELEASE')}${execMetric('Modelo fuente',esc(meta.source_model),'Datos protegidos')}${execMetric('Parques visibles',fmt(meta.visible_parks),'Según alcance')}${execMetric('Último bootstrap',esc(formatTraceDate(meta.generated_at)),'JWT + RLS')}</div><div class="traceability-rule"><b>Regla general:</b> ningún indicador operativo se calcula desde archivos públicos. La información visible viene de Supabase con sesión activa, RLS y alcance autorizado.</div><div class="traceability-rule traceability-warn"><b>Pendientes controlados:</b> los registros rechazados o sin conciliación se muestran como pendientes; no se suman al indicador canónico ni se maquillan.</div><div class="tablewrap"><table class="traceability-table"><thead><tr><th>Módulo</th><th>Fuente / archivo</th><th>Corte / responsable</th><th>Proceso / regla</th><th>Pendientes</th></tr></thead><tbody>${bodyRows}</tbody></table></div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadTraceabilityCsv()">Exportar trazabilidad CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+}
+function downloadTraceabilityCsv(){
+ const rows=dataTraceabilityRows();
+ const header=['Modulo','Registros','Fuente','Archivo origen','Actualizado','Responsable','Proceso','Regla de calculo','Pendientes o rechazados'];
+ const data=rows.map(r=>[r.module,r.records,r.source,r.file,formatTraceDate(r.updated),r.responsible,r.process,r.rule,r.pending]);
+ const csv=[header,...data].map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+ const url=URL.createObjectURL(blob);const a=document.createElement('a');
+ a.href=url;a.download=`PARKS_ONE_TRAZABILIDAD_${new Date().toISOString().slice(0,10)}.csv`;
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+}
+window.ParksDataTraceability=Object.freeze({snapshot:dataTraceabilitySnapshot,open:openDataTraceability});
+
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 
 window.handleNationalSmartFile=async function(input){
@@ -3833,6 +3975,7 @@ function renderDashboard(){
   <small>Inicios de sesión, consultas, documentos y cambios · según tu alcance →</small>
  </button>`;
  refreshDashboardAuditSummary();
+ renderDashboardTraceability();
 
  const high=t23.parks.filter(p=>p.risk==='ALTO').length;
  const controlled=t23.parks.filter(p=>['MEDIO','BAJO','POR VALIDAR'].includes(p.risk)).length;
@@ -4959,8 +5102,16 @@ function showDocumentDetail(parkEncoded,filenameEncoded){
  if(!f)return toast('No se encontró la información del documento.');
  const ref=documentStorageRef(f),ext=String(f.extension||String(f.filename||'').split('.').pop()||'Sin formato').toUpperCase();
  const related=C.files.filter(x=>String(x.park||'')===String(f.park||'')&&String(x.document_type||x.folder||'')===String(f.document_type||f.folder||''));
+ const md=objectValue(f.metadata);
+ const validation=objectValue(md.content_validation);
+ const uploadedBy=md.uploaded_by_name||md.uploaded_by_email||f.uploaded_by_name||f.uploaded_by||'No registrado';
+ const workflow=String(f.workflow_status||f.status||md.publication||'No registrado');
+ const updated=f.updated_at||f.created_at||md.aplicada_en||'';
+ const checksum=f.checksum||validation.checksum||md.checksum||'';
+ const isCurrent=canonicalParkIdSet().has(String(f.park_id||''));
+ const traceHtml=`<div class="traceability-doc-grid" style="margin-top:14px"><div class="card section"><h3>Trazabilidad</h3><p><b>Fuente:</b> ${esc(f.source||'public.documents')}</p><p><b>Actualización:</b> ${esc(formatTraceDate(updated))}</p><p><b>Responsable:</b> ${esc(uploadedBy)}</p><p><b>Flujo / estado:</b> ${esc(workflow)}</p></div><div class="card section"><h3>Control documental</h3><p><b>Parque canónico:</b> ${isCurrent?'Sí':'Histórico por conciliar'}</p><p><b>Validación de archivo:</b> ${validation.extension||validation.mime_type?'Extensión/MIME/contenido verificado':'No registrada'}</p><p><b>Checksum:</b> ${checksum?esc(String(checksum).slice(0,18)+'…'):'No registrado'}</p><p><b>Regla:</b> Solo documentos actuales conciliados alimentan cobertura. Históricos no se fuerzan.</p></div></div>`;
  const actions=ref?`<button class="btn primary" onclick="openDocument('${encodeURIComponent(ref)}')">Abrir documento</button><button class="btn secondary" onclick="downloadDocument('${encodeURIComponent(ref)}','${encodeURIComponent(f.filename||'documento')}')">Descargar</button>`:'<span class="meta">Este registro está indexado, pero no existe una ruta válida en Storage. Debe vincularse o importarse nuevamente.</span>';
- openModal('Ficha documental',`<h3 style="margin-top:0">${esc(f.filename)}</h3><p class="meta">${esc(f.park||'Sin parque')} · ${esc(f.region||'Sin región')}</p><div class="grid2"><div class="card section"><b>Requisito documental</b><p>${esc(f.document_type||f.folder||'Sin clasificar')}</p><b>Año</b><p>${esc(f.year||'Sin año')}</p><b>Formato</b><p>${esc(ext)}</p></div><div class="card section"><b>Versiones relacionadas</b><p>${fmt(related.length)}</p><b>Disponibilidad</b><p>${ref?'Archivo vinculado a Storage':'Solo registro indexado'}</p><b>Referencia</b><p style="overflow-wrap:anywhere">${esc(f.storage_path||f.path||f.local_url||'Sin ruta registrada')}</p></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">${actions}</div>`);
+ openModal('Ficha documental',`<h3 style="margin-top:0">${esc(f.filename)}</h3><p class="meta">${esc(f.park||'Sin parque')} · ${esc(f.region||'Sin región')}</p><div class="grid2"><div class="card section"><b>Requisito documental</b><p>${esc(f.document_type||f.folder||'Sin clasificar')}</p><b>Año</b><p>${esc(f.year||'Sin año')}</p><b>Formato</b><p>${esc(ext)}</p></div><div class="card section"><b>Versiones relacionadas</b><p>${fmt(related.length)}</p><b>Disponibilidad</b><p>${ref?'Archivo vinculado a Storage':'Solo registro indexado'}</p><b>Referencia</b><p style="overflow-wrap:anywhere">${esc(f.storage_path||f.path||f.local_url||'Sin ruta registrada')}</p></div></div>${traceHtml}<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">${actions}</div>`);
 }
 function waterYes(value){
  const text=String(value||'').trim().toUpperCase();
