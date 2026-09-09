@@ -1573,10 +1573,74 @@ html,body{max-width:100%;overflow-x:hidden}
   .tablewrap table{min-width:680px}.profile{display:none}.search-results{left:0;right:0}
 }
 
+
+
+/* ============================================================
+   PARKS ONE V7.4.8 · Documentación CI + corrección visual Top 5
+   Alcance: documentación visible y ajuste de presentación. No modifica
+   Supabase, cálculos, Top 5 fuente, Hídrica, sesiones ni permisos.
+   ============================================================ */
+.intel-help .intel-doc-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:10px;
+}
+.intel-help .intel-doc-box{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fbfdfc;
+  padding:10px 12px;
+  line-height:1.4;
+  min-width:0;
+}
+.intel-help .intel-doc-box b{display:block;color:var(--gd);margin-bottom:3px}
+.intel-help .intel-doc-box small{display:block;color:var(--mut);overflow-wrap:anywhere}
+.intel-help .intel-update-note,
+.top5-visual-note{
+  border:1px solid #d6e8df;
+  border-left:4px solid var(--g);
+  background:#f4fbf8;
+  border-radius:12px;
+  padding:10px 12px;
+  margin:10px 0 12px;
+  color:var(--ink);
+  line-height:1.45;
+}
+.top5-visual-note{font-size:13px;margin-top:12px}
+.top5-visual-note b{color:var(--gd)}
+#top5DetailView .tablewrap{
+  overflow-x:auto;
+  overflow-y:visible;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:8px;
+}
+#top5DetailView table.top5-admin-table{
+  width:100%;
+  min-width:1120px;
+  table-layout:auto;
+}
+#top5DetailView table.top5-admin-table th,
+#top5DetailView table.top5-admin-table td{
+  vertical-align:middle;
+  line-height:1.28;
+}
+#top5DetailView table.top5-admin-table th:nth-child(1),
+#top5DetailView table.top5-admin-table td:nth-child(1){min-width:76px;white-space:nowrap}
+#top5DetailView table.top5-admin-table th:nth-child(2),
+#top5DetailView table.top5-admin-table td:nth-child(2){min-width:205px}
+#top5DetailView table.top5-admin-table th:nth-child(3),
+#top5DetailView table.top5-admin-table td:nth-child(3){min-width:285px;white-space:normal;overflow-wrap:anywhere}
+#top5DetailView table.top5-admin-table th:nth-child(n+4),
+#top5DetailView table.top5-admin-table td:nth-child(n+4){min-width:95px;white-space:nowrap;text-align:center}
+#top5DetailView table.top5-admin-table th:nth-child(8),
+#top5DetailView table.top5-admin-table td:nth-child(8){min-width:125px}
+@media(max-width:760px){.intel-help .intel-doc-grid{grid-template-columns:1fr}#top5DetailView table.top5-admin-table{min-width:980px}}
+
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.4.7',
+  version:'7.4.8',
   releasedAt:'2026-09-09',
   environment:'production'
 });
@@ -1604,7 +1668,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.6</div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.4.8</div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -1779,8 +1843,9 @@ window.PARKS_RELEASE=Object.freeze({
         <button class="btn secondary" onclick="downloadTop5Csv()">Exportar registros</button>
       </div>
       <h3>Cumplimiento por Administrador</h3>
+      <div class="top5-visual-note"><b>Actualización V7.4.8:</b> se corrige la vista de esta tabla para que las columnas de Matutinos, Vespertinos, Registros, Meta y Cumplimiento no se corten ni se compriman. Es un ajuste visual; no cambia cálculos ni fuente Top 5.</div>
       <div class="tablewrap">
-        <table>
+        <table class="top5-admin-table">
           <thead><tr><th>Región</th><th>Administrador</th><th>Parques</th><th>Matutinos</th><th>Vespertinos</th><th>Registros</th><th>Meta</th><th>Cumplimiento</th></tr></thead>
           <tbody id="top5AdminBody"></tbody>
         </table>
@@ -2093,12 +2158,17 @@ window.PARKS_RELEASE=Object.freeze({
         <div id="intelSuggestions" class="intel-suggestions"></div>
         <small class="intel-disclaimer">Las respuestas se generan únicamente con datos disponibles en PARKS ONE y respetan el alcance del usuario.</small>
         <details class="intel-help">
-          <summary>Alcance y funcionamiento del Centro de Inteligencia</summary>
+          <summary>Alcance, fuentes y límites del Centro de Inteligencia</summary>
           <div>
-            <p><b>Motor:</b> consultas y reglas internas de PARKS ONE; no envía información operativa a un servicio externo de IA.</p>
-            <p><b>Fuentes:</b> Top 23, Top 5, parques, documentos, alertas, usuarios y matriz hídrica disponibles para la sesión.</p>
-            <p><b>Permisos:</b> cada respuesta usa únicamente la información autorizada por el perfil y alcance validados en Supabase.</p>
-            <p><b>Limitaciones:</b> si la fuente no contiene evidencia suficiente, la respuesta debe indicarlo y no completar información por inferencia.</p>
+            <div class="intel-update-note"><b>Actualización V7.4.8:</b> se documenta el alcance operativo del Centro de Inteligencia y se deja registrado que las respuestas usan fuentes internas, reglas visibles y permisos del usuario. También se incluye corrección visual menor en Top 5 para evitar columnas cortadas.</div>
+            <div class="intel-doc-grid">
+              <div class="intel-doc-box"><b>Qué puede preguntar</b><small>Top 23, cumplimiento documental, parques, documentos, alertas, agua/PTAR/descargas, Top 5 operativo, usuarios, flujos y reportes ejecutivos.</small></div>
+              <div class="intel-doc-box"><b>Fuentes internas</b><small>Supabase, Storage privado, operational_records, documents, audit_events, user_scopes y los módulos visibles de PARKS ONE.</small></div>
+              <div class="intel-doc-box"><b>Permisos y alcance</b><small>La respuesta se limita al perfil activo: Administrador por región, Regional por división, Divisional nacional, Dirección/CEO consulta nacional y Arquitecto control autorizado.</small></div>
+              <div class="intel-doc-box"><b>Reglas de cálculo</b><small>No mezcla indicadores distintos. Top 5 usa cierre oficial; Top 23 excluye N/A justificados; Hídrica usa padrón canónico; documentos históricos se separan.</small></div>
+              <div class="intel-doc-box"><b>Cuando no hay datos suficientes</b><small>Debe responder “por validar”, “sin evidencia suficiente” o “histórico por conciliar”; no debe inventar fechas, permisos, cumplimiento ni documentos inexistentes.</small></div>
+              <div class="intel-doc-box"><b>Reglas internas vs apoyo IA</b><small>El módulo opera con reglas internas y datos disponibles en PARKS ONE. La inteligencia ayuda a interpretar, resumir y navegar; no sustituye la evidencia fuente.</small></div>
+            </div>
           </div>
         </details>
       </div>
@@ -6127,8 +6197,8 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.4.7',
-      scope:'visual-css-only',
+      release:'7.4.8',
+      scope:'visual-css-and-documentation-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
       horizontal_overflow:overflowX,
@@ -6136,7 +6206,31 @@ window.ParksResponsiveVisual=Object.freeze({
       intelligence_bottom_visible:!!document.querySelector('#inteligencia .intel-bottom'),
       documents_table_scroll:!!docs,
       alerts_layout:!!alerts,
+      top5_admin_table_fix:!!document.querySelector('#top5DetailView table.top5-admin-table'),
+      intelligence_documentation:true,
       protected_logic:'sin cambios en Supabase, Top 5, Hídrica, sesiones, permisos ni cálculos'
+    };
+  }
+});
+</script>
+
+
+<script>
+/* PARKS ONE V7.4.8 · Snapshot de documentación del Centro de Inteligencia */
+window.ParksIntelligenceDocumentation=Object.freeze({
+  snapshot(){
+    return {
+      release:'7.4.8',
+      documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
+      covers_questions:true,
+      covers_sources:true,
+      covers_permissions:true,
+      covers_limitations:true,
+      covers_internal_rules_vs_ai:true,
+      insufficient_information_rule:true,
+      top5_visual_note:!!document.querySelector('#top5DetailView .top5-visual-note'),
+      top5_table_not_compressed:!!document.querySelector('#top5DetailView table.top5-admin-table'),
+      protected_logic:'sin cambios funcionales: Supabase, cálculos, Top 5 fuente, Hídrica, sesiones, permisos y seguridad permanecen intactos'
     };
   }
 });
