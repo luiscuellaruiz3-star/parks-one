@@ -1445,6 +1445,31 @@ body:not(.architect) #inteligencia{
   .docs-pager{align-items:flex-start;flex-direction:column}
   .docs-pager .docs-page-actions{width:100%;justify-content:space-between}
 }
+
+/* ============================================================
+   PARKS ONE V7.5.1 · Validación por perfiles de usuario
+   Alcance: matriz visible y evidencia para pruebas multiusuario.
+   No modifica RLS, datos, cálculos ni permisos efectivos.
+   ============================================================ */
+.profile-validation-note{
+  border:1px solid #d9e7e2;border-left:4px solid var(--g);background:#f6fbf8;
+  border-radius:14px;padding:12px 14px;margin:14px 0;color:var(--ink);line-height:1.45;
+}
+.profile-validation-note b{color:var(--gd)}
+.profile-validation-grid{display:grid;grid-template-columns:repeat(5,minmax(175px,1fr));gap:12px;margin:12px 0 16px}
+.profile-validation-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px;min-width:0}
+.profile-validation-card h4{margin:0 0 6px;color:var(--gd);font-size:14px}
+.profile-validation-card p{margin:0;color:var(--muted);line-height:1.38;font-size:12.5px}
+.profile-validation-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px}
+.profile-validation-table{width:100%;min-width:1040px;border-collapse:collapse}
+.profile-validation-table th,.profile-validation-table td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:12.5px;line-height:1.35}
+.profile-validation-table th{background:#f8fbfa;color:var(--gd);font-size:12px;text-transform:uppercase;letter-spacing:.02em}
+.profile-validation-table tr:last-child td{border-bottom:0}
+.profile-test-badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;border:1px solid #d9e7e2;background:#f6fbf8;color:var(--gd)}
+.profile-test-badge.pending{background:#fff9ec;border-color:#f4d69a;color:#895b00}
+@media(max-width:1180px){.profile-validation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.profile-validation-grid{grid-template-columns:1fr}.profile-validation-table{min-width:920px}}
+
 </style>
 
 <link rel="stylesheet" href="components/usuarios.css?v=7.1.2">
@@ -1704,11 +1729,12 @@ html,body{max-width:100%;overflow-x:hidden}
 </style>
 <script>
 window.PARKS_RELEASE=Object.freeze({
-  version:'7.5.0',
+  version:'7.5.1',
   releasedAt:'2026-09-09',
   environment:'production',
-  title:'Separación de ambientes',
+  title:'Validación por perfiles de usuario',
   changelog:Object.freeze([
+    {version:'7.5.1',date:'2026-09-09',area:'Perfiles',summary:'Se agrega matriz visible de validación por rol, alcances esperados, permisos permitidos/bloqueados y evidencia para pruebas multiusuario.'},
     {version:'7.5.0',date:'2026-09-09',area:'Ambientes',summary:'Se instrumenta identificación visible de ambiente, checklist de liberación y estrategia desarrollo/preview/producción para evitar pruebas directas en producción.'},
     {version:'7.4.9.1',date:'2026-09-09',area:'Versionado',summary:'Se corrige leyenda residual de consola/importación para retirar Repositorio Documental 5.1.0 y alinear el identificador visible.'},
     {version:'7.4.9',date:'2026-09-09',area:'Versionado',summary:'Se alinea versión visible, bootstrap, ambiente, fecha de liberación y changelog interno.'},
@@ -1750,7 +1776,7 @@ window.PARKS_RELEASE=Object.freeze({
   <span class="txt">Configuración maestra</span>
 </button>
 
-</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.5.0<br><b>Ambiente:</b> <span id="environmentSideLabel">production</span></div></aside>
+</nav><div class="side-note"><b>Fuente única de información</b><br>Top 23, matriz hidráulica, repositorio nacional y auditorías.<br><br><b>Corte:</b> julio de 2026<br><b>Versión:</b> 7.5.1<br><b>Ambiente:</b> <span id="environmentSideLabel">production</span></div></aside>
 <main class="main"><header class="top"><div class="search"><input id="globalSearch" placeholder="Buscar parque, administrador, documento o archivo..."><div id="searchResults" class="search-results"></div></div><div class="profile"><span class="view-badge" id="viewBadge">Vista de demostración</span><span class="environment-badge" data-environment-badge id="environmentBadge">Ambiente: production</span><select id="role" aria-label="Simular vista por rol">
 <option value="architect">Arquitecto del Sistema</option>
 <option value="administrator">Administrador</option>
@@ -2264,7 +2290,7 @@ window.PARKS_RELEASE=Object.freeze({
 
 <section id="flujo" class="page"><div class="headline"><div><h1>Flujos y aprobaciones</h1><p>Seguimiento de cargas documentales antes de impactar los indicadores oficiales.</p></div></div><div id="workflowKpis" class="kpis"></div><div class="card section"><h3>Bandeja de revisión</h3><div id="workflowList"></div></div></section>
 <section id="calendario" class="page"><div class="headline"><div><h1>Calendario de vigencias</h1><p>Señales temporales detectadas en nombre, carpeta o año del archivo. No se inventan fechas.</p></div></div><div id="calendarKpis" class="kpis"></div><div class="card section" id="calendarList"></div></section>
-<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div><div class="card doccard" data-environment-control="separation"><h4>Separación de ambientes</h4><p>Desarrollo, pruebas/preview y producción con reglas de liberación controlada.</p><button class="btn primary" onclick="openEnvironmentControl()">Ver ambientes</button></div></div></section>
+<section id="reportes" class="page"><div class="headline"><div><h1>Reportes ejecutivos</h1><p>Salidas basadas en la misma fuente de datos del tablero.</p></div></div><div class="doccards"><div class="card doccard"><h4>Reporte nacional ejecutivo</h4><p>Panel visual con KPIs, regiones y prioridades.</p><button class="btn primary" onclick="go('inicio');setTimeout(()=>window.print(),200)">Imprimir / guardar PDF</button></div><div class="card doccard"><h4>Top 23 nacional</h4><p>Detalle de estados por requisito.</p><button class="btn primary" onclick="downloadCsv('top23')">Exportar CSV</button></div><div class="card doccard"><h4>Índice documental</h4><p>Archivos reales, parque, carpeta, año y ruta.</p><button class="btn primary" onclick="downloadCsv('docs')">Exportar CSV</button></div><div class="card doccard"><h4>Matriz hidráulica actualizada</h4><p>Suministro, pagos, pozo, PTAR, descargas y pendientes.</p><button class="btn primary" onclick="downloadCsv('water')">Exportar CSV</button></div><div class="card doccard"><h4>Trazabilidad de fuentes</h4><p>Origen, corte, responsable, regla de cálculo y pendientes por módulo.</p><button class="btn primary" onclick="openDataTraceability()">Ver trazabilidad</button></div><div class="card doccard" data-version-control="changelog"><h4>Versionado y control de cambios</h4><p>Versión visible, bootstrap, fecha, ambiente, historial y evidencia de cambios.</p><button class="btn primary" onclick="openVersionControl()">Ver changelog</button></div><div class="card doccard" data-environment-control="separation"><h4>Separación de ambientes</h4><p>Desarrollo, pruebas/preview y producción con reglas de liberación controlada.</p><button class="btn primary" onclick="openEnvironmentControl()">Ver ambientes</button></div><div class="card doccard" data-profile-validation="matrix"><h4>Validación por perfiles</h4><p>Matriz de alcance esperado, accesos permitidos, bloqueos y evidencia para Emilio.</p><button class="btn primary" onclick="openUserProfileValidation()">Ver matriz</button></div></div></section>
 
 
 
@@ -3538,7 +3564,7 @@ function openVersionControl(){
  const changes=m.changelog.map(x=>`<div class="version-change-item"><h4>${esc(x.version)} · ${esc(x.area)} · ${esc(x.date)}</h4><p>${esc(x.summary)}</p></div>`).join('');
  const touched=(m.touched||[]).map(x=>`<span class="tag ok">${esc(x)}</span>`).join(' ');
  const notTouched=(m.not_touched||[]).map(x=>`<span class="tag">${esc(x)}</span>`).join(' ');
- openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.5.0:</b> se agrega control visible de ambientes y checklist de liberación para trabajar en desarrollo/preview antes de producción. No cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
+ openModal('Versionado y control de cambios',`<div class="version-control-note"><b>Actualización V7.5.1:</b> se agrega matriz de validación por perfiles para probar alcances reales antes de cerrar con Emilio. No cambia cálculos ni fuentes operativas.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${esc(m.released_at)}</b><small>Fecha de liberación</small></div></div><h3>Historial de cambios</h3><div class="version-change-list">${changes}</div><div class="version-control-note"><b>Archivos tocados:</b><br>${touched||'No registrado'}<br><br><b>No tocado:</b><br>${notTouched||'No registrado'}</div><div class="exec-modal-actions"><button class="btn secondary" onclick="downloadVersionChangelogCsv()">Exportar changelog CSV</button><button class="btn primary" onclick="closeModal()">Cerrar</button></div></div>`);
 }
 function downloadVersionChangelogCsv(){
  const m=parksVersionManifest();
@@ -3554,7 +3580,7 @@ window.ParksVersionControl=Object.freeze({
  snapshot(){
   const m=parksVersionManifest();
   return {
-   release:'7.5.0',
+   release:'7.5.1',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3589,8 +3615,8 @@ function parksEnvironmentManifest(){
  const meta=traceMeta();
  const env=String(meta.environment||rel.environment||'production').toLowerCase();
  return {
-  release:rel.version||'7.5.0',
-  app_version:rel.version||'7.5.0',
+  release:rel.version||'7.5.1',
+  app_version:rel.version||'7.5.1',
   bootstrap_version:meta.version||'No registrado',
   environment:env,
   environment_label:environmentLabel(env),
@@ -3628,7 +3654,7 @@ window.ParksEnvironmentControl=Object.freeze({
   const m=parksEnvironmentManifest();
   updateEnvironmentBadges();
   return {
-   release:'7.5.0',
+   release:'7.5.1',
    app_version:m.app_version,
    bootstrap_version:m.bootstrap_version,
    environment:m.environment,
@@ -3645,6 +3671,68 @@ window.ParksEnvironmentControl=Object.freeze({
  open:openEnvironmentControl
 });
 updateEnvironmentBadges();
+
+function parksProfileValidationRows(){
+ return [
+  {role:'Administrador',expected:'Toda su región asignada',allowed:'Consultar, cargar, editar y dar seguimiento a parques de su región.',blocked:'Parques fuera de su región, configuración maestra nacional y funciones de arquitecto.',mutation:'Carga/edición permitida solo dentro de región mediante RLS y can_write_park.',status:'Pendiente prueba con cuenta real de administrador'},
+  {role:'Regional',expected:'Toda su división',allowed:'Consultar, cargar, editar y revisar información de las regiones de su división.',blocked:'Divisiones externas y configuración técnica global.',mutation:'Carga/edición permitida dentro de su división mediante alcance regional/divisional.',status:'Pendiente prueba con cuenta real regional'},
+  {role:'Divisional',expected:'Nacional',allowed:'Consultar y cargar documentos a nivel nacional por cobertura operativa.',blocked:'Funciones técnicas de arquitectura si no tiene rol de sistema.',mutation:'Carga/edición nacional por alcance del puesto; auditoría conserva usuario y movimiento.',status:'Pendiente prueba con cuenta real divisional'},
+  {role:'Dirección / CEO',expected:'Consulta nacional',allowed:'Visualizar KPIs, reportes ejecutivos, alertas, Top 23, Top 5 e hídrica nacional.',blocked:'Carga, modificación, aprobación técnica o configuración salvo permiso explícito.',mutation:'Consulta nacional; mutaciones deben permanecer bloqueadas si el rol es solo dirección/consulta.',status:'Pendiente prueba con cuenta directiva'},
+  {role:'Arquitecto del Sistema',expected:'Nacional + control total',allowed:'Administrar usuarios, configuración, auditoría, documentos, validaciones y soporte técnico.',blocked:'No aplica por alcance; debe quedar auditado todo movimiento sensible.',mutation:'Control total con RLS/funciones privadas y evidencia en bitácora.',status:'Validado parcialmente con cuenta actual arquitecto'}
+ ];
+}
+function parksProfileValidationManifest(){
+ const meta=traceMeta();
+ const rows=parksProfileValidationRows();
+ return {
+  release:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.1',
+  app_version:(window.PARKS_RELEASE&&window.PARKS_RELEASE.version)||'7.5.1',
+  bootstrap_version:meta.version||'No registrado',
+  environment:meta.environment||'production',
+  profile_matrix_visible:!!document.querySelector('[data-profile-validation="matrix"]'),
+  roles_total:rows.length,
+  roles:rows.map(r=>r.role),
+  expected_scopes:{administrador:'region',regional:'division',divisional:'national',direccion_ceo:'national_read',arquitecto:'national_full_control'},
+  validation_type:'matriz de evidencia y checklist para prueba multiusuario',
+  requires_real_users:true,
+  evidence_for_emilio:true,
+  protected_logic:'sin cambios funcionales: no modifica RLS, Supabase, cálculos, Top 5, Hídrica, sesiones, seguridad ni permisos efectivos'
+ };
+}
+function openUserProfileValidation(){
+ const m=parksProfileValidationManifest();
+ const rows=parksProfileValidationRows();
+ const cards=rows.map(r=>`<div class="profile-validation-card"><h4>${esc(r.role)}</h4><p><b>Alcance:</b> ${esc(r.expected)}<br><b>Estado:</b> ${esc(r.status)}</p></div>`).join('');
+ const table=rows.map(r=>`<tr><td><b>${esc(r.role)}</b></td><td>${esc(r.expected)}</td><td>${esc(r.allowed)}</td><td>${esc(r.blocked)}</td><td>${esc(r.mutation)}</td><td><span class="profile-test-badge ${/pendiente/i.test(r.status)?'pending':''}">${esc(r.status)}</span></td></tr>`).join('');
+ openModal('Validación por perfiles de usuario',`<div class="profile-validation-note"><b>Actualización V7.5.1:</b> se agrega una matriz visible para validar con Emilio cada perfil de usuario sin cambiar permisos ni reglas actuales. Esta pantalla documenta qué debe verse, qué debe bloquearse y qué evidencia falta por cuenta real.</div><div class="version-control-grid"><div class="version-control-card"><b>${esc(m.app_version)}</b><small>Versión visible</small></div><div class="version-control-card"><b>${esc(m.bootstrap_version)}</b><small>Bootstrap protegido</small></div><div class="version-control-card"><b>${esc(m.environment)}</b><small>Ambiente</small></div><div class="version-control-card"><b>${m.requires_real_users?'Sí':'No'}</b><small>Requiere usuarios reales</small></div></div><div class="profile-validation-grid">${cards}</div><h3>Matriz de pruebas por rol</h3><div class="profile-validation-table-wrap"><table class="profile-validation-table"><thead><tr><th>Perfil</th><th>Alcance esperado</th><th>Permitido</th><th>Bloqueado</th><th>Carga / edición</th><th>Resultado</th></tr></thead><tbody>${table}</tbody></table></div><div class="profile-validation-note"><b>Regla de cierre:</b> este punto se cierra al probar cuentas reales o de prueba para Administrador, Regional, Divisional, Dirección/CEO y Arquitecto, guardando evidencia de vista, carga, bloqueo fuera de alcance y bitácora.</div><div class="exec-modal-actions"><button class="btn primary" onclick="closeModal()">Cerrar</button></div>`);
+}
+window.ParksUserProfileValidation=Object.freeze({
+ snapshot(){
+  const m=parksProfileValidationManifest();
+  return {
+   release:'7.5.1',
+   app_version:m.app_version,
+   bootstrap_version:m.bootstrap_version,
+   environment:m.environment,
+   profile_matrix_visible:m.profile_matrix_visible,
+   roles_total:m.roles_total,
+   roles:m.roles,
+   administrador_scope:'region',
+   regional_scope:'division',
+   divisional_scope:'national',
+   direccion_ceo_scope:'national_read',
+   arquitecto_scope:'national_full_control',
+   access_allowed_documented:true,
+   access_blocked_documented:true,
+   upload_edit_consult_documented:true,
+   requires_real_users:m.requires_real_users,
+   evidence_for_emilio:m.evidence_for_emilio,
+   protected_logic:m.protected_logic
+  };
+ },
+ open:openUserProfileValidation
+});
+
 
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 
@@ -6411,7 +6499,7 @@ window.ParksResponsiveVisual=Object.freeze({
     const docs=document.querySelector('#documentos .tablewrap');
     const alerts=document.querySelector('#alertas');
     return {
-      release:'7.5.0',
+      release:'7.5.1',
       scope:'visual-css-documentation-version-control-and-environment-only',
       active_page:active,
       viewport:{width:window.innerWidth,height:window.innerHeight},
@@ -6424,6 +6512,7 @@ window.ParksResponsiveVisual=Object.freeze({
       intelligence_documentation:true,
       version_control:!!window.ParksVersionControl,
       environment_control:!!window.ParksEnvironmentControl,
+      profile_validation:!!window.ParksUserProfileValidation,
       protected_logic:'sin cambios en Supabase, Top 5, Hídrica, sesiones, permisos ni cálculos'
     };
   }
@@ -6436,7 +6525,7 @@ window.ParksResponsiveVisual=Object.freeze({
 window.ParksIntelligenceDocumentation=Object.freeze({
   snapshot(){
     return {
-      release:'7.5.0',
+      release:'7.5.1',
       documentation_visible:!!document.querySelector('#inteligencia .intel-help'),
       covers_questions:true,
       covers_sources:true,
@@ -6448,6 +6537,7 @@ window.ParksIntelligenceDocumentation=Object.freeze({
       top5_table_not_compressed:!!document.querySelector('#top5DetailView table.top5-admin-table'),
       version_control:!!window.ParksVersionControl,
       environment_control:!!window.ParksEnvironmentControl,
+      profile_validation:!!window.ParksUserProfileValidation,
       protected_logic:'sin cambios funcionales: Supabase, cálculos, Top 5 fuente, Hídrica, sesiones, permisos y seguridad permanecen intactos'
     };
   }
