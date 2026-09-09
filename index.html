@@ -2856,26 +2856,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const current=(data||[]).find(row=>row.name==='hydrica:current');
     const currentRows=current?.payload?.rows;
 
-    // Protección de integridad V7.4.4:
-    // la suficiencia se compara contra el padrón hídrico canónico actual, nunca
-    // contra un número histórico fijo. Así una fuente antigua de 91 filas no
-    // vuelve a inflar el indicador cuando representa menos parques reales.
-    const masterRows=global.PARKS_HYDRICA_MASTER_SEED?.rows||[];
-    const masterMatched=new Set(masterRows.map(row=>findPark(row.park)?.park).filter(Boolean)).size;
-    if(Array.isArray(currentRows)){
-      const currentMatched=new Set(currentRows.map(row=>findPark(row.park)?.park).filter(Boolean)).size;
-      const minimum=Math.max(1,Math.ceil(masterMatched*0.95));
-      if(currentMatched>=minimum){
-        applyWaterSnapshot(current.payload);
-      }else{
-        console.warn(
-          'Matriz Hídrica guardada ignorada por cobertura insuficiente:',
-          currentRows.length,'filas /',currentMatched,'parques conciliados.',
-          'Se conserva la fuente maestra homologada de',masterMatched,'parques.'
-        );
-      }
-    }else if(current?.payload){
-      console.warn('Matriz Hídrica guardada ignorada: el payload no contiene filas válidas.');
+    // V7.4.4.2: operational_records es la fuente hídrica protegida/canónica.
+    // El snapshot datasets.hydrica:current se conserva como histórico, pero no
+    // puede sustituir al padrón protegido cuando éste ya está disponible.
+    const protectedRows=global.PARKS_HYDRICA_MASTER_SEED?.rows||[];
+    if(!protectedRows.length && Array.isArray(currentRows) && currentRows.length){
+      applyWaterSnapshot(current.payload);
+    }else if(current?.payload && protectedRows.length){
+      console.info(
+        `Matriz Hídrica protegida conservada: ${protectedRows.length} registros; `+
+        `snapshot legado ignorado: ${Array.isArray(currentRows)?currentRows.length:0}.`
+      );
     }
 
     await loadWaterHistory();
@@ -3092,10 +3083,27 @@ window.__PARKS_INLINE_ENGINE_DIAG__ = {
   nationalEngine: !!window.ParksNationalDataEngine
 };
 </script>
-<script src="importacion.js?v=6.0.0"></script>
+<script src="importacion.js?v=6.0.2"></script>
 <script src="alerts_engine.js?v=12.1.0"></script>
 <script>
 let D=window.SIGOP_DATA;const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const fmt=n=>new Intl.NumberFormat('es-MX').format(n||0);const pct=(n,d=1)=>(100*(n||0)).toFixed(d)+'%';const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+function canonicalParkIdSet(){
+ const ids=new Set();
+ (C?.parks||[]).filter(isCanonicalPark).forEach(p=>{
+  [p.cloud_id,...(p.cloud_ids||[])].filter(Boolean).forEach(id=>ids.add(String(id)));
+ });
+ return ids;
+}
+function documentConsistencyStats(){
+ const canonicalIds=canonicalParkIdSet();
+ const files=C?.files||[];
+ const current=files.filter(f=>f?.park_id && canonicalIds.has(String(f.park_id)));
+ const legacy=files.filter(f=>!f?.park_id || !canonicalIds.has(String(f.park_id)));
+ const parksWithDocs=(C?.parks||[]).filter(p=>isCanonicalPark(p)&&(Number(p.file_count)||0)>0).length;
+ return {total:files.length,current:current.length,legacy:legacy.length,parksWithDocs};
+}
+
 let currentRole='executive';const textStore=()=>JSON.parse(localStorage.getItem('parksOneTexts')||'{}');
 
 window.handleNationalSmartFile=async function(input){
@@ -3219,6 +3227,24 @@ function reconcilePhysicalFiles(){
    const key=String(f.cloud_id||f.storage_path||f.path||f.local_url||f.filename);
    if(!seen.has(key)){seen.add(key);unique.push(f)}
  });
+
+ const canonicalById=new Map();
+ (D.parks||[]).filter(isCanonicalPark).forEach(p=>{
+   [p.cloud_id,...(p.cloud_ids||[])].filter(Boolean).forEach(id=>canonicalById.set(String(id),p));
+ });
+ unique.forEach(f=>{
+   const owner=f?.park_id?canonicalById.get(String(f.park_id)):null;
+   if(owner){
+     f.park=owner.park;
+     f.region=owner.region||f.region||'';
+     f.division=owner.division||f.division||'';
+     f.administrator=owner.administrator||f.administrator||'';
+     f.is_legacy_unreconciled=false;
+   }else{
+     f.is_legacy_unreconciled=true;
+   }
+ });
+
  (D.parks||[]).forEach(p=>{
    p.files=physicalFilesForPark(p,unique);
    p.file_count=p.files.length;
@@ -3699,10 +3725,13 @@ function indicatorConsistencySnapshot(){
  const alerts=dashboardAlertsData();
  const water=dashboardWaterData();
  const top5=dashboardTop5Data();
+ const docs=documentConsistencyStats();
  return {
   parks:t23.parks.length,
-  documents:(C.files||[]).length,
-  parks_with_documents:new Set((C.files||[]).map(f=>f.park).filter(Boolean)).size,
+  documents:docs.total,
+  documents_current:docs.current,
+  documents_legacy_unreconciled:docs.legacy,
+  parks_with_documents:docs.parksWithDocs,
   hydrica_parks:water.rows.length,
   top5_month:top5.month,
   top5_administrators:top5.admins.length,
@@ -3732,7 +3761,7 @@ function renderDashboard(){
   ['cum','Cumplimiento documental',pct(t23.compliance,2),`${fmt(t23.integrated)} integrados de ${fmt(t23.evaluated)} aplicables`,'good','◉'],
   ['pend','Pendientes documentales',fmt(t23.pending),'Obligaciones aplicables sin evidencia integrada','danger','!'],
   ['top5','Top 5 operativo',pct(top5.compliance,2),`${top5.month} · cierre consolidado por Administrador`,'info','↗'],
-  ['docs','Documentos cargados',fmt(C.files.length),`${fmt(new Set(C.files.map(f=>f.park).filter(Boolean)).size)} parques con evidencia`,'good','▤'],
+  ['docs','Documentos cargados',fmt(C.files.length),(()=>{const d=documentConsistencyStats();return `${fmt(d.parksWithDocs)} parques actuales con evidencia · ${fmt(d.legacy)} históricos por conciliar`;})(),'good','▤'],
   ['alerts','Alertas críticas',fmt(alerts.critical),'Centro de alertas · atención prioritaria','warn','●'],
   ['critical','Parques con rezago crítico',fmt(critical),'0% de cumplimiento en obligaciones aplicables','danger','⚠']
  ];
@@ -4821,9 +4850,11 @@ function renderDocs(resetOnFilter=true){
   return searchable.includes(q)&&(!reg||f.region===reg);
  });
  const years=new Set(C.files.map(f=>f.year).filter(Boolean));
+ const docStats=documentConsistencyStats();
  const kpis=[
   ['all','Archivos indexados',C.files.length,'Repositorio nacional','good'],
-  ['parks','Parques con archivos',new Set(C.files.map(f=>f.park).filter(Boolean)).size,'Cobertura física','info'],
+  ['parks','Parques actuales con archivos',docStats.parksWithDocs,'Cobertura física canónica','info'],
+  ['legacy','Históricos por conciliar',docStats.legacy,'Conservados sin forzar parque actual','warn'],
   ['years','Años identificados',years.size,'En nombre o carpeta','warn'],
   ['pdf','PDF',C.files.filter(f=>String(f.extension||'').toLowerCase()==='pdf').length,'Formato predominante','good']
  ];
@@ -4860,9 +4891,17 @@ function openDocumentKpi(type){
   return openModal('Desglose de archivos indexados',`<p><b>${fmt(files.length)}</b> archivos vinculados al inventario nacional.</p><div class="tablewrap"><table><thead><tr><th>Formato</th><th>Archivos</th><th>Participación</th></tr></thead><tbody>${rows}</tbody></table></div><div style="margin-top:14px;text-align:right"><button class="btn secondary" onclick="downloadCsv('docs')">Descargar inventario CSV</button></div>`);
  }
  if(type==='parks'){
-  const counts={};files.forEach(f=>{const p=f.park||'Sin parque';counts[p]=(counts[p]||0)+1});
+  const canonicalIds=canonicalParkIdSet();
+  const counts={};files.filter(f=>f?.park_id&&canonicalIds.has(String(f.park_id))).forEach(f=>{const p=f.park||'Sin parque';counts[p]=(counts[p]||0)+1});
   const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<tr><td><b>${esc(p)}</b></td><td>${fmt(n)}</td><td><button class="btn ghost" onclick="filterDocumentLibrary('${encodeURIComponent(p)}')">Ver documentos</button></td></tr>`).join('');
-  return openModal('Parques con archivos',`<div class="tablewrap"><table><thead><tr><th>Parque</th><th>Archivos</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+  return openModal('Parques actuales con archivos',`<p>Solo se contabilizan parques pertenecientes al padrón canónico actual.</p><div class="tablewrap"><table><thead><tr><th>Parque</th><th>Archivos</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+ }
+ if(type==='legacy'){
+  const canonicalIds=canonicalParkIdSet();
+  const legacy=files.filter(f=>!f?.park_id||!canonicalIds.has(String(f.park_id)));
+  const counts={};legacy.forEach(f=>{const p=f.park||'Sin parque conciliado';counts[p]=(counts[p]||0)+1});
+  const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<tr><td><b>${esc(p)}</b></td><td>${fmt(n)}</td></tr>`).join('');
+  return openModal('Documentos históricos por conciliar',`<p><b>${fmt(legacy.length)}</b> documentos se conservan íntegros, pero no se fuerzan a un parque actual sin evidencia suficiente.</p><div class="tablewrap"><table><thead><tr><th>Referencia histórica actual</th><th>Documentos</th></tr></thead><tbody>${rows}</tbody></table></div>`);
  }
  if(type==='years'){
   const counts={};let missing=0;files.forEach(f=>f.year?counts[f.year]=(counts[f.year]||0)+1:missing++);
